@@ -114,6 +114,12 @@ type DynamicPolicy struct {
 	cpuPressureEviction       agent.Component
 	cpuPressureEvictionCancel context.CancelFunc
 
+	// core controller of MBM
+	// it only interacts with MetricsReader to get current reading of momory bandwidth usage (todo)
+	// also, it enforces the MBM via ExternalManager (todo)
+	mbmController       agent.Component
+	mbmControllerCancel context.CancelFunc
+
 	// those are parsed from configurations
 	// todo if we want to use dynamic configuration, we'd better not use self-defined conf
 	enableCPUAdvisor              bool
@@ -123,6 +129,9 @@ type DynamicPolicy struct {
 	extraStateFileAbsPath         string
 	enableCPUIdle                 bool
 	enableSyncingCPUIdle          bool
+	enableMBM                     bool
+	mbmThresholdPercentage        int
+	mbmScanInterval               time.Duration
 	reclaimRelativeRootCgroupPath string
 	qosConfig                     *generic.QoSConfiguration
 	dynamicConfig                 *dynamicconfig.DynamicAgentConfiguration
@@ -194,9 +203,17 @@ func NewDynamicPolicy(agentCtx *agent.GenericContext, conf *config.Configuration
 		extraStateFileAbsPath:         conf.ExtraStateFileAbsPath,
 		enableSyncingCPUIdle:          conf.CPUQRMPluginConfig.EnableSyncingCPUIdle,
 		enableCPUIdle:                 conf.CPUQRMPluginConfig.EnableCPUIdle,
+		enableMBM:                     conf.CPUQRMPluginConfig.EnableMBM,
+		mbmThresholdPercentage:        conf.MBMThresholdPercentage,
+		mbmScanInterval:               conf.MBMScanInterval,
 		reclaimRelativeRootCgroupPath: conf.ReclaimRelativeRootCgroupPath,
 		podDebugAnnoKeys:              conf.PodDebugAnnoKeys,
 		transitionPeriod:              30 * time.Second,
+	}
+
+	// threshold >= 100% does not make sense to control MB
+	if policyImplement.enableMBM && policyImplement.mbmThresholdPercentage < 100 {
+		// todo: stuff mbmController
 	}
 
 	// register allocation behaviors for pods with different QoS level
@@ -309,6 +326,16 @@ func (p *DynamicPolicy) Start() (err error) {
 		go p.cpuPressureEviction.Run(ctx)
 	}
 
+	if p.mbmController != nil {
+		general.Infof("mbm controller is enabled and in effect")
+
+		// todo: to start numa mc mem bandwidth usage scanning by periodical handler, and save metric into metricStore
+
+		var ctx context.Context
+		ctx, p.mbmControllerCancel = context.WithCancel(context.Background())
+		go p.mbmController.Run(ctx)
+	}
+
 	go wait.Until(func() {
 		periodicalhandler.ReadyToStartHandlersByGroup(qrm.QRMCPUPluginPeriodicalHandlerGroupName)
 	}, 5*time.Second, p.stopCh)
@@ -385,6 +412,10 @@ func (p *DynamicPolicy) Stop() error {
 
 	if p.cpuPressureEvictionCancel != nil {
 		p.cpuPressureEvictionCancel()
+	}
+
+	if p.mbmControllerCancel != nil {
+		p.mbmControllerCancel()
 	}
 
 	periodicalhandler.StopHandlersByGroup(qrm.QRMCPUPluginPeriodicalHandlerGroupName)
