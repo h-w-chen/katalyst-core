@@ -73,6 +73,7 @@ func TestCPUOptions_ApplyTo(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			o := &CPUOptions{
@@ -82,8 +83,23 @@ func TestCPUOptions_ApplyTo(t *testing.T) {
 				CPUDynamicPolicyOptions: tt.fields.CPUDynamicPolicyOptions,
 				CPUNativePolicyOptions:  tt.fields.CPUNativePolicyOptions,
 			}
-			if err := o.ApplyTo(tt.args.conf); (err != nil) != tt.wantErr {
+			err := o.ApplyTo(tt.args.conf)
+			if (err != nil) != tt.wantErr {
 				t.Errorf("ApplyTo() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if err != nil {
+				if o.EnableMBM != tt.args.conf.EnableMBM {
+					t.Errorf("apply EnableMBM failed: expected %v, got %v", tt.args.conf.EnableMBM, o.EnableMBM)
+				}
+				if o.MBMThresholdPercentage != tt.args.conf.MBMThresholdPercentage {
+					t.Errorf("apply MBMThresholdPercentage failed: expected %v, got %v",
+						tt.args.conf.MBMThresholdPercentage, o.MBMThresholdPercentage)
+				}
+				if o.MBMScanInterval != tt.args.conf.MBMScanInterval {
+					t.Errorf("apply MBMScanInterval failed: expected %v, got %v",
+						tt.args.conf.MBMScanInterval, o.MBMScanInterval)
+				}
 			}
 		})
 	}
