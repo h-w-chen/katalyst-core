@@ -211,10 +211,11 @@ func NewDynamicPolicy(agentCtx *agent.GenericContext, conf *config.Configuration
 		transitionPeriod:              30 * time.Second,
 	}
 
-	//// threshold >= 100% does not make sense to control MB
-	//if policyImplement.enableMBM && policyImplement.mbmThresholdPercentage < 100 {
-	//	// todo: stuff mbmController
-	//}
+	// threshold >= 100% does not make sense to control MB
+	if policyImplement.enableMBM && policyImplement.mbmThresholdPercentage < 100 {
+		// todo: stuff mbmController w/ real object
+		policyImplement.mbmController = nil
+	}
 
 	// register allocation behaviors for pods with different QoS level
 	policyImplement.allocationHandlers = map[string]util.AllocationHandler{
