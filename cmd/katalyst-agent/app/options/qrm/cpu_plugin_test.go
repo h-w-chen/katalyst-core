@@ -17,9 +17,10 @@ limitations under the License.
 package qrm
 
 import (
-	cliflag "k8s.io/component-base/cli/flag"
 	"testing"
 	"time"
+
+	cliflag "k8s.io/component-base/cli/flag"
 
 	qrmconfig "github.com/kubewharf/katalyst-core/pkg/config/agent/qrm"
 )
