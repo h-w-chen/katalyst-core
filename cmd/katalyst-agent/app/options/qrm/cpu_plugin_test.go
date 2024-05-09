@@ -17,6 +17,7 @@ limitations under the License.
 package qrm
 
 import (
+	cliflag "k8s.io/component-base/cli/flag"
 	"testing"
 	"time"
 
@@ -134,5 +135,30 @@ func TestCPUOptions_ApplyTo(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestCPUOptions_AddFlags(t *testing.T) {
+	t.Parallel()
+
+	o := NewCPUOptions()
+	fss := &cliflag.NamedFlagSets{}
+	o.AddFlags(fss)
+
+	fs := fss.FlagSet("cpu_resource_plugin")
+	if err := fs.Parse([]string{
+		"--enable-mbm",
+		"--mbm-scan-interval=5s",
+	}); err != nil {
+		t.Errorf("addflags failed, error: %#v", err)
+		return
+	}
+
+	if !o.EnableMBM {
+		t.Errorf("mbm enabling: expected true, got %v", o.EnableMBM)
+	}
+
+	if o.MBMScanInterval != time.Second*5 {
+		t.Errorf("mbm scan interval: expected %v, got %v", time.Second*5, o.MBMScanInterval)
 	}
 }
