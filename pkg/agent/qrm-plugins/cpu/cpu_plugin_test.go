@@ -54,29 +54,16 @@ func TestCPUOptions_ApplyTo(t *testing.T) {
 		{
 			name: "happy path of mbm options",
 			fields: fields{
-				PolicyName:             "dummy-policy",
-				ReservedCPUCores:       0,
-				SkipCPUStateCorruption: false,
+				PolicyName: "dummy-policy",
 				CPUDynamicPolicyOptions: qrm.CPUDynamicPolicyOptions{
-					EnableCPUAdvisor:              false,
-					EnableCPUPressureEviction:     false,
-					LoadPressureEvictionSkipPools: nil,
-					EnableSyncingCPUIdle:          false,
-					EnableCPUIdle:                 false,
-					EnableMBM:                     true,
-					MBMThresholdPercentage:        88,
-					MBMScanInterval:               time.Second * 2,
+					EnableMBM:              true,
+					MBMThresholdPercentage: 88,
+					MBMScanInterval:        time.Second * 2,
 				},
 				CPUNativePolicyOptions: qrm.CPUNativePolicyOptions{},
 			},
 			args: args{
-				conf: &qrmconfig.CPUQRMPluginConfig{
-					PolicyName:             "dummy-policy",
-					ReservedCPUCores:       0,
-					SkipCPUStateCorruption: false,
-					CPUDynamicPolicyConfig: qrmconfig.CPUDynamicPolicyConfig{},
-					CPUNativePolicyConfig:  qrmconfig.CPUNativePolicyConfig{},
-				},
+				conf: &qrmconfig.CPUQRMPluginConfig{},
 			},
 			wantMBMOptions: mbmOptions{
 				EnableMBM:              true,
