@@ -36,11 +36,17 @@ func TestCPUOptions_ApplyTo(t *testing.T) {
 	type args struct {
 		conf *qrmconfig.CPUQRMPluginConfig
 	}
+	type mbmOptions struct {
+		EnableMBM              bool
+		MBMThresholdPercentage int
+		MBMScanInterval        time.Duration
+	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
+		name           string
+		fields         fields
+		args           args
+		wantMBMOptions mbmOptions
+		wantErr        bool
 	}{
 		{
 			name: "happy path of mbm options",
@@ -69,6 +75,32 @@ func TestCPUOptions_ApplyTo(t *testing.T) {
 					CPUNativePolicyConfig:  qrmconfig.CPUNativePolicyConfig{},
 				},
 			},
+			wantMBMOptions: mbmOptions{
+				EnableMBM:              true,
+				MBMThresholdPercentage: 88,
+				MBMScanInterval:        time.Second * 2,
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalid options is corrected",
+			fields: fields{
+				PolicyName: "dummy",
+				CPUDynamicPolicyOptions: CPUDynamicPolicyOptions{
+					EnableMBM:              true,
+					MBMThresholdPercentage: -1,
+					MBMScanInterval:        time.Nanosecond * 1,
+				},
+				CPUNativePolicyOptions: CPUNativePolicyOptions{},
+			},
+			args: args{
+				conf: &qrmconfig.CPUQRMPluginConfig{},
+			},
+			wantMBMOptions: mbmOptions{
+				EnableMBM:              true,
+				MBMThresholdPercentage: 50,
+				MBMScanInterval:        time.Millisecond * 50,
+			},
 			wantErr: false,
 		},
 	}
@@ -88,17 +120,17 @@ func TestCPUOptions_ApplyTo(t *testing.T) {
 				t.Errorf("ApplyTo() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			if err != nil {
-				if o.EnableMBM != tt.args.conf.EnableMBM {
-					t.Errorf("apply EnableMBM failed: expected %v, got %v", tt.args.conf.EnableMBM, o.EnableMBM)
+			if err == nil {
+				if tt.args.conf.EnableMBM != tt.wantMBMOptions.EnableMBM {
+					t.Errorf("apply EnableMBM failed: expected %v, got %v", tt.args.conf.EnableMBM, tt.args.conf.EnableMBM)
 				}
-				if o.MBMThresholdPercentage != tt.args.conf.MBMThresholdPercentage {
+				if tt.args.conf.MBMThresholdPercentage != tt.wantMBMOptions.MBMThresholdPercentage {
 					t.Errorf("apply MBMThresholdPercentage failed: expected %v, got %v",
-						tt.args.conf.MBMThresholdPercentage, o.MBMThresholdPercentage)
+						tt.wantMBMOptions.MBMThresholdPercentage, tt.args.conf.MBMThresholdPercentage)
 				}
-				if o.MBMScanInterval != tt.args.conf.MBMScanInterval {
+				if tt.args.conf.MBMScanInterval != tt.wantMBMOptions.MBMScanInterval {
 					t.Errorf("apply MBMScanInterval failed: expected %v, got %v",
-						tt.args.conf.MBMScanInterval, o.MBMScanInterval)
+						tt.wantMBMOptions.MBMScanInterval, tt.args.conf.MBMScanInterval)
 				}
 			}
 		})
