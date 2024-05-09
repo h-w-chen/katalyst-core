@@ -24,6 +24,8 @@ import (
 )
 
 func TestCPUOptions_ApplyTo(t *testing.T) {
+	t.Parallel()
+
 	type fields struct {
 		PolicyName              string
 		ReservedCPUCores        int
