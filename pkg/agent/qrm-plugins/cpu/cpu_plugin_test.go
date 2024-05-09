@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package qrm
+package cpu
 
 import (
 	"testing"
@@ -22,6 +22,7 @@ import (
 
 	cliflag "k8s.io/component-base/cli/flag"
 
+	"github.com/kubewharf/katalyst-core/cmd/katalyst-agent/app/options/qrm"
 	qrmconfig "github.com/kubewharf/katalyst-core/pkg/config/agent/qrm"
 )
 
@@ -32,8 +33,8 @@ func TestCPUOptions_ApplyTo(t *testing.T) {
 		PolicyName              string
 		ReservedCPUCores        int
 		SkipCPUStateCorruption  bool
-		CPUDynamicPolicyOptions CPUDynamicPolicyOptions
-		CPUNativePolicyOptions  CPUNativePolicyOptions
+		CPUDynamicPolicyOptions qrm.CPUDynamicPolicyOptions
+		CPUNativePolicyOptions  qrm.CPUNativePolicyOptions
 	}
 	type args struct {
 		conf *qrmconfig.CPUQRMPluginConfig
@@ -56,7 +57,7 @@ func TestCPUOptions_ApplyTo(t *testing.T) {
 				PolicyName:             "dummy-policy",
 				ReservedCPUCores:       0,
 				SkipCPUStateCorruption: false,
-				CPUDynamicPolicyOptions: CPUDynamicPolicyOptions{
+				CPUDynamicPolicyOptions: qrm.CPUDynamicPolicyOptions{
 					EnableCPUAdvisor:              false,
 					EnableCPUPressureEviction:     false,
 					LoadPressureEvictionSkipPools: nil,
@@ -66,7 +67,7 @@ func TestCPUOptions_ApplyTo(t *testing.T) {
 					MBMThresholdPercentage:        88,
 					MBMScanInterval:               time.Second * 2,
 				},
-				CPUNativePolicyOptions: CPUNativePolicyOptions{},
+				CPUNativePolicyOptions: qrm.CPUNativePolicyOptions{},
 			},
 			args: args{
 				conf: &qrmconfig.CPUQRMPluginConfig{
@@ -88,12 +89,12 @@ func TestCPUOptions_ApplyTo(t *testing.T) {
 			name: "invalid options is corrected",
 			fields: fields{
 				PolicyName: "dummy",
-				CPUDynamicPolicyOptions: CPUDynamicPolicyOptions{
+				CPUDynamicPolicyOptions: qrm.CPUDynamicPolicyOptions{
 					EnableMBM:              true,
 					MBMThresholdPercentage: -1,
 					MBMScanInterval:        time.Nanosecond * 1,
 				},
-				CPUNativePolicyOptions: CPUNativePolicyOptions{},
+				CPUNativePolicyOptions: qrm.CPUNativePolicyOptions{},
 			},
 			args: args{
 				conf: &qrmconfig.CPUQRMPluginConfig{},
@@ -110,7 +111,7 @@ func TestCPUOptions_ApplyTo(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			o := &CPUOptions{
+			o := &qrm.CPUOptions{
 				PolicyName:              tt.fields.PolicyName,
 				ReservedCPUCores:        tt.fields.ReservedCPUCores,
 				SkipCPUStateCorruption:  tt.fields.SkipCPUStateCorruption,
@@ -142,7 +143,7 @@ func TestCPUOptions_ApplyTo(t *testing.T) {
 func TestCPUOptions_AddFlags(t *testing.T) {
 	t.Parallel()
 
-	o := NewCPUOptions()
+	o := qrm.NewCPUOptions()
 	fss := &cliflag.NamedFlagSets{}
 	o.AddFlags(fss)
 
