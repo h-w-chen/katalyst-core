@@ -18,10 +18,10 @@ package dynamicpolicy
 
 import (
 	"context"
-	"github.com/kubewharf/katalyst-core/pkg/util/general"
 	"time"
 
 	"github.com/kubewharf/katalyst-core/cmd/katalyst-agent/app/agent"
+	"github.com/kubewharf/katalyst-core/pkg/util/general"
 )
 
 type StoppableComponent interface {
@@ -52,6 +52,7 @@ func (m *mbmController) run(ctx context.Context) {
 func (m *mbmController) Stop() {
 	if m.mbmControllerCancel != nil {
 		m.mbmControllerCancel()
+		m.mbmControllerCancel = nil
 	}
 }
 

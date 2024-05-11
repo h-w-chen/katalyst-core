@@ -17,6 +17,7 @@ limitations under the License.
 package dynamicpolicy
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -147,5 +148,22 @@ func TestNewDynamicPolicy_MBMController(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestMBMController_Run_Stop(t *testing.T) {
+	t.Parallel()
+	mc := mbmController{
+		mbmThresholdPercentage: 80,
+		mbmScanInterval:        time.Second * 2,
+	}
+
+	mc.Run(context.TODO())
+	if mc.mbmControllerCancel == nil {
+		t.Errorf("expected cancel func after started; got nil")
+	}
+	mc.Stop()
+	if mc.mbmControllerCancel != nil {
+		t.Errorf("expected cancel func cleared after stop; got non-nil")
 	}
 }
