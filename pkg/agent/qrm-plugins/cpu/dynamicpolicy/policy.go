@@ -125,9 +125,6 @@ type DynamicPolicy struct {
 	extraStateFileAbsPath         string
 	enableCPUIdle                 bool
 	enableSyncingCPUIdle          bool
-	enableMBM                     bool
-	mbmThresholdPercentage        int
-	mbmScanInterval               time.Duration
 	reclaimRelativeRootCgroupPath string
 	qosConfig                     *generic.QoSConfiguration
 	dynamicConfig                 *dynamicconfig.DynamicAgentConfiguration
@@ -199,16 +196,12 @@ func NewDynamicPolicy(agentCtx *agent.GenericContext, conf *config.Configuration
 		extraStateFileAbsPath:         conf.ExtraStateFileAbsPath,
 		enableSyncingCPUIdle:          conf.CPUQRMPluginConfig.EnableSyncingCPUIdle,
 		enableCPUIdle:                 conf.CPUQRMPluginConfig.EnableCPUIdle,
-		enableMBM:                     conf.CPUQRMPluginConfig.EnableMBM,
-		mbmThresholdPercentage:        conf.MBMThresholdPercentage,
-		mbmScanInterval:               conf.MBMScanInterval,
 		reclaimRelativeRootCgroupPath: conf.ReclaimRelativeRootCgroupPath,
 		podDebugAnnoKeys:              conf.PodDebugAnnoKeys,
 		transitionPeriod:              30 * time.Second,
 	}
 
-	// threshold >= 100% does not make sense to control MB
-	if policyImplement.enableMBM {
+	if conf.EnableMBM {
 		policyImplement.mbmController = NewMBMController(conf.MBMThresholdPercentage, conf.MBMScanInterval)
 	}
 
