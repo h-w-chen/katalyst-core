@@ -27,7 +27,7 @@ import (
 
 func TestMBMController_Run_Stop(t *testing.T) {
 	t.Parallel()
-	mc := NewMBMController(&metrics.DummyMetrics{}, &external.DummyExternalManager{}, 80, time.Second*2)
+	mc := NewMBMController(&metrics.DummyMetrics{}, &external.DummyExternalManager{}, nil, 80, time.Second*2)
 
 	controller, ok := mc.(*mbmController)
 	if !ok {

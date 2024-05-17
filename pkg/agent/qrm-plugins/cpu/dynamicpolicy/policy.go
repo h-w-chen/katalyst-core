@@ -205,6 +205,7 @@ func NewDynamicPolicy(agentCtx *agent.GenericContext, conf *config.Configuration
 		policyImplement.mbmController = NewMBMController(
 			agentCtx.EmitterPool.GetDefaultMetricsEmitter().WithTags(MBM_Controller),
 			agentCtx.MetaServer.ExternalManager,
+			agentCtx.MetaAgent.MetricsFetcher,
 			conf.MBMThresholdPercentage,
 			conf.MBMScanInterval)
 	}

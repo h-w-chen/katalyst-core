@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/kubewharf/katalyst-core/cmd/katalyst-agent/app/agent"
+	metrictypes "github.com/kubewharf/katalyst-core/pkg/metaserver/agent/metric/types"
 	"github.com/kubewharf/katalyst-core/pkg/metaserver/external"
 	"github.com/kubewharf/katalyst-core/pkg/metrics"
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
@@ -44,10 +45,14 @@ type mbmController struct {
 	mbmThresholdPercentage int
 	mbmScanInterval        time.Duration
 	mbmControllerCancel    context.CancelFunc
+	metricsReader          metrictypes.MetricsReader
 }
 
 func (m *mbmController) Run(ctx context.Context) {
 	general.Infof("mbm controller is enabled and in effect")
+
+	// todo: periodally read mb metrics from metrics store
+	//       and decide what to do
 	ctx, m.mbmControllerCancel = context.WithCancel(ctx)
 	go m.run(ctx)
 }
@@ -64,10 +69,15 @@ func (m *mbmController) Stop() {
 	}
 }
 
-func NewMBMController(emitter metrics.MetricEmitter, externalManager external.ExternalManager, threshold int, scanInterval time.Duration) StoppableComponent {
+func NewMBMController(emitter metrics.MetricEmitter,
+	externalManager external.ExternalManager,
+	metricsReader metrictypes.MetricsReader,
+	threshold int,
+	scanInterval time.Duration) StoppableComponent {
 	return &mbmController{
 		emitter:                emitter.WithTags(MBM_Controller),
 		externalManager:        externalManager,
+		metricsReader:          metricsReader,
 		mbmThresholdPercentage: threshold,
 		mbmScanInterval:        scanInterval,
 	}
