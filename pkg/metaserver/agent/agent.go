@@ -95,6 +95,9 @@ func NewMetaAgent(conf *config.Configuration, clientSet *client.GenericClientSet
 		KubeletConfigFetcher: kubeletconfig.NewKubeletConfigFetcher(conf.BaseConfiguration, emitter),
 	}
 
+	// machine info set as extra config, which it is mandatory for mbm metrics provisioner
+	conf.MetaServerConfiguration.MBMetricConfiguration.MachineInfo = machineInfo
+
 	if conf.EnableMetricsFetcher {
 		metaAgent.MetricsFetcher = metric.NewMetricsFetcher(conf.BaseConfiguration, conf.MetaServerConfiguration.MetricConfiguration, emitter, metaAgent)
 	} else {

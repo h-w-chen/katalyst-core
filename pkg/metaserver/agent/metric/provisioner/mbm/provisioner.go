@@ -7,10 +7,12 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/metaserver/agent/metric/types"
 	"github.com/kubewharf/katalyst-core/pkg/metaserver/agent/pod"
 	"github.com/kubewharf/katalyst-core/pkg/metrics"
+	"github.com/kubewharf/katalyst-core/pkg/util/machine"
 	utilmetric "github.com/kubewharf/katalyst-core/pkg/util/metric"
 )
 
 type MBMetricsProvisioner struct {
+	machineInfo *machine.KatalystMachineInfo
 	metricStore *utilmetric.MetricStore
 	emitter     metrics.MetricEmitter
 
@@ -26,9 +28,10 @@ func (m MBMetricsProvisioner) sample(ctx context.Context) {
 	panic("implement me")
 }
 
-func NewMBMetricsProvisioner(_ *global.BaseConfiguration, _ *metaserver.MetricConfiguration,
+func NewMBMetricsProvisioner(_ *global.BaseConfiguration, metricConf *metaserver.MetricConfiguration,
 	emitter metrics.MetricEmitter, _ pod.PodFetcher, metricStore *utilmetric.MetricStore) types.MetricsProvisioner {
 	m := MBMetricsProvisioner{
+		machineInfo: metricConf.MachineInfo,
 		metricStore: metricStore,
 		emitter:     emitter,
 	}

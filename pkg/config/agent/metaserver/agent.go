@@ -20,6 +20,8 @@ import (
 	"time"
 
 	"golang.org/x/time/rate"
+
+	"github.com/kubewharf/katalyst-core/pkg/util/machine"
 )
 
 const (
@@ -41,6 +43,7 @@ type MetricConfiguration struct {
 	*CgroupMetricConfiguration
 	*KubeletMetricConfiguration
 	*RodanMetricConfiguration
+	*MBMetricConfiguration
 }
 
 type MalachiteMetricConfiguration struct{}
@@ -51,6 +54,10 @@ type KubeletMetricConfiguration struct{}
 
 type RodanMetricConfiguration struct {
 	RodanServerPort int
+}
+
+type MBMetricConfiguration struct {
+	MachineInfo *machine.KatalystMachineInfo
 }
 
 type PodConfiguration struct {
@@ -90,6 +97,7 @@ func NewAgentConfiguration() *AgentConfiguration {
 			CgroupMetricConfiguration:    &CgroupMetricConfiguration{},
 			KubeletMetricConfiguration:   &KubeletMetricConfiguration{},
 			RodanMetricConfiguration:     &RodanMetricConfiguration{},
+			MBMetricConfiguration:        &MBMetricConfiguration{},
 		},
 		PodConfiguration:  &PodConfiguration{},
 		NodeConfiguration: &NodeConfiguration{},

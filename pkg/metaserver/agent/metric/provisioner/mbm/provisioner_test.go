@@ -3,6 +3,9 @@ package mbm
 import (
 	"context"
 	"testing"
+
+	"github.com/kubewharf/katalyst-core/pkg/config/agent/metaserver"
+	"github.com/kubewharf/katalyst-core/pkg/util/machine"
 )
 
 type testStub struct {
@@ -18,7 +21,13 @@ func TestMBMetricsProvisioner_Run_to_sample_once(t *testing.T) {
 	t.Parallel()
 
 	stub := &testStub{}
-	m := NewMBMetricsProvisioner(nil, nil, nil, nil, nil)
+
+	metricConf := &metaserver.MetricConfiguration{
+		MBMetricConfiguration: &metaserver.MBMetricConfiguration{
+			MachineInfo: &machine.KatalystMachineInfo{},
+		},
+	}
+	m := NewMBMetricsProvisioner(nil, metricConf, nil, nil, nil)
 	m.(*MBMetricsProvisioner).sampleFunc = stub.foo
 
 	m.Run(context.TODO())
