@@ -23,10 +23,11 @@ import (
 )
 
 const (
-	MetricProvisionerMalachite = "malachite"
-	MetricProvisionerCgroup    = "cgroup"
-	MetricProvisionerKubelet   = "kubelet"
-	MetricProvisionerRodan     = "rodan"
+	MetricProvisionerMalachite       = "malachite"
+	MetricProvisionerCgroup          = "cgroup"
+	MetricProvisionerKubelet         = "kubelet"
+	MetricProvisionerRodan           = "rodan"
+	MetricProvisionerMemoryBandwidth = "mbm"
 )
 
 type MetricConfiguration struct {
