@@ -2,8 +2,10 @@ package mbm
 
 import (
 	"context"
+
 	"github.com/kubewharf/katalyst-core/pkg/config/agent/global"
 	"github.com/kubewharf/katalyst-core/pkg/config/agent/metaserver"
+	"github.com/kubewharf/katalyst-core/pkg/metaserver/agent/metric/provisioner/mbm/sampling"
 	"github.com/kubewharf/katalyst-core/pkg/metaserver/agent/metric/types"
 	"github.com/kubewharf/katalyst-core/pkg/metaserver/agent/pod"
 	"github.com/kubewharf/katalyst-core/pkg/metrics"
@@ -16,12 +18,11 @@ type MBMetricsProvisioner struct {
 	metricStore *utilmetric.MetricStore
 	emitter     metrics.MetricEmitter
 
-	// test hook
-	sampleFunc func(context.Context)
+	sampler sampling.MBSampler
 }
 
 func (m MBMetricsProvisioner) Run(ctx context.Context) {
-	m.sampleFunc(ctx)
+	m.sampler.Sample(ctx)
 }
 
 func (m MBMetricsProvisioner) sample(ctx context.Context) {
@@ -34,8 +35,11 @@ func NewMBMetricsProvisioner(_ *global.BaseConfiguration, metricConf *metaserver
 		machineInfo: metricConf.MachineInfo,
 		metricStore: metricStore,
 		emitter:     emitter,
+		sampler:     metricConf.SamplerFactory(metricConf.MachineInfo),
 	}
-	m.sampleFunc = m.sample
+
+	m.sampler.Init()
+
 	return &m
 }
 

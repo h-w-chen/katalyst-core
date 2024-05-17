@@ -35,6 +35,7 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/metaserver/agent/cnr"
 	"github.com/kubewharf/katalyst-core/pkg/metaserver/agent/kubeletconfig"
 	"github.com/kubewharf/katalyst-core/pkg/metaserver/agent/metric"
+	"github.com/kubewharf/katalyst-core/pkg/metaserver/agent/metric/provisioner/mbm/sampling"
 	"github.com/kubewharf/katalyst-core/pkg/metaserver/agent/metric/types"
 	"github.com/kubewharf/katalyst-core/pkg/metaserver/agent/node"
 	"github.com/kubewharf/katalyst-core/pkg/metaserver/agent/pod"
@@ -97,6 +98,8 @@ func NewMetaAgent(conf *config.Configuration, clientSet *client.GenericClientSet
 
 	// machine info set as extra config, which it is mandatory for mbm metrics provisioner
 	conf.MetaServerConfiguration.MBMetricConfiguration.MachineInfo = machineInfo
+	// also, we need to know the factory method to create mbm sampler in production
+	conf.MetaServerConfiguration.MBMetricConfiguration.SamplerFactory = sampling.NewMBSampler
 
 	if conf.EnableMetricsFetcher {
 		metaAgent.MetricsFetcher = metric.NewMetricsFetcher(conf.BaseConfiguration, conf.MetaServerConfiguration.MetricConfiguration, emitter, metaAgent)

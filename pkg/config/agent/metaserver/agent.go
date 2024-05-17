@@ -21,6 +21,7 @@ import (
 
 	"golang.org/x/time/rate"
 
+	"github.com/kubewharf/katalyst-core/pkg/metaserver/agent/metric/provisioner/mbm/sampling"
 	"github.com/kubewharf/katalyst-core/pkg/util/machine"
 )
 
@@ -57,7 +58,8 @@ type RodanMetricConfiguration struct {
 }
 
 type MBMetricConfiguration struct {
-	MachineInfo *machine.KatalystMachineInfo
+	MachineInfo    *machine.KatalystMachineInfo
+	SamplerFactory sampling.MBSamplerFactory
 }
 
 type PodConfiguration struct {
