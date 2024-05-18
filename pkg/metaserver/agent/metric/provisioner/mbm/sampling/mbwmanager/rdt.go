@@ -1,8 +1,7 @@
-package sampling
+package mbwmanager
 
 import (
 	"fmt"
-
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
 	"github.com/kubewharf/katalyst-core/pkg/util/mbw/msr"
 	"github.com/kubewharf/katalyst-core/pkg/util/mbw/rdt"

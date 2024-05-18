@@ -2,8 +2,9 @@ package sampling
 
 import (
 	"context"
-	"github.com/pkg/errors"
 	"testing"
+
+	"github.com/pkg/errors"
 )
 
 type stubMBReader struct {

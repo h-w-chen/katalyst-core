@@ -3,6 +3,7 @@ package sampling
 import (
 	"context"
 
+	"github.com/kubewharf/katalyst-core/pkg/metaserver/agent/metric/provisioner/mbm/sampling/mbwmanager"
 	"github.com/kubewharf/katalyst-core/pkg/util/machine"
 )
 
@@ -96,7 +97,7 @@ func (m *mbSampler) sample(ctx context.Context) {
 
 func NewMBSampler(metricConf *machine.KatalystMachineInfo, packageSampleWriter, numaSampleWriter SampleWriter) MBSampler {
 	// todo: revise to accept machine info as param
-	monitor, err := NewMonitor()
+	monitor, err := mbwmanager.NewMonitor()
 	if err != nil {
 		// todo: log error
 		// not to crash as mb monitor is not the most essential; fine keeping whole machine functioning with reduced capacity

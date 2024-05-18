@@ -1,8 +1,8 @@
-package sampling
+package mbwmanager
 
 // this file is extension of mbw monitor, for the ease of integration
-// all mbw monitor source code files are kept in the original form as much as possible
-// to facilitate evolution of its own
+// except this file, all mbw monitor source code files are kept in the original form
+// as much as possible to facilitate evolution of its own
 
 // GetPackageSamples return total memory bandwidth of all packages
 // it reuses input param as the buffer to avoid excessive object allocations

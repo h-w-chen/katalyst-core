@@ -1,4 +1,4 @@
-package sampling
+package mbwmanager
 
 import (
 	"context"

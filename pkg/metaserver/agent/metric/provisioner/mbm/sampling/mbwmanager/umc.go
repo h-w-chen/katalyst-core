@@ -1,4 +1,4 @@
-package sampling
+package mbwmanager
 
 import (
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
