@@ -35,8 +35,7 @@ type mbSampler struct {
 }
 
 func (m *mbSampler) Shutdown() {
-	//TODO implement me
-	panic("implement me")
+	m.monitor.Stop()
 }
 
 func (m *mbSampler) Init() {
@@ -48,6 +47,17 @@ func (m *mbSampler) Init() {
 }
 
 func (m *mbSampler) Sample(ctx context.Context) {
+	select {
+	case <-ctx.Done():
+		// clean up as graceful termination
+		m.Shutdown()
+		return
+	default:
+		m.sample(ctx)
+	}
+}
+
+func (m *mbSampler) sample(ctx context.Context) {
 	if m.monitor == nil {
 		return
 	}

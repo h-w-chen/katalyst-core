@@ -25,10 +25,6 @@ func (m MBMetricsProvisioner) Run(ctx context.Context) {
 	m.sampler.Sample(ctx)
 }
 
-func (m MBMetricsProvisioner) sample(ctx context.Context) {
-	panic("implement me")
-}
-
 func NewMBMetricsProvisioner(_ *global.BaseConfiguration, metricConf *metaserver.MetricConfiguration,
 	emitter metrics.MetricEmitter, _ pod.PodFetcher, metricStore *utilmetric.MetricStore) types.MetricsProvisioner {
 	m := MBMetricsProvisioner{
