@@ -32,7 +32,7 @@ func TestMBMetricsProvisioner_New_to_Init_Run_to_sample(t *testing.T) {
 	metricConf := &metaserver.MetricConfiguration{
 		MBMetricConfiguration: &metaserver.MBMetricConfiguration{
 			MachineInfo: &machine.KatalystMachineInfo{},
-			SamplerFactory: func(metricConf *machine.KatalystMachineInfo) sampling.MBSampler {
+			SamplerFactory: func(*machine.KatalystMachineInfo, sampling.SampleWriter, sampling.SampleWriter) sampling.MBSampler {
 				return stub
 			},
 		},

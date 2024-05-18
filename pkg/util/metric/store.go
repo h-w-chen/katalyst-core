@@ -49,6 +49,9 @@ type MetricStore struct {
 	podVolumeMetricMap        map[string]map[string]map[string]MetricData            // map[podUID]map[volumeName]map[metricName]data
 	cgroupMetricMap           map[string]map[string]MetricData                       // map[cgroupPath]map[metricName]value
 	cgroupNumaMetricMap       map[string]map[int]map[string]MetricData               // map[cgroupPath]map[numaNode]map[metricName]value
+
+	mbmPackageMetricMap map[int]MetricData // total memory bandwidth in MB/s per packet
+	mbmNumaMetricMap    map[int]MetricData // total memory bandwidth in MB/s per numa (fake likely)
 }
 
 func NewMetricStore() *MetricStore {
@@ -63,6 +66,8 @@ func NewMetricStore() *MetricStore {
 		podVolumeMetricMap:        make(map[string]map[string]map[string]MetricData),
 		cgroupMetricMap:           make(map[string]map[string]MetricData),
 		cgroupNumaMetricMap:       make(map[string]map[int]map[string]MetricData),
+		mbmPackageMetricMap:       make(map[int]MetricData),
+		mbmNumaMetricMap:          make(map[int]MetricData),
 	}
 }
 
@@ -332,6 +337,54 @@ func (c *MetricStore) GetCgroupNumaMetric(cgroupPath string, numaNode int, metri
 	metric, ok := metrics[metricName]
 	if !ok {
 		return MetricData{}, fmt.Errorf("[MetricStore] load value for %v failed", metricName)
+	}
+	return metric, nil
+}
+
+func (c *MetricStore) SetMBMPacketMetrics(samples []float64) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	now := time.Now()
+	for i, sample := range samples {
+		c.mbmPackageMetricMap[i] = MetricData{
+			Value: sample,
+			Time:  &now,
+		}
+	}
+}
+
+func (c *MetricStore) GetMBMPacketMetric(packetID int) (MetricData, error) {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+
+	metric, ok := c.mbmPackageMetricMap[packetID]
+	if !ok {
+		return MetricData{}, fmt.Errorf("[MetricStore] load packet mem bandwidth for %v failed")
+	}
+	return metric, nil
+}
+
+func (c *MetricStore) SetMBMNUMAMetrics(samples []float64) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	now := time.Now()
+	for i, sample := range samples {
+		c.mbmNumaMetricMap[i] = MetricData{
+			Value: sample,
+			Time:  &now,
+		}
+	}
+}
+
+func (c *MetricStore) GetMBMNUMAMetric(packetID int) (MetricData, error) {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+
+	metric, ok := c.mbmNumaMetricMap[packetID]
+	if !ok {
+		return MetricData{}, fmt.Errorf("[MetricStore] load numa mem bandwidth for %v failed")
 	}
 	return metric, nil
 }

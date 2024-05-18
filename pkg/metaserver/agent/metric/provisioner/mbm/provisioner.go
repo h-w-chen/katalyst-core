@@ -35,7 +35,9 @@ func NewMBMetricsProvisioner(_ *global.BaseConfiguration, metricConf *metaserver
 		machineInfo: metricConf.MachineInfo,
 		metricStore: metricStore,
 		emitter:     emitter,
-		sampler:     metricConf.SamplerFactory(metricConf.MachineInfo),
+		sampler: metricConf.SamplerFactory(metricConf.MachineInfo,
+			sampling.SamplerWriteFunc(metricStore.SetMBMPacketMetrics),
+			sampling.SamplerWriteFunc(metricStore.SetMBMNUMAMetrics)),
 	}
 
 	m.sampler.Init()

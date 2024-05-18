@@ -12,10 +12,23 @@ type MBSampler interface {
 	Sample(context.Context)
 }
 
-type MBSamplerFactory func(metricConf *machine.KatalystMachineInfo) MBSampler
+type SampleWriter interface {
+	Write([]float64)
+}
+
+type SamplerWriteFunc func([]float64)
+
+func (f SamplerWriteFunc) Write(samples []float64) {
+	f(samples)
+}
+
+type MBSamplerFactory func(metricConf *machine.KatalystMachineInfo, packageSampleWriter, numaSampleWriter SampleWriter) MBSampler
 
 type mbSampler struct {
 	monitor *MBMonitor
+
+	packageSampleWriter SampleWriter
+	numaSampleWriter    SampleWriter
 }
 
 func (m *mbSampler) Shutdown() {
@@ -38,7 +51,7 @@ func (m *mbSampler) Sample(ctx context.Context) {
 
 	if err := m.monitor.ServePackageMB(); err == nil {
 		// todo: save to metrics store
-		//m.monitor.MemoryBandwidth.Packages
+		//m.packetSampleWriter.Write(m.monitor.MemoryBandwidth.Packages)
 	}
 
 	if err := m.monitor.ServeCoreMB(); err == nil {
@@ -47,7 +60,7 @@ func (m *mbSampler) Sample(ctx context.Context) {
 	}
 }
 
-func NewMBSampler(metricConf *machine.KatalystMachineInfo) MBSampler {
+func NewMBSampler(metricConf *machine.KatalystMachineInfo, packageSampleWriter, numaSampleWriter SampleWriter) MBSampler {
 	monitor, err := NewMonitor()
 	if err != nil {
 		// todo: log error
@@ -56,6 +69,8 @@ func NewMBSampler(metricConf *machine.KatalystMachineInfo) MBSampler {
 	}
 
 	return &mbSampler{
-		monitor: monitor,
+		monitor:             monitor,
+		packageSampleWriter: packageSampleWriter,
+		numaSampleWriter:    numaSampleWriter,
 	}
 }
