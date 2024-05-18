@@ -27,6 +27,9 @@ type MBSamplerFactory func(metricConf *machine.KatalystMachineInfo, packageSampl
 type mbSampler struct {
 	monitor *MBMonitor
 
+	packageTotalMBs []float64
+	numaTotalMBs    []float64
+
 	packageSampleWriter SampleWriter
 	numaSampleWriter    SampleWriter
 }
@@ -50,14 +53,22 @@ func (m *mbSampler) Sample(ctx context.Context) {
 	}
 
 	if err := m.monitor.ServePackageMB(); err == nil {
-		// todo: save to metrics store
-		//m.packetSampleWriter.Write(m.monitor.MemoryBandwidth.Packages)
+		if samples := m.monitor.GetPackageSamples(m.packageTotalMBs); samples != nil {
+			m.packageSampleWriter.Write(samples)
+		}
 	}
+	//else {
+	//	// todo: log error
+	//}
 
 	if err := m.monitor.ServeCoreMB(); err == nil {
-		// todo: save fake numa stats
-		// m.monitor.MemoryBandwidth.Numas
+		if samples := m.monitor.GetNUMASamples(m.numaTotalMBs); samples != nil {
+			m.numaSampleWriter.Write(samples)
+		}
 	}
+	//else {
+	//	// todo: log error
+	//}
 }
 
 func NewMBSampler(metricConf *machine.KatalystMachineInfo, packageSampleWriter, numaSampleWriter SampleWriter) MBSampler {
@@ -70,6 +81,8 @@ func NewMBSampler(metricConf *machine.KatalystMachineInfo, packageSampleWriter, 
 
 	return &mbSampler{
 		monitor:             monitor,
+		packageTotalMBs:     make([]float64, monitor.NumPackages),
+		numaTotalMBs:        make([]float64, monitor.NumNUMANodes),
 		packageSampleWriter: packageSampleWriter,
 		numaSampleWriter:    numaSampleWriter,
 	}
