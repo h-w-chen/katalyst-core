@@ -24,8 +24,17 @@ func (f SamplerWriteFunc) Write(samples []float64) {
 
 type MBSamplerFactory func(metricConf *machine.KatalystMachineInfo, packageSampleWriter, numaSampleWriter SampleWriter) MBSampler
 
+type MemBandwidthMonitor interface {
+	Init() error
+	Stop()
+	ServePackageMB() error
+	ServeCoreMB() error
+	GetPackageSamples([]float64) []float64
+	GetNUMASamples([]float64) []float64
+}
+
 type mbSampler struct {
-	monitor *MBMonitor
+	monitor MemBandwidthMonitor
 
 	packageTotalMBs []float64
 	numaTotalMBs    []float64
@@ -35,6 +44,10 @@ type mbSampler struct {
 }
 
 func (m *mbSampler) Shutdown() {
+	if m.monitor == nil {
+		return
+	}
+
 	m.monitor.Stop()
 }
 
@@ -82,6 +95,7 @@ func (m *mbSampler) sample(ctx context.Context) {
 }
 
 func NewMBSampler(metricConf *machine.KatalystMachineInfo, packageSampleWriter, numaSampleWriter SampleWriter) MBSampler {
+	// todo: revise to accept machine info as param
 	monitor, err := NewMonitor()
 	if err != nil {
 		// todo: log error
