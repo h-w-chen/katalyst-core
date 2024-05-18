@@ -8,7 +8,7 @@ import (
 )
 
 type stubMBReader struct {
-	MemBandwidthMonitor
+	MBMonitor
 	shutdownCalled bool
 }
 

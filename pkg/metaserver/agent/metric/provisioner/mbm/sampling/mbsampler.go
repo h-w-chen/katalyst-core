@@ -25,7 +25,7 @@ func (f SamplerWriteFunc) Write(samples []float64) {
 
 type MBSamplerFactory func(metricConf *machine.KatalystMachineInfo, packageSampleWriter, numaSampleWriter SampleWriter) MBSampler
 
-type MemBandwidthMonitor interface {
+type MBMonitor interface {
 	Init() error
 	Stop()
 	ServePackageMB() error
@@ -35,7 +35,7 @@ type MemBandwidthMonitor interface {
 }
 
 type mbSampler struct {
-	monitor MemBandwidthMonitor
+	monitor MBMonitor
 
 	packageTotalMBs []float64
 	numaTotalMBs    []float64
