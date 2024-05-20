@@ -145,6 +145,10 @@ const (
 	MetricMemLatencyReadNuma      = "mem.latency.read.numa"
 	MetricMemLatencyWriteNuma     = "mem.latency.write.numa"
 	MetricMemAMDL3MissLatencyNuma = "mem.latency.amd.l3.miss"
+
+	// different from MetricMemBandwidthNuma: this is got by per-core aggregation in much faster frequency
+	MetricMemBandwidthTotalNuma    = "mem.bandwidth.total.numa"
+	MetricMemBandwidthTotalPackage = "mem.bandwidth.total.package"
 )
 
 // System cpu compute metrics

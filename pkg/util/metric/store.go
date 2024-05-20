@@ -19,6 +19,7 @@ package metric
 import (
 	"errors"
 	"fmt"
+	metric_consts "github.com/kubewharf/katalyst-core/pkg/consts"
 	"sync"
 	"time"
 )
@@ -40,6 +41,7 @@ type MetricStore struct {
 	mutex sync.RWMutex
 
 	nodeMetricMap             map[string]MetricData                                  // map[metricName]data
+	packageMetricMap          map[int]map[string]MetricData                          // map[packageID]map[metricName]data
 	numaMetricMap             map[int]map[string]MetricData                          // map[numaID]map[metricName]data
 	deviceMetricMap           map[string]map[string]MetricData                       // map[deviceName]map[metricName]data
 	networkMetricMap          map[string]map[string]MetricData                       // map[networkName]map[metricName]data
@@ -50,8 +52,6 @@ type MetricStore struct {
 	cgroupMetricMap           map[string]map[string]MetricData                       // map[cgroupPath]map[metricName]value
 	cgroupNumaMetricMap       map[string]map[int]map[string]MetricData               // map[cgroupPath]map[numaNode]map[metricName]value
 
-	mbmPackageMetricMap map[int]MetricData // total memory bandwidth in MB/s per packet
-	mbmNumaMetricMap    map[int]MetricData // total memory bandwidth in MB/s per numa (fake likely)
 }
 
 func NewMetricStore() *MetricStore {
@@ -66,8 +66,6 @@ func NewMetricStore() *MetricStore {
 		podVolumeMetricMap:        make(map[string]map[string]map[string]MetricData),
 		cgroupMetricMap:           make(map[string]map[string]MetricData),
 		cgroupNumaMetricMap:       make(map[string]map[int]map[string]MetricData),
-		mbmPackageMetricMap:       make(map[int]MetricData),
-		mbmNumaMetricMap:          make(map[int]MetricData),
 	}
 }
 
@@ -77,13 +75,52 @@ func (c *MetricStore) SetNodeMetric(metricName string, data MetricData) {
 	c.nodeMetricMap[metricName] = data
 }
 
+func (c *MetricStore) setPackageMetric(packageID int, metricName string, data MetricData) {
+	if _, ok := c.packageMetricMap[packageID]; !ok {
+		c.packageMetricMap[packageID] = make(map[string]MetricData)
+	}
+	c.packageMetricMap[packageID][metricName] = data
+}
+
+func (c *MetricStore) SetMBMPacketMetrics(samples []float64) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	now := time.Now()
+	for i, sample := range samples {
+		data := MetricData{
+			Value: sample,
+			Time:  &now,
+		}
+		c.setPackageMetric(i, metric_consts.MetricMemBandwidthTotalPackage, data)
+	}
+}
+
 func (c *MetricStore) SetNumaMetric(numaID int, metricName string, data MetricData) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
+	c.setNumaMetric(numaID, metricName, data)
+}
+
+func (c *MetricStore) setNumaMetric(numaID int, metricName string, data MetricData) {
 	if _, ok := c.numaMetricMap[numaID]; !ok {
 		c.numaMetricMap[numaID] = make(map[string]MetricData)
 	}
 	c.numaMetricMap[numaID][metricName] = data
+}
+
+func (c *MetricStore) SetMBMNUMAMetrics(samples []float64) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	now := time.Now()
+	for i, sample := range samples {
+		data := MetricData{
+			Value: sample,
+			Time:  &now,
+		}
+		c.setNumaMetric(i, metric_consts.MetricMemBandwidthTotalNuma, data)
+	}
 }
 
 func (c *MetricStore) SetDeviceMetric(deviceName string, metricName string, data MetricData) {
@@ -167,6 +204,20 @@ func (c *MetricStore) GetNodeMetric(metricName string) (MetricData, error) {
 	} else {
 		return MetricData{}, errors.New(fmt.Sprintf("[MetricStore] load value failed, metric=%v", metricName))
 	}
+}
+
+func (c *MetricStore) GetPacketMetric(packetID int, metricName string) (MetricData, error) {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+
+	if c.packageMetricMap[packetID] != nil {
+		if data, ok := c.numaMetricMap[packetID][metricName]; ok {
+			return data, nil
+		} else {
+			return MetricData{}, errors.New(fmt.Sprintf("[MetricStore] load value failed, metric=%v, packageID=%v", metricName, packetID))
+		}
+	}
+	return MetricData{}, errors.New(fmt.Sprintf("[MetricStore] empty map, metric=%v, packageID=%v", metricName, packetID))
 }
 
 func (c *MetricStore) GetNumaMetric(numaID int, metricName string) (MetricData, error) {
@@ -337,54 +388,6 @@ func (c *MetricStore) GetCgroupNumaMetric(cgroupPath string, numaNode int, metri
 	metric, ok := metrics[metricName]
 	if !ok {
 		return MetricData{}, fmt.Errorf("[MetricStore] load value for %v failed", metricName)
-	}
-	return metric, nil
-}
-
-func (c *MetricStore) SetMBMPacketMetrics(samples []float64) {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-
-	now := time.Now()
-	for i, sample := range samples {
-		c.mbmPackageMetricMap[i] = MetricData{
-			Value: sample,
-			Time:  &now,
-		}
-	}
-}
-
-func (c *MetricStore) GetMBMPacketMetric(packetID int) (MetricData, error) {
-	c.mutex.RLock()
-	defer c.mutex.RUnlock()
-
-	metric, ok := c.mbmPackageMetricMap[packetID]
-	if !ok {
-		return MetricData{}, fmt.Errorf("[MetricStore] load packet mem bandwidth for %v failed")
-	}
-	return metric, nil
-}
-
-func (c *MetricStore) SetMBMNUMAMetrics(samples []float64) {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-
-	now := time.Now()
-	for i, sample := range samples {
-		c.mbmNumaMetricMap[i] = MetricData{
-			Value: sample,
-			Time:  &now,
-		}
-	}
-}
-
-func (c *MetricStore) GetMBMNUMAMetric(packetID int) (MetricData, error) {
-	c.mutex.RLock()
-	defer c.mutex.RUnlock()
-
-	metric, ok := c.mbmNumaMetricMap[packetID]
-	if !ok {
-		return MetricData{}, fmt.Errorf("[MetricStore] load numa mem bandwidth for %v failed")
 	}
 	return metric, nil
 }
