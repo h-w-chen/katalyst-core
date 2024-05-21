@@ -202,12 +202,14 @@ func NewDynamicPolicy(agentCtx *agent.GenericContext, conf *config.Configuration
 	}
 
 	if conf.EnableMBM {
+		topology := getTopologySummary(agentCtx.KatalystMachineInfo)
 		policyImplement.mbmController = NewMBMController(
 			agentCtx.EmitterPool.GetDefaultMetricsEmitter().WithTags(MBM_Controller),
 			agentCtx.MetaServer.ExternalManager,
 			agentCtx.MetaAgent.MetricsFetcher,
 			conf.MBMThresholdPercentage,
-			conf.MBMScanInterval)
+			conf.MBMScanInterval,
+			topology)
 	}
 
 	// register allocation behaviors for pods with different QoS level
