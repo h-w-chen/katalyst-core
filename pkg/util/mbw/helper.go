@@ -8,6 +8,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/spf13/afero"
 )
 
 const (
@@ -15,6 +17,10 @@ const (
 
 	SYS_DEVICE_SYSTEM_NODE_PATH = "/sys/devices/system/node/"
 	CPU_CACHE_LEVEL_LLC         = 3
+)
+
+var (
+	appOS = &afero.Afero{Fs: afero.NewOsFs()}
 )
 
 func Contains(array []int, item int) bool {
@@ -94,7 +100,7 @@ func GetCCDTopology(numNuma int) (map[int][]int, error) {
 
 	for nodeID := 0; nodeID < numNuma; nodeID++ {
 		path := filepath.Join(SYS_DEVICE_SYSTEM_NODE_PATH, fmt.Sprintf("node%d", nodeID))
-		files, err := os.ReadDir(path)
+		files, err := appOS.ReadDir(path)
 		if err != nil {
 			return nil, err
 		}
@@ -126,10 +132,10 @@ func GetCCDTopology(numNuma int) (map[int][]int, error) {
 			// here to retrieve the CCX/CCD domains on this machine, so index3 is the
 			// target file we gonna read.
 			cachePath := filepath.Join(cpuPath, "cache")
-			if _, err = os.Stat(cachePath); errors.Is(err, os.ErrNotExist) {
+			if _, err = appOS.Stat(cachePath); errors.Is(err, os.ErrNotExist) {
 				continue
 			}
-			cacheDirFiles, err := os.ReadDir(cachePath)
+			cacheDirFiles, err := appOS.ReadDir(cachePath)
 			if err != nil {
 				return nil, err
 			}
@@ -190,7 +196,7 @@ func memoryCacheSharedCPUList(nodeID, lpID, cacheIndex int) string {
 		getNodeCPUCacheIndexPath(nodeID, lpID, cacheIndex),
 		"shared_cpu_list",
 	)
-	sharedCpuList, err := os.ReadFile(scpuPath)
+	sharedCpuList, err := appOS.ReadFile(scpuPath)
 	if err != nil {
 		return ""
 	}
