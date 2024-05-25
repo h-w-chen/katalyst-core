@@ -4,9 +4,15 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"sync"
 	"testing"
 
 	"github.com/spf13/afero"
+)
+
+var (
+	instanceTest *afero.Afero
+	onceTest     sync.Once
 )
 
 func TestContains(t *testing.T) {
@@ -232,7 +238,13 @@ func TestGetCCDTopology(t *testing.T) {
 	}
 
 	// set up fake fs replacing the source package-scoped  var
-	appOS = &afero.Afero{Fs: afero.NewMemMapFs()}
+	appOS = func() *afero.Afero {
+		onceTest.Do(func() {
+			instanceTest = &afero.Afero{Fs: afero.NewMemMapFs()}
+		})
+		return instanceTest
+	}()
+
 	for _, entry := range fakeFiles {
 		appOS.MkdirAll(entry.dir, os.ModePerm)
 		appOS.WriteFile(filepath.Join(entry.dir, entry.file), []byte(entry.content), os.ModePerm)
