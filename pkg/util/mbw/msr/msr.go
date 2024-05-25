@@ -15,13 +15,13 @@ type MSRDev struct {
 
 // Close() closes the connection to the MSR
 func (d MSRDev) Close() error {
-	return syscall.Close(d.fd)
+	return AppSyscall.Close(d.fd)
 }
 
 // MSR() provides an interface for reoccurring access to a given CPU's MSR
 func MSR(cpu uint32) (MSRDev, error) {
 	cpuDir := fmt.Sprintf(defaultFmtStr, cpu)
-	fd, err := syscall.Open(cpuDir, syscall.O_RDWR, 777)
+	fd, err := AppSyscall.Open(cpuDir, syscall.O_RDWR, 777)
 	if err != nil {
 		return MSRDev{}, err
 	}
