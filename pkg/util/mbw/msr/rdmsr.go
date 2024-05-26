@@ -3,14 +3,13 @@ package msr
 import (
 	"encoding/binary"
 	"fmt"
-	"syscall"
 )
 
 // Read() reads a given MSR on the CPU and returns the uint64
 func (d MSRDev) Read(msr int64) (uint64, error) {
 	regBuf := make([]byte, 8)
 
-	rc, err := syscall.Pread(d.fd, regBuf, msr)
+	rc, err := AppSyscall.Pread(d.fd, regBuf, msr)
 
 	if err != nil {
 		return 0, err
