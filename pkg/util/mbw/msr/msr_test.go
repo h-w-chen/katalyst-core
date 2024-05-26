@@ -12,6 +12,10 @@ var (
 
 type stubSyscaller struct{}
 
+func (s stubSyscaller) Pwrite(fd int, p []byte, offset int64) (n int, err error) {
+	return 8, nil
+}
+
 func (s stubSyscaller) Pread(fd int, p []byte, offset int64) (n int, err error) {
 	p[7] = 0x007B //123
 	return 8, nil

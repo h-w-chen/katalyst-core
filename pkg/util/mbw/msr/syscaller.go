@@ -12,6 +12,7 @@ type syscaller interface {
 	Close(fd int) (err error)
 	Open(path string, mode int, perm uint32) (fd int, err error)
 	Pread(fd int, p []byte, offset int64) (n int, err error)
+	Pwrite(fd int, p []byte, offset int64) (n int, err error)
 }
 
 type realOS struct{}
@@ -26,4 +27,8 @@ func (r realOS) Close(fd int) (err error) {
 
 func (r realOS) Pread(fd int, p []byte, offset int64) (n int, err error) {
 	return syscall.Pread(fd, p, offset)
+}
+
+func (r realOS) Pwrite(fd int, p []byte, offset int64) (n int, err error) {
+	return syscall.Pwrite(fd, p, offset)
 }

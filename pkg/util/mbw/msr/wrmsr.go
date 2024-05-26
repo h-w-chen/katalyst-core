@@ -3,7 +3,6 @@ package msr
 import (
 	"encoding/binary"
 	"fmt"
-	"syscall"
 )
 
 // Write() writes a given value to the provided register
@@ -13,7 +12,7 @@ func (d MSRDev) Write(regno int64, value uint64) error {
 
 	binary.LittleEndian.PutUint64(buf, value)
 
-	count, err := syscall.Pwrite(d.fd, buf, regno)
+	count, err := AppSyscall.Pwrite(d.fd, buf, regno)
 	if err != nil {
 		return err
 	}
