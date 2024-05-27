@@ -1,46 +1,14 @@
 package msr
 
 import (
-	"sync"
 	"testing"
 )
-
-var (
-	instanceTest syscaller
-	onceTest     sync.Once
-)
-
-type stubSyscaller struct{}
-
-func (s stubSyscaller) Pwrite(fd int, p []byte, offset int64) (n int, err error) {
-	return 8, nil
-}
-
-func (s stubSyscaller) Pread(fd int, p []byte, offset int64) (n int, err error) {
-	p[7] = 0x007B //123
-	return 8, nil
-}
-
-func (s stubSyscaller) Close(fd int) (err error) {
-	return nil
-}
-
-func (s stubSyscaller) Open(path string, mode int, perm uint32) (fd int, err error) {
-	return 99, nil
-}
-
-var _ syscaller = &stubSyscaller{}
 
 func TestMSRDev_Close(t *testing.T) {
 	t.Parallel()
 
 	// set up test stub
-	AppSyscall = func() syscaller {
-		onceTest.Do(func() {
-			instanceTest = &stubSyscaller{}
-		})
-		return instanceTest
-	}()
+	SetupTestSyscaller()
 
 	testMSRDev := MSRDev{fd: 5}
 	if err := testMSRDev.Close(); err != nil {
@@ -52,12 +20,7 @@ func TestMSR(t *testing.T) {
 	t.Parallel()
 
 	// set up test stub
-	AppSyscall = func() syscaller {
-		onceTest.Do(func() {
-			instanceTest = &stubSyscaller{}
-		})
-		return instanceTest
-	}()
+	SetupTestSyscaller()
 
 	_, err := MSR(9)
 	if err != nil {

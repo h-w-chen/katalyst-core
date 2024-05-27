@@ -6,12 +6,7 @@ func TestMSRDev_Write(t *testing.T) {
 	t.Parallel()
 
 	// set up test stub
-	AppSyscall = func() syscaller {
-		onceTest.Do(func() {
-			instanceTest = &stubSyscaller{}
-		})
-		return instanceTest
-	}()
+	SetupTestSyscaller()
 
 	type fields struct {
 		fd int
@@ -56,12 +51,7 @@ func TestWriteMSR(t *testing.T) {
 	t.Parallel()
 
 	// set up test stub
-	AppSyscall = func() syscaller {
-		onceTest.Do(func() {
-			instanceTest = &stubSyscaller{}
-		})
-		return instanceTest
-	}()
+	SetupTestSyscaller()
 
 	type args struct {
 		cpu   uint32
@@ -87,28 +77,6 @@ func TestWriteMSR(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			if err := WriteMSR(tt.args.cpu, tt.args.msr, tt.args.value); (err != nil) != tt.wantErr {
-				t.Errorf("WriteMSR() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func TestWriteMSR1(t *testing.T) {
-	type args struct {
-		cpu   uint32
-		msr   int64
-		value uint64
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
 			if err := WriteMSR(tt.args.cpu, tt.args.msr, tt.args.value); (err != nil) != tt.wantErr {
 				t.Errorf("WriteMSR() error = %v, wantErr %v", err, tt.wantErr)
 			}

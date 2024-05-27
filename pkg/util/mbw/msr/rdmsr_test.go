@@ -6,12 +6,7 @@ func TestMSRDev_Read(t *testing.T) {
 	t.Parallel()
 
 	// set up test stub
-	AppSyscall = func() syscaller {
-		onceTest.Do(func() {
-			instanceTest = &stubSyscaller{}
-		})
-		return instanceTest
-	}()
+	SetupTestSyscaller()
 
 	type fields struct {
 		fd int
@@ -61,12 +56,7 @@ func TestReadMSR(t *testing.T) {
 	t.Parallel()
 
 	// set up test stub
-	AppSyscall = func() syscaller {
-		onceTest.Do(func() {
-			instanceTest = &stubSyscaller{}
-		})
-		return instanceTest
-	}()
+	SetupTestSyscaller()
 
 	type args struct {
 		cpu uint32
