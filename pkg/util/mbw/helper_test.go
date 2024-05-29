@@ -1,18 +1,8 @@
 package mbw
 
 import (
-	"os"
-	"path/filepath"
 	"reflect"
-	"sync"
 	"testing"
-
-	"github.com/spf13/afero"
-)
-
-var (
-	instanceTest *afero.Afero
-	onceTest     sync.Once
 )
 
 func TestContains(t *testing.T) {
@@ -209,46 +199,8 @@ func TestBytesToGB(t *testing.T) {
 func TestGetCCDTopology(t *testing.T) {
 	t.Parallel()
 
-	// we would like to have below device files exist for testing
-	fakeFiles := []struct {
-		dir     string
-		file    string
-		content string
-	}{
-		{
-			dir:     "/sys/devices/system/node/node0/cpu0/cache/index3/",
-			file:    "shared_cpu_list",
-			content: "0-1\n",
-		},
-		{
-			dir:     "/sys/devices/system/node/node0/cpu1/cache/index3/",
-			file:    "shared_cpu_list",
-			content: "0-1\n",
-		},
-		{
-			dir:     "/sys/devices/system/node/node1/cpu2/cache/index3/",
-			file:    "shared_cpu_list",
-			content: "2-3\n",
-		},
-		{
-			dir:     "/sys/devices/system/node/node1/cpu3/cache/index3/",
-			file:    "shared_cpu_list",
-			content: "2-3\n",
-		},
-	}
-
-	// set up fake fs replacing the source package-scoped  var
-	appOS = func() *afero.Afero {
-		onceTest.Do(func() {
-			instanceTest = &afero.Afero{Fs: afero.NewMemMapFs()}
-		})
-		return instanceTest
-	}()
-
-	for _, entry := range fakeFiles {
-		appOS.MkdirAll(entry.dir, os.ModePerm)
-		appOS.WriteFile(filepath.Join(entry.dir, entry.file), []byte(entry.content), os.ModePerm)
-	}
+	// set up fake fs replacing the source package-scoped var
+	SetupTestFileSystem()
 
 	type args struct {
 		numNuma int
