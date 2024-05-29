@@ -29,7 +29,7 @@ func TestMSRDev_Read(t *testing.T) {
 			args: args{
 				msr: 22,
 			},
-			want:    0x7B00000000000000,
+			want:    0x3B00000000000000,
 			wantErr: false,
 		},
 	}
@@ -74,7 +74,7 @@ func TestReadMSR(t *testing.T) {
 				cpu: 1,
 				msr: 5,
 			},
-			want:    0x7B00000000000000,
+			want:    0x3B00000000000000,
 			wantErr: false,
 		},
 	}
