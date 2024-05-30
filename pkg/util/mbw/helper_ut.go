@@ -14,7 +14,7 @@ var (
 )
 
 // MUST not be called in prod code!
-// for unit test only.
+// for unit test only!
 func SetupTestFileSystem() {
 	onceTest.Do(func() {
 		instanceTest = &afero.Afero{Fs: afero.NewMemMapFs()}
