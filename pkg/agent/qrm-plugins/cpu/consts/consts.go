@@ -17,6 +17,8 @@ limitations under the License.
 package consts
 
 import (
+	"time"
+
 	"github.com/kubewharf/katalyst-api/pkg/consts"
 )
 
@@ -32,4 +34,34 @@ const (
 	CheckCPUSet                = CPUPluginDynamicPolicyName + "_check_cpuset"
 	SyncCPUIdle                = CPUPluginDynamicPolicyName + "_sync_cpu_idle"
 	CommunicateWithAdvisor     = CPUPluginDynamicPolicyName + "_communicate_with_advisor"
+)
+
+const (
+	// CPUStateAnnotationKeyNUMAHint is the key stored in allocationInfo.Annotations
+	// to indicate NUMA hint for the entry
+	CPUStateAnnotationKeyNUMAHint = "numa_hint"
+)
+
+const (
+	// CPUIncrRatioSharedCoresNUMABinding will be multiplied to the shared_cores with numa_biding entry request
+	// and be used to increment pool size
+	CPUIncrRatioSharedCoresNUMABinding = 2.0
+
+	// CPUIncrRatioDefault is the default value be multiplied to the entry request
+	// and be used to increment pool size
+	CPUIncrRatioDefault = 1.0
+)
+
+const (
+	// packing: refers to the strategy of putting as many containers as possible onto a single NUMA node in order to utilize the resources efficiently and reduce fragmentation.
+	CPUNUMAHintPreferPolicyPacking = "packing"
+	// spreading: tries to distributing containers across multiple nodes. Aiming to balance the load by avoiding overloading individual nodes.
+	CPUNUMAHintPreferPolicySpreading = "spreading"
+	// dynamic_packing: refers to the strategy of putting as many containers as possible onto a single NUMA node until the node hits configurable threshold.
+	// if all nodes hit configurable threshold, use spreading policy instead.
+	CPUNUMAHintPreferPolicyDynamicPacking = "dynamic_packing"
+	// mbm control interval: the interval between mbm control cycles
+	MBMControlInterval = time.Second * 1
+	// mbm bandwidth threshold is the value, in MB per second, the controller will be engaged to throttle certain numa nodes inside one package
+	MBMBandwidthThreshold = 14_000
 )
