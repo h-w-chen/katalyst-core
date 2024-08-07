@@ -69,9 +69,11 @@ func NewMBWMetricsProvisioner(config *global.BaseConfiguration, metricConf *meta
 		emitter:     emitter,
 	}
 
+	klog.Infof("mbw: creating mbw metric provisioner")
 	var err error
 	mbwMonitor, err = monitor.NewMonitor(config.MachineInfoConfiguration)
 	if err != nil {
+		klog.Errorf("mbw: create provisioner failed")
 		m.shouldNotRun = true
 	} else {
 		m.sampler = sampling.New(mbwMonitor, metricStore, emitter)
