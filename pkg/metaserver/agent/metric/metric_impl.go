@@ -25,6 +25,7 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/klog/v2"
 
 	"github.com/kubewharf/katalyst-core/pkg/config/agent/global"
 	"github.com/kubewharf/katalyst-core/pkg/config/agent/metaserver"
@@ -278,6 +279,10 @@ func NewMetricsFetcher(baseConf *global.BaseConfiguration, metricConf *metaserve
 	intervals := make(map[string]time.Duration)
 	provisioners := make(map[string]types.MetricsProvisioner)
 	registeredProvisioners := getProvisioners()
+
+	// todo: remove this extraneous log
+	klog.Infof("metrics fetcher: provisioners arg: %v", metricConf.MetricProvisions)
+
 	for _, name := range metricConf.MetricProvisions {
 		if f, ok := registeredProvisioners[name]; ok {
 			intervals[name] = metricConf.DefaultInterval
