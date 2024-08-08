@@ -18,7 +18,6 @@ package mbw
 
 import (
 	"context"
-
 	"k8s.io/klog/v2"
 
 	"github.com/kubewharf/katalyst-core/pkg/config/agent/global"
@@ -75,14 +74,20 @@ func NewMBWMetricsProvisioner(config *global.BaseConfiguration, metricConf *meta
 	// todo: remove temp code
 	m.shouldNotRun = true
 
-	//var err error
-	//mbwMonitor, err = monitor.NewMonitor(config.MachineInfoConfiguration)
-	//if err != nil {
-	//	klog.Errorf("mbw: create provisioner failed")
-	//	m.shouldNotRun = true
-	//} else {
-	//	m.sampler = sampling.New(mbwMonitor, metricStore, emitter)
-	//}
+	defer func() {
+		if r := recover(); r != nil {
+			klog.Errorf("Recovered in f: %v", r)
+		}
+	}()
+
+	var err error
+	mbwMonitor, err = monitor.NewMonitor(config.MachineInfoConfiguration)
+	if err != nil {
+		klog.Errorf("mbw: create provisioner failed")
+		m.shouldNotRun = true
+	} else {
+		m.sampler = sampling.New(mbwMonitor, metricStore, emitter)
+	}
 
 	return &m
 }
