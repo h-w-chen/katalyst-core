@@ -59,13 +59,13 @@ func newExtKatalystMachineInfo(machineInfoConfig *global.MachineInfoConfiguratio
 		return nil, err
 	}
 
-	// todo: remove
-	if machineInfoConfig != nil {
-		return nil, errors.New("fake error at line 64")
-	}
-
 	if info.FakeNumaConfigured() {
 		info.FakeNUMAEnabled = true
+	}
+
+	// todo: remove
+	if machineInfoConfig != nil {
+		return nil, errors.New("fake error at line 68")
 	}
 
 	// ExtraTopologyInfo handling is still under development
