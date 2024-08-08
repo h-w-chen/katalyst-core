@@ -63,11 +63,18 @@ func newExtKatalystMachineInfo(machineInfoConfig *global.MachineInfoConfiguratio
 		info.FakeNUMAEnabled = true
 	}
 
+	// CHW: OK at this line
+
 	// ExtraTopologyInfo handling is still under development
 	numasPerPackage := info.ExtraTopologyInfo.SiblingNumaMap[0].Len() + 1
 	info.NumPackages = info.NumNUMANodes / numasPerPackage
 	info.PackagePerSocket = info.NumPackages / info.MachineInfo.NumSockets
 	info.PackageMap = info.GetPackageMap()
+
+	// todo: remove
+	if machineInfoConfig != nil {
+		return nil, errors.New("fake error at line 76")
+	}
 
 	info.CCDMap, err = utils.GetCCDTopology(info.NumNUMANodes)
 	if err != nil {
@@ -88,10 +95,7 @@ func newExtKatalystMachineInfo(machineInfoConfig *global.MachineInfoConfiguratio
 		info.MemoryBandwidth.Cores[i].Package = info.CPUTopology.CPUDetails[i].NUMANodeID / (info.ExtraTopologyInfo.SiblingNumaMap[info.CPUTopology.CPUDetails[i].NUMANodeID].Len() + 1)
 	}
 
-	// todo: remove
-	if machineInfoConfig != nil {
-		return nil, errors.New("fake error at line 98")
-	}
+	// CHW: crashed before this line
 
 	info.MemoryBandwidth.Numas = make([]machine.NumaMB, info.NumNUMANodes)
 	for i := range info.MemoryBandwidth.Numas {
