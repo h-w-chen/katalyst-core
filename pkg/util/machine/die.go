@@ -28,3 +28,9 @@ type DieTopology struct {
 	NumaMap          map[int][]int // mapping from Numa to CCDs on AMD
 	FakeNUMAEnabled  bool          // if the fake NUMA is configured on this server
 }
+
+// GetDieTopology get uninitialized die info
+// todo: stuff die structure based on other available info
+func GetDieTopology() (*DieTopology, error) {
+	return &DieTopology{}, nil
+}
