@@ -46,6 +46,7 @@ type MBWMetricsProvisioner struct {
 
 func (m *MBWMetricsProvisioner) Run(ctx context.Context) {
 	if m.shouldNotRun {
+		klog.Infof("mbw: noop")
 		return
 	}
 
@@ -64,20 +65,24 @@ func (m *MBWMetricsProvisioner) Run(ctx context.Context) {
 func NewMBWMetricsProvisioner(config *global.BaseConfiguration, metricConf *metaserver.MetricConfiguration,
 	emitter metrics.MetricEmitter, _ pod.PodFetcher, metricStore *utilmetric.MetricStore,
 ) types.MetricsProvisioner {
+	klog.Infof("mbw: creating mbw metric provisioner")
+
 	m := MBWMetricsProvisioner{
 		metricStore: metricStore,
 		emitter:     emitter,
 	}
 
-	klog.Infof("mbw: creating mbw metric provisioner")
-	var err error
-	mbwMonitor, err = monitor.NewMonitor(config.MachineInfoConfiguration)
-	if err != nil {
-		klog.Errorf("mbw: create provisioner failed")
-		m.shouldNotRun = true
-	} else {
-		m.sampler = sampling.New(mbwMonitor, metricStore, emitter)
-	}
+	// todo: remove temp code
+	m.shouldNotRun = true
+
+	//var err error
+	//mbwMonitor, err = monitor.NewMonitor(config.MachineInfoConfiguration)
+	//if err != nil {
+	//	klog.Errorf("mbw: create provisioner failed")
+	//	m.shouldNotRun = true
+	//} else {
+	//	m.sampler = sampling.New(mbwMonitor, metricStore, emitter)
+	//}
 
 	return &m
 }
