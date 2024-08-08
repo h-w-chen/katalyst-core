@@ -80,12 +80,18 @@ func newExtKatalystMachineInfo(machineInfoConfig *global.MachineInfoConfiguratio
 
 	// ExtraTopologyInfo handling is still under development
 	numasPerPackage := info.ExtraTopologyInfo.SiblingNumaMap[0].Len() + 1
+
+	// todo: remove
+	if machineInfoConfig != nil {
+		return nil, errors.New("fake error at line 85")
+	}
+
 	info.NumPackages = info.NumNUMANodes / numasPerPackage
 	info.PackagePerSocket = info.NumPackages / info.MachineInfo.NumSockets
 
 	// todo: remove
 	if machineInfoConfig != nil {
-		return nil, errors.New("fake error at line 81")
+		return nil, errors.New("fake error at line 100")
 	}
 
 	info.PackageMap = info.GetPackageMap()
