@@ -284,6 +284,12 @@ func NewMetricsFetcher(baseConf *global.BaseConfiguration, metricConf *metaserve
 	klog.Infof("metrics fetcher: provisioners arg: %v", metricConf.MetricProvisions)
 
 	for _, name := range metricConf.MetricProvisions {
+		// todo: remove this temp code block
+		if name == "mbw" {
+			klog.Infof("metrics fetcher: mbw provisoner specified and skipped")
+			continue
+		}
+
 		if f, ok := registeredProvisioners[name]; ok {
 			intervals[name] = metricConf.DefaultInterval
 			if interval, exist := metricConf.ProvisionerIntervals[name]; exist {
