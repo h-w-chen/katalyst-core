@@ -65,16 +65,27 @@ func newExtKatalystMachineInfo(machineInfoConfig *global.MachineInfoConfiguratio
 
 	// CHW: OK at this line
 
+	// todo: remove
+	if info.ExtraTopologyInfo != nil {
+		if info.ExtraTopologyInfo.SiblingNumaMap != nil {
+			klog.Infof("sibling numa map: %#v", info.ExtraTopologyInfo.SiblingNumaMap)
+		}
+
+		klog.Infof("numas: %v", info.NumNUMANodes)
+	}
+
+	if info.MachineInfo != nil {
+		klog.Infof("sockets: %v", info.MachineInfo.NumSockets)
+	}
+
+	if machineInfoConfig != nil {
+		return nil, errors.New("fake error at line 81")
+	}
+
 	// ExtraTopologyInfo handling is still under development
 	numasPerPackage := info.ExtraTopologyInfo.SiblingNumaMap[0].Len() + 1
 	info.NumPackages = info.NumNUMANodes / numasPerPackage
 	info.PackagePerSocket = info.NumPackages / info.MachineInfo.NumSockets
-
-	// todo: remove
-	klog.Infof("sockets: %d, packages: %d, numas per package: %d", info.MachineInfo.NumSockets, info.NumPackages, numasPerPackage)
-	if machineInfoConfig != nil {
-		return nil, errors.New("fake error at line 73")
-	}
 
 	info.PackageMap = info.GetPackageMap()
 
