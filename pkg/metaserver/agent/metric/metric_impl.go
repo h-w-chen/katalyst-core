@@ -296,6 +296,13 @@ func NewMetricsFetcher(baseConf *global.BaseConfiguration, metricConf *metaserve
 			if interval, exist := metricConf.ProvisionerIntervals[name]; exist {
 				intervals[name] = interval
 			}
+
+			// todo: remove this temp code block
+			if name == "mbw" {
+				klog.Infof("metrics fetcher: mbw provisoner creation skipped")
+				continue
+			}
+
 			provisioners[name] = f(baseConf, metricConf, emitter, podFetcher, metricStore)
 		}
 	}
