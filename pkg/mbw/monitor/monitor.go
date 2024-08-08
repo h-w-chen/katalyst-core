@@ -63,11 +63,6 @@ func newExtKatalystMachineInfo(machineInfoConfig *global.MachineInfoConfiguratio
 		info.FakeNUMAEnabled = true
 	}
 
-	// todo: remove
-	if machineInfoConfig != nil {
-		return nil, errors.New("fake error at line 68")
-	}
-
 	// ExtraTopologyInfo handling is still under development
 	numasPerPackage := info.ExtraTopologyInfo.SiblingNumaMap[0].Len() + 1
 	info.NumPackages = info.NumNUMANodes / numasPerPackage
@@ -91,6 +86,11 @@ func newExtKatalystMachineInfo(machineInfoConfig *global.MachineInfoConfiguratio
 	for i := range info.MemoryBandwidth.Cores {
 		// the physical NUMA ID equals to "node ID / number of node per physical NUMA"
 		info.MemoryBandwidth.Cores[i].Package = info.CPUTopology.CPUDetails[i].NUMANodeID / (info.ExtraTopologyInfo.SiblingNumaMap[info.CPUTopology.CPUDetails[i].NUMANodeID].Len() + 1)
+	}
+
+	// todo: remove
+	if machineInfoConfig != nil {
+		return nil, errors.New("fake error at line 98")
 	}
 
 	info.MemoryBandwidth.Numas = make([]machine.NumaMB, info.NumNUMANodes)
