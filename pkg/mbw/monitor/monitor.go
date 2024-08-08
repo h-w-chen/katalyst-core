@@ -53,15 +53,15 @@ func newExtKatalystMachineInfo(machineInfoConfig *global.MachineInfoConfiguratio
 		machineInfoConfig.SiblingNumaMaxDistance = MAX_NUMA_DISTANCE
 	}
 
-	// todo: remove
-	if machineInfoConfig != nil {
-		return nil, errors.New("fake error")
-	}
-
 	info, err := machineWrapper.GetKatalystMachineInfo(machineInfoConfig)
 	if err != nil {
 		fmt.Println("Failed to initialize the katalyst machine info")
 		return nil, err
+	}
+
+	// todo: remove
+	if machineInfoConfig != nil {
+		return nil, errors.New("fake error at line 64")
 	}
 
 	if info.FakeNumaConfigured() {
