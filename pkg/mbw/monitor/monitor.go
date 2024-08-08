@@ -18,7 +18,9 @@ package monitor
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"k8s.io/klog/v2"
 	"sync"
 
 	"github.com/kubewharf/katalyst-core/pkg/config/agent/global"
@@ -43,10 +45,19 @@ const (
 func newExtKatalystMachineInfo(machineInfoConfig *global.MachineInfoConfiguration) (
 	*machine.KatalystMachineInfo, error,
 ) {
+	// todo: remove log
+	klog.Infof("mbw: newExtKatalystMachineInfo")
+
 	// ensure max numa distance make sense, as it is critical for mbw monitor
 	if machineInfoConfig.SiblingNumaMaxDistance < MIN_NUMA_DISTANCE {
 		machineInfoConfig.SiblingNumaMaxDistance = MAX_NUMA_DISTANCE
 	}
+
+	// todo: remove
+	if machineInfoConfig != nil {
+		return nil, errors.New("fake error")
+	}
+
 	info, err := machineWrapper.GetKatalystMachineInfo(machineInfoConfig)
 	if err != nil {
 		fmt.Println("Failed to initialize the katalyst machine info")
