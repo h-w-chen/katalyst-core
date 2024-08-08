@@ -87,7 +87,8 @@ func newExtKatalystMachineInfo(machineInfoConfig *global.MachineInfoConfiguratio
 		return nil, errors.New("fake error at line 87")
 	}
 
-	info.NumPackages = info.NumNUMANodes / numasPerPackage
+	// CHW: ensure info.DieTopology not nil
+	info.DieTopology.NumPackages = info.NumNUMANodes / numasPerPackage
 
 	// CHW: crashed before this line
 
@@ -95,7 +96,7 @@ func newExtKatalystMachineInfo(machineInfoConfig *global.MachineInfoConfiguratio
 
 	// todo: remove
 	if machineInfoConfig != nil {
-		return nil, errors.New("fake error at line 100")
+		return nil, errors.New("fake error at line 101")
 	}
 
 	info.PackageMap = info.GetPackageMap()
