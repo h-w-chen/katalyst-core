@@ -299,8 +299,7 @@ func NewMetricsFetcher(baseConf *global.BaseConfiguration, metricConf *metaserve
 
 			// todo: remove this temp code block
 			if name == "mbw" {
-				klog.Infof("metrics fetcher: mbw provisoner creation skipped")
-				continue
+				klog.Infof("metrics fetcher: mbw provisoner being created ...")
 			}
 
 			provisioners[name] = f(baseConf, metricConf, emitter, podFetcher, metricStore)
