@@ -501,7 +501,13 @@ func Discover(machineInfo *info.MachineInfo) (*CPUTopology, *MemoryTopology, err
 	CPUDetails := CPUDetails{}
 	numPhysicalCores := 0
 
-	memoryTopology := MemoryTopology{MemoryDetails: map[int]uint64{}}
+	memoryTopology := MemoryTopology{
+		MemoryDetails: map[int]uint64{},
+		MemoryLatency: MemoryLatencyInfo{
+			CCDLocker: sync.RWMutex{},
+			L3Latency: make([]L3PMCLatencyInfo, 32), //bug temp measure - to verify
+		},
+	}
 
 	for _, node := range machineInfo.Topology {
 		memoryTopology.MemoryDetails[node.Id] = node.Memory
