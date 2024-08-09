@@ -33,6 +33,8 @@ const (
 	MBM_MONITOR_INTERVAL = 1000
 
 	MAX_NUMA_DISTANCE = 32 // this is the inter-socket distance on AMD, intel inter-socket distance < 32
+
+	// +++++ bug: on some AMD machines 12 is seens ???
 	MIN_NUMA_DISTANCE = 11 // the distance to local numa is 10 in Linux, thus 11 is the minimum inter-numa distance
 
 	MBA_COS_MAX = 16 // AMD supports up to 16 cos per CCD, while Intel supports up to 16 cos per socket
@@ -77,19 +79,12 @@ func newExtKatalystMachineInfo(machineInfoConfig *global.MachineInfoConfiguratio
 		klog.Infof("mbw: sockets: %v", info.MachineInfo.NumSockets)
 	}
 
+	// +++++ bug: sibling map: each item has 0 element???
+
 	// ExtraTopologyInfo handling is still under development
 	numasPerPackage := info.ExtraTopologyInfo.SiblingNumaMap[0].Len() + 1
-
-	// todo: remove
-	klog.Infof("mbw: numas per package: %d, packages: %d", numasPerPackage, info.NumNUMANodes/numasPerPackage)
-
-	// CHW: ensure info.DieTopology not nil
 	info.DieTopology.NumPackages = info.NumNUMANodes / numasPerPackage
-
-	// CHW: crashed before this line
-
 	info.PackagePerSocket = info.NumPackages / info.MachineInfo.NumSockets
-
 	info.PackageMap = info.GetPackageMap()
 
 	// CHW: crashed before this line
