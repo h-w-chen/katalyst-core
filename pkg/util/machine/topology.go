@@ -512,7 +512,7 @@ func Discover(machineInfo *info.MachineInfo) (*CPUTopology, *MemoryTopology, err
 		MemoryDetails: map[int]uint64{},
 		MemoryLatency: MemoryLatencyInfo{
 			CCDLocker: sync.RWMutex{},
-			L3Latency: make([]L3PMCLatencyInfo, 32), //bug temp measure - to verify
+			L3Latency: make([]L3PMCLatencyInfo, 512), //bug temp measure - to verify
 		},
 	}
 
