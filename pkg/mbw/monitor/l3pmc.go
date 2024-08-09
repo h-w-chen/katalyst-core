@@ -68,7 +68,7 @@ func (m MBMonitor) ClearL3PMCSetting() {
 }
 
 func (m *MBMonitor) ReadL3MissLatency() error {
-	m.MemoryLatency.CCDLocker.Lock()
+	m.KatalystMachineInfo.MemoryTopology.MemoryLatency.CCDLocker.Lock()
 	defer m.MemoryLatency.CCDLocker.Unlock()
 
 	for i, ccd := range m.KatalystMachineInfo.CCDMap {

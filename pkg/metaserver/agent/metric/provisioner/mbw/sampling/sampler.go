@@ -67,6 +67,7 @@ func (m mbwSampler) Sample(ctx context.Context) {
 	for i, numaMB := range m.monitor.GetMemoryBandwidthOfNUMAs() {
 		m.metricStore.SetNumaMetric(i, consts.MetricMemBandwidthFinerNuma,
 			utilmetric.MetricData{Value: float64(numaMB.Total), Time: &now})
+		klog.V(6).Infof("mbw: numa metrics: total %d mb", numaMB.Total)
 	}
 
 	// write per-package memory-bandwidth - Read & Write Bandwidth [r/w ratio]

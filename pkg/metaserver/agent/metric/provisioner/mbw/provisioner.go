@@ -58,6 +58,7 @@ func (m *MBWMetricsProvisioner) Run(ctx context.Context) {
 		}
 	}
 
+	klog.V(6).Infof("mbw: taking one sample")
 	m.sampler.Sample(ctx)
 }
 
