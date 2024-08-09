@@ -71,9 +71,6 @@ func NewMBWMetricsProvisioner(config *global.BaseConfiguration, metricConf *meta
 		emitter:     emitter,
 	}
 
-	// todo: remove temp code
-	m.shouldNotRun = true
-
 	defer func() {
 		if r := recover(); r != nil {
 			klog.Errorf("Recovered in f: %v", r)
