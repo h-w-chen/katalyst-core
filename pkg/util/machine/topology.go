@@ -603,6 +603,7 @@ func GetSiblingNumaInfo(conf *global.MachineInfoConfiguration,
 		for _, distance := range distanceMap {
 			if distance.NumaID == numaID {
 				selfNumaDistance = distance.Distance
+				selfNumaDistance = 12 // todo: remove hard code for temp bug verification
 				break
 			}
 		}
