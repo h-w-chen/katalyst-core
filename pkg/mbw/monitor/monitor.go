@@ -247,37 +247,43 @@ func (m MBMonitor) GlobalStats(ctx context.Context, refreshRate uint64) error {
 		m.ServeL3Latency,
 	}
 
-	return utils.TickUntilDone(ctx, refreshRate, func() error {
-		var wg sync.WaitGroup
+	go func() {
+		err := utils.TickUntilDone(ctx, refreshRate, func() error {
+			var wg sync.WaitGroup
 
-		errCh := make(chan error, len(serveFuncs))
+			errCh := make(chan error, len(serveFuncs))
 
-		for _, sf := range serveFuncs {
-			// todo: remove log
-			klog.Infof("mbw: starting the background scanning threds: %#v", sf)
+			for _, sf := range serveFuncs {
+				// todo: remove log
+				klog.Infof("mbw: starting the background scanning threds: %#v", sf)
 
-			wg.Add(1)
-			go func(sf serveFunc) {
-				defer func() {
-					if r := recover(); r != nil {
-						klog.Errorf("mbw: crashed error: %v in thread %#v", r, sf)
-					}
-				}()
-				defer wg.Done()
-				errCh <- sf()
-			}(sf)
-		}
-
-		wg.Wait()
-		close(errCh)
-		for err := range errCh {
-			if err != nil {
-				return err
+				wg.Add(1)
+				go func(sf serveFunc) {
+					defer func() {
+						if r := recover(); r != nil {
+							klog.Errorf("mbw: crashed error: %v in thread %#v", r, sf)
+						}
+					}()
+					defer wg.Done()
+					errCh <- sf()
+				}(sf)
 			}
-		}
 
-		return nil
-	})
+			wg.Wait()
+			close(errCh)
+			for err := range errCh {
+				if err != nil {
+					return err
+				}
+			}
+
+			return nil
+		})
+
+		klog.Errorf("mbw: underground periodcal scanning had error: %v", err)
+	}()
+
+	return nil
 }
 
 // ServeL3Latency() collects the latency between that a L3 cache line is missed to that it is loaded from memory to L3
