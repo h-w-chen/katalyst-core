@@ -18,7 +18,6 @@ package sampling
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"k8s.io/klog/v2"
@@ -46,9 +45,10 @@ type mbwSampler struct {
 }
 
 func (m mbwSampler) Startup(ctx context.Context) error {
-	if !m.monitor.FakeNumaConfigured() {
-		return errors.New("not fake numa; memory bandwidth management not applicable")
-	}
+	// todo: revisit
+	//if !m.monitor.FakeNumaConfigured() {
+	//	return errors.New("not fake numa; memory bandwidth management not applicable")
+	//}
 
 	if err := m.monitor.Init(); err != nil {
 		return err
