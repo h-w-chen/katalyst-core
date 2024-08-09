@@ -18,6 +18,7 @@ package sampling
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"k8s.io/klog/v2"
@@ -52,6 +53,11 @@ func (m mbwSampler) Startup(ctx context.Context) error {
 
 	if err := m.monitor.Init(); err != nil {
 		return err
+	}
+
+	// todo: remove fake error lines
+	if true {
+		return errors.New("fake error: line 58")
 	}
 
 	return m.monitor.GlobalStats(ctx, uint64(probeInterval.Milliseconds()))
