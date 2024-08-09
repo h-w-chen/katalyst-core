@@ -91,11 +91,6 @@ func newExtKatalystMachineInfo(machineInfoConfig *global.MachineInfoConfiguratio
 
 	info.PackagePerSocket = info.NumPackages / info.MachineInfo.NumSockets
 
-	// todo: remove
-	if machineInfoConfig != nil {
-		return nil, errors.New("fake error at line 101")
-	}
-
 	info.PackageMap = info.GetPackageMap()
 
 	// CHW: crashed before this line
@@ -150,6 +145,11 @@ func newExtKatalystMachineInfo(machineInfoConfig *global.MachineInfoConfiguratio
 	}
 
 	info.PMU.UMC.NumPerPackage = info.PMU.UMC.NumPerSocket / info.PackagePerSocket
+
+	// todo: remove
+	if machineInfoConfig != nil {
+		return nil, errors.New("fake error at line 151")
+	}
 
 	return info, nil
 }
