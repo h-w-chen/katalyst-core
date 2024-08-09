@@ -55,12 +55,12 @@ func (m mbwSampler) Startup(ctx context.Context) error {
 		return err
 	}
 
-	// todo: remove fake error lines
-	if true {
-		return errors.New("fake error: line 58")
+	if err := m.monitor.GlobalStats(ctx, uint64(probeInterval.Milliseconds())); err != nil {
+		return err
 	}
 
-	return m.monitor.GlobalStats(ctx, uint64(probeInterval.Milliseconds()))
+	// todo: remove fake error lines
+	return errors.New("fake error: line 58")
 }
 
 func (m mbwSampler) Sample(ctx context.Context) {

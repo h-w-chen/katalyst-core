@@ -258,8 +258,16 @@ func (m MBMonitor) GlobalStats(ctx context.Context, refreshRate uint64) error {
 		errCh := make(chan error, len(serveFuncs))
 
 		for _, sf := range serveFuncs {
+			// todo: remove log
+			klog.Infof("mbw: starting the background scanning threds: %#v", sf)
+
 			wg.Add(1)
 			go func(sf serveFunc) {
+				defer func() {
+					if r := recover(); r != nil {
+						klog.Errorf("mbw: crashed error: %v in thread %#v", r, sf)
+					}
+				}()
 				defer wg.Done()
 				errCh <- sf()
 			}(sf)
