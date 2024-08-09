@@ -83,9 +83,6 @@ func newExtKatalystMachineInfo(machineInfoConfig *global.MachineInfoConfiguratio
 
 	// todo: remove
 	klog.Infof("mbw: numas per package: %d, packages: %d", numasPerPackage, info.NumNUMANodes/numasPerPackage)
-	if machineInfoConfig != nil {
-		return nil, errors.New("fake error at line 87")
-	}
 
 	// CHW: ensure info.DieTopology not nil
 	info.DieTopology.NumPackages = info.NumNUMANodes / numasPerPackage
