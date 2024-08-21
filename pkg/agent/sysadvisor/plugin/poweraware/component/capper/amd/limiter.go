@@ -22,9 +22,9 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 
+	amd "amd_utils/pkg"
+	"amd_utils/utils"
 	"github.com/kubewharf/katalyst-core/pkg/util/external/power"
-	utils "github.com/kubewharf/katalyst-core/pkg/util/lowlevel"
-	"github.com/kubewharf/katalyst-core/pkg/util/power/amd"
 )
 
 type powerLimiter struct {

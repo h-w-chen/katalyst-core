@@ -3,6 +3,7 @@ module github.com/kubewharf/katalyst-core
 go 1.18
 
 require (
+	amd_utils v0.0.0-00010101000000-000000000000
 	bou.ke/monkey v1.0.2
 	github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d
 	github.com/bougou/go-ipmi v0.4.3
@@ -18,7 +19,7 @@ require (
 	github.com/google/cadvisor v0.44.2
 	github.com/google/uuid v1.3.0
 	github.com/h2non/gock v1.2.0
-	github.com/klauspost/cpuid/v2 v2.2.6
+	github.com/klauspost/cpuid/v2 v2.2.7
 	github.com/kubewharf/katalyst-api v0.5.1-0.20240820031712-7c1239991078
 	github.com/montanaflynn/stats v0.7.1
 	github.com/opencontainers/runc v1.1.6
@@ -57,7 +58,7 @@ require (
 	k8s.io/component-base v0.25.0
 	k8s.io/component-helpers v0.24.16
 	k8s.io/cri-api v0.25.3
-	k8s.io/klog/v2 v2.80.1
+	k8s.io/klog/v2 v2.130.1
 	k8s.io/kube-aggregator v0.24.6
 	k8s.io/kubelet v0.24.6
 	k8s.io/kubernetes v1.24.16
@@ -86,7 +87,7 @@ require (
 	github.com/emicklei/go-restful v2.16.0+incompatible // indirect
 	github.com/emicklei/go-restful-swagger12 v0.0.0-20201014110547-68ccff494617 // indirect
 	github.com/felixge/httpsnoop v1.0.1 // indirect
-	github.com/go-logr/logr v1.2.3 // indirect
+	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/jsonreference v0.20.0 // indirect
 	github.com/go-openapi/swag v0.19.15 // indirect
@@ -168,6 +169,7 @@ require (
 )
 
 replace (
+	amd_utils => code.byted.org/tce/amd-utils v0.0.0-20240821053428-983631365617
 	k8s.io/api => k8s.io/api v0.24.6
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.24.6
 	k8s.io/apimachinery => k8s.io/apimachinery v0.24.6

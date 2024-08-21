@@ -25,6 +25,7 @@ import (
 
 	"k8s.io/klog/v2"
 
+	"amd_utils/utils"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/component/capper/amd"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/component/capper/intel"
 	"github.com/kubewharf/katalyst-core/pkg/metaserver/agent/pod"
@@ -32,7 +33,6 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/util/external/network"
 	"github.com/kubewharf/katalyst-core/pkg/util/external/power"
 	"github.com/kubewharf/katalyst-core/pkg/util/external/rdt"
-	utils "github.com/kubewharf/katalyst-core/pkg/util/lowlevel"
 )
 
 var (
