@@ -169,7 +169,7 @@ require (
 )
 
 replace (
-	amd_utils => code.byted.org/tce/amd-utils v0.0.0-20240821053428-983631365617
+	amd_utils => code.byted.org/tce/amd-utils v0.0.0-20240821064405-7c416a4cfc61
 	k8s.io/api => k8s.io/api v0.24.6
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.24.6
 	k8s.io/apimachinery => k8s.io/apimachinery v0.24.6
