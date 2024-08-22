@@ -82,8 +82,15 @@ func (p *powerPressureEvictPluginServer) ThresholdMet(ctx context.Context, empty
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 
+	if len(p.evicts) == 0 {
+		return &pluginapi.ThresholdMetResponse{
+			MetType: pluginapi.ThresholdMetType_NOT_MET,
+		}, nil
+	}
+
 	return &pluginapi.ThresholdMetResponse{
 		ThresholdValue: float64(len(p.evicts)),
+		MetType:        pluginapi.ThresholdMetType_HARD_MET,
 	}, nil
 }
 
@@ -145,8 +152,14 @@ func (p *powerPressureEvictPluginServer) GetEvictPods(ctx context.Context, reque
 
 var _ skeleton.EvictionPlugin = &powerPressureEvictPluginServer{}
 
+func newPowerPressureEvictPluginServer() *powerPressureEvictPluginServer {
+	return &powerPressureEvictPluginServer{
+		evicts: make(map[types.UID]*v1.Pod),
+	}
+}
+
 func NewPowerPressureEvictPluginServer(conf *config.Configuration, emitter metrics.MetricEmitter) (PodEvictor, *skeleton.PluginRegistrationWrapper, error) {
-	plugin := &powerPressureEvictPluginServer{}
+	plugin := newPowerPressureEvictPluginServer()
 	regWrapper, err := skeleton.NewRegistrationPluginWrapper(plugin,
 		[]string{conf.PluginRegistrationDir}, // unix socket dirs
 		func(key string, value int64) {
