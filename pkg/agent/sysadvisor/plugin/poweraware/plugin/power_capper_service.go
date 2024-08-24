@@ -35,8 +35,6 @@ const (
 )
 
 type powerCapAdvisorPluginServer struct {
-	lis        net.Listener
-	grpcServer *grpc.Server
 }
 
 func (p powerCapAdvisorPluginServer) Init() error {
@@ -65,9 +63,20 @@ func (p powerCapAdvisorPluginServer) Reset() {
 	panic("implement me")
 }
 
+func capToMessage(targetWatts, currWatt int) (map[string]string, error) {
+	if targetWatts <= currWatt {
+		return nil, errors.New("invalid power cap request")
+	}
+
+	return map[string]string{
+		"op-code":  "4",
+		"op-value": fmt.Sprintf("%d", currWatt-targetWatts),
+	}, nil
+}
+
 func (p powerCapAdvisorPluginServer) Cap(ctx context.Context, targetWatts, currWatt int) {
-	//TODO implement me
-	panic("implement me")
+	// convert to message of map
+	// notify live client of such
 }
 
 var _ advisorsvc.AdvisorServiceServer = &powerCapAdvisorPluginServer{}
