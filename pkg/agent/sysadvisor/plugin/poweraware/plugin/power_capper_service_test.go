@@ -1,35 +1,31 @@
+/*
+Copyright 2022 The Katalyst Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package plugin
 
 import (
 	"context"
-	"net"
 	"testing"
 )
 
 func Test_powerCapAdvisorPluginServer_Cap(t *testing.T) {
-	type fields struct {
-		lis        net.Listener
-		grpcServer *grpc.Server
-	}
-	type args struct {
-		ctx         context.Context
-		targetWatts int
-		currWatt    int
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			p := powerCapAdvisorPluginServer{
-				lis:        tt.fields.lis,
-				grpcServer: tt.fields.grpcServer,
-			}
-			p.Cap(tt.args.ctx, tt.args.targetWatts, tt.args.currWatt)
-		})
-	}
+	t.Parallel()
+
+	p := powerCapAdvisorPluginServer{}
+	p.Cap(context.TODO(), 80, 100)
+
+	// todo: mock a live client, verify it will receive the cap request
 }
