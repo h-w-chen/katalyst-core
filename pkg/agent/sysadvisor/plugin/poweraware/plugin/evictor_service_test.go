@@ -149,6 +149,7 @@ func Test_powerPressureEvictPluginServer_ThresholdMet(t *testing.T) {
 			want: &evictionv1apha1.ThresholdMetResponse{
 				ThresholdValue: 1,
 				ObservedValue:  0,
+				MetType:        evictionv1apha1.ThresholdMetType_HARD_MET,
 			},
 			wantErr: checkError,
 		},
