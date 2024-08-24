@@ -18,18 +18,24 @@ package capper
 
 import (
 	"context"
-
 	"k8s.io/klog/v2"
 
+	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/plugin"
 	"github.com/kubewharf/katalyst-core/pkg/util/external/power"
 )
 
-type PowerCapper interface {
-	Cap(ctx context.Context, targetWatts, currWatt int)
-}
+type PowerCapper = plugin.NodePowerCapper
 
 type powerCapper struct {
 	limiter power.PowerLimiter
+}
+
+func (p powerCapper) Init() error {
+	return p.limiter.Init()
+}
+
+func (p powerCapper) Reset() {
+	p.limiter.Reset()
 }
 
 func (p powerCapper) Cap(_ context.Context, targetWatts, currWatt int) {
@@ -38,6 +44,19 @@ func (p powerCapper) Cap(_ context.Context, targetWatts, currWatt int) {
 	}
 }
 
+// todo: remove all local power capping code to qrm plugin (in katalyst-adapter repo)
 func NewPowerCapper(limiter power.PowerLimiter) PowerCapper {
 	return &powerCapper{limiter: limiter}
+}
+
+func NewRemotePowerCapper() PowerCapper {
+	powerCapAdvisor, grpcServer, err := plugin.NewPowerCapAdvisorPluginServer(nil, nil)
+	if err != nil {
+		klog.Errorf("failed to create power cap advisor service: %v", err)
+		return nil
+	}
+
+	grpcServer.Run()
+
+	return powerCapAdvisor
 }

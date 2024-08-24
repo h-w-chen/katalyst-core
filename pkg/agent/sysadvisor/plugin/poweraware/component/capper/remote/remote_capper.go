@@ -20,7 +20,6 @@ import (
 	"context"
 
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/component/capper"
-	"github.com/kubewharf/katalyst-core/pkg/util/external/power"
 )
 
 type RemoteCapper struct {
@@ -46,4 +45,3 @@ func New() *RemoteCapper {
 }
 
 var _ capper.PowerCapper = &RemoteCapper{}
-var _ power.InitResetter = &RemoteCapper{}
