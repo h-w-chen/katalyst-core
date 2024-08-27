@@ -38,9 +38,9 @@ func TestGetPowerAlertResponseTimeLimit(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "happy path gets known setting",
+			name: "happy path gets known setting, upper case of alert is ok",
 			args: args{
-				alert: "s0",
+				alert: "S0",
 			},
 			want:    time.Minute * 2,
 			wantErr: false,
@@ -89,10 +89,10 @@ func TestGetPowerSpec(t *testing.T) {
 				node: &v1.Node{
 					ObjectMeta: metav1.ObjectMeta{
 						Annotations: map[string]string{
-							"power_alert":       "s0",
-							"power_budget":      "128",
-							"power_internal_op": "0",
-							"power_alert_time":  timeInRFC3339,
+							"tce.kubernetes.io/power-alert":       "s0",
+							"tce.kubernetes.io/power-budget":      "128",
+							"tce.kubernetes.io/power-internal-op": "0",
+							"tce.kubernetes.io/power-alert-time":  timeInRFC3339,
 						},
 					},
 				},
@@ -127,9 +127,9 @@ func TestGetPowerSpec(t *testing.T) {
 				node: &v1.Node{
 					ObjectMeta: metav1.ObjectMeta{
 						Annotations: map[string]string{
-							"power_alert":       "f2",
-							"power_internal_op": "0",
-							"power_alert_time":  timeInRFC3339,
+							"tce.kubernetes.io/power-alert":       "f2",
+							"tce.kubernetes.io/power-internal-op": "0",
+							"tce.kubernetes.io/power-alert-time":  timeInRFC3339,
 						},
 					},
 				},
@@ -143,9 +143,9 @@ func TestGetPowerSpec(t *testing.T) {
 				node: &v1.Node{
 					ObjectMeta: metav1.ObjectMeta{
 						Annotations: map[string]string{
-							"power_alert":      "f2",
-							"power_budget":     "128",
-							"power_alert_time": timeInRFC3339,
+							"tce.kubernetes.io/power-alert":      "P2",
+							"tce.kubernetes.io/power-budget":     "128",
+							"tce.kubernetes.io/power-alert-time": timeInRFC3339,
 						},
 					},
 				},
@@ -164,10 +164,10 @@ func TestGetPowerSpec(t *testing.T) {
 				node: &v1.Node{
 					ObjectMeta: metav1.ObjectMeta{
 						Annotations: map[string]string{
-							"power_alert":       "s0",
-							"power_budget":      "128",
-							"power_internal_op": "non-int",
-							"power_alert_time":  timeInRFC3339,
+							"tce.kubernetes.io/power-alert":       "s0",
+							"tce.kubernetes.io/power-budget":      "128",
+							"tce.kubernetes.io/power-internal-op": "non-int",
+							"tce.kubernetes.io/power-alert-time":  timeInRFC3339,
 						},
 					},
 				},
@@ -181,10 +181,10 @@ func TestGetPowerSpec(t *testing.T) {
 				node: &v1.Node{
 					ObjectMeta: metav1.ObjectMeta{
 						Annotations: map[string]string{
-							"power_alert":       "s0",
-							"power_budget":      "128",
-							"power_internal_op": "0",
-							"power_alert_time":  "2024-06-01 15:17:30",
+							"tce.kubernetes.io/power-alert":       "s0",
+							"tce.kubernetes.io/power-budget":      "128",
+							"tce.kubernetes.io/power-internal-op": "0",
+							"tce.kubernetes.io/power-alert-time":  "2024-06-01 15:17:30",
 						},
 					},
 				},

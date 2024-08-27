@@ -19,6 +19,7 @@ package types
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -33,9 +34,9 @@ type (
 const (
 	// authentic power alert code
 	PowerAlertS0 PowerAlert = "s0"
-	PowerAlertF0 PowerAlert = "f0"
-	PowerAlertF1 PowerAlert = "f1"
-	PowerAlertF2 PowerAlert = "f2"
+	PowerAlertF0 PowerAlert = "p0"
+	PowerAlertF1 PowerAlert = "p1"
+	PowerAlertF2 PowerAlert = "p2"
 
 	// derivative power alert code which corresponds to NON-existent annotation
 	PowerAlertOK PowerAlert = "ok"
@@ -45,6 +46,11 @@ const (
 	InternalOpEvict    InternalOp = 2
 	InternalOpFreqCap  InternalOp = 4
 	InternalOpPause    InternalOp = 8
+
+	AnnoKeyPowerAlert      = "tce.kubernetes.io/power-alert"
+	AnnoKeyPowerBudget     = "tce.kubernetes.io/power-budget"
+	AnnoKeyPowerAlertTime  = "tce.kubernetes.io/power-alert-time"
+	AnnoKeyPowerInternalOp = "tce.kubernetes.io/power-internal-op"
 )
 
 var (
@@ -60,6 +66,7 @@ func init() {
 }
 
 func GetPowerAlertResponseTimeLimit(alert PowerAlert) (time.Duration, error) {
+	alert = PowerAlert(strings.ToLower(string(alert)))
 	resp, ok := powerAlertResponseTime[alert]
 	if !ok {
 		return time.Duration(0), unknownAlertError
@@ -90,7 +97,7 @@ type PowerSpec struct {
 }
 
 func GetPowerSpec(node *v1.Node) (*PowerSpec, error) {
-	alert := PowerAlert(node.Annotations["power_alert"])
+	alert := PowerAlert(node.Annotations[AnnoKeyPowerAlert])
 	if len(alert) == 0 {
 		return &PowerSpec{
 			Alert:      PowerAlertOK,
@@ -99,21 +106,24 @@ func GetPowerSpec(node *v1.Node) (*PowerSpec, error) {
 		}, nil
 	}
 
-	budget, err := strconv.Atoi(node.Annotations["power_budget"])
+	// uniformly convert alert level input to lower case just in case
+	alert = PowerAlert(strings.ToLower(string(alert)))
+
+	budget, err := strconv.Atoi(node.Annotations[AnnoKeyPowerBudget])
 	if err != nil {
 		return nil, err
 	}
 
 	internalOp := InternalOpAuto
-	if len(node.Annotations["power_internal_op"]) > 0 {
-		code, err := strconv.Atoi(node.Annotations["power_internal_op"])
+	if len(node.Annotations[AnnoKeyPowerInternalOp]) > 0 {
+		code, err := strconv.Atoi(node.Annotations[AnnoKeyPowerInternalOp])
 		if err != nil {
 			return nil, err
 		}
 		internalOp = InternalOp(code)
 	}
 
-	alertTimeStr := node.Annotations["power_alert_time"]
+	alertTimeStr := node.Annotations[AnnoKeyPowerAlertTime]
 	alertTime, err := time.Parse(time.RFC3339, alertTimeStr)
 	if err != nil {
 		return nil, err
