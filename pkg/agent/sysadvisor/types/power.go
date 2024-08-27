@@ -109,7 +109,8 @@ func GetPowerSpec(node *v1.Node) (*PowerSpec, error) {
 	// uniformly convert alert level input to lower case just in case
 	alert = PowerAlert(strings.ToLower(string(alert)))
 
-	budget, err := strconv.Atoi(node.Annotations[AnnoKeyPowerBudget])
+	// input float number like 611.31 is allowed
+	budget, err := strconv.ParseFloat(node.Annotations[AnnoKeyPowerBudget], 32)
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +131,7 @@ func GetPowerSpec(node *v1.Node) (*PowerSpec, error) {
 	}
 	return &PowerSpec{
 		Alert:      alert,
-		Budget:     budget,
+		Budget:     int(budget),
 		InternalOp: internalOp,
 		AlertTime:  alertTime,
 	}, nil
