@@ -39,7 +39,14 @@ func (pr *ipmiPowerReader) Init() error {
 		return errors.Wrap(err, "ipmi connecting client failed")
 	}
 
-	sdr, err := client.GetSDRBySensorName("Total_Power")
+	// todo: known bug - need to fix
+	var sdr *SDR
+	for retry := 0; retry < 5; retry += 1 {
+		sdr, err = client.GetSDRBySensorName("Total_Power")
+		if err == nil {
+			break
+		}
+	}
 	if err != nil {
 		return errors.Wrap(err, "ipmi searching for total power sensor failed")
 	}
