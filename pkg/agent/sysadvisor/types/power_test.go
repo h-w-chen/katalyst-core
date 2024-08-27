@@ -122,6 +122,26 @@ func TestGetPowerSpec(t *testing.T) {
 			wantErr: assert.NoError,
 		},
 		{
+			name: "float is OK converting to int",
+			args: args{
+				node: &v1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Annotations: map[string]string{
+							"tce.kubernetes.io/power-alert":      "s0",
+							"tce.kubernetes.io/power-budget":     "128.51",
+							"tce.kubernetes.io/power-alert-time": timeInRFC3339,
+						},
+					},
+				},
+			},
+			want: &PowerSpec{
+				Alert:     PowerAlertS0,
+				Budget:    128,
+				AlertTime: timeTest,
+			},
+			wantErr: assert.NoError,
+		},
+		{
 			name: "missing budget is a bad spec",
 			args: args{
 				node: &v1.Node{
