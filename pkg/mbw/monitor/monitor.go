@@ -118,6 +118,9 @@ func newExtKatalystMachineInfo(machineInfoConfig *global.MachineInfoConfiguratio
 
 	info.PMU.UMC.NumPerPackage = info.PMU.UMC.NumPerSocket / info.PackagePerSocket
 
+	// ensure package map is properly populated
+	info.PackageMap = info.GetPackageMap()
+
 	return info, nil
 }
 

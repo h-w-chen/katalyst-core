@@ -130,6 +130,7 @@ func (c Controller) processPackage(packageID int, nodes []int) {
 	if err != nil {
 		c.metricEmitter.StoreInt64(metricGetPackageMetricsFail, 1, metrics.MetricTypeNameCount,
 			metrics.MetricTag{Key: "name", Val: consts.MetricMemBandwidthRWPackage})
+		general.Errorf("mbm controller failed to get package metrics: %v", err)
 		return
 	}
 
@@ -227,6 +228,7 @@ func NewController(metricEmitter metrics.MetricEmitter, metricReader types.Metri
 	return &Controller{
 		metricEmitter:      metricEmitter.WithTags(MemoryBandwidthManagement),
 		metricReader:       metricReader,
+		numaThrottled:      make(sets.Int),
 		numaStater:         stater,
 		mbAdjust:           mbAdjuster,
 		packageMap:         packageMap,
