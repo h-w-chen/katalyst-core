@@ -74,6 +74,8 @@ func Run(conf *config.Configuration, clientSet *client.GenericClientSet, generic
 		time.Sleep(1 * time.Second)
 	}()
 
+	general.Infof("package map: %#v", genericCtx.PackageMap)
+	genericCtx.PackageMap = genericCtx.GetPackageMap()
 	return startAgent(ctx, genericCtx, conf, GetAgentInitializers())
 }
 
