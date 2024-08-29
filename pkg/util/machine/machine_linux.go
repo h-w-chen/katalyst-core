@@ -58,15 +58,22 @@ func GetKatalystMachineInfo(conf *global.MachineInfoConfiguration) (*KatalystMac
 		return nil, err
 	}
 
-	return &KatalystMachineInfo{
+	dieTopologyInfo := &DieTopology{}
+
+	katalystMachineInfo := &KatalystMachineInfo{
 		MachineInfo:       machineInfo,
 		CPUTopology:       cpuTopology,
 		MemoryTopology:    memoryTopology,
 		ExtraCPUInfo:      extraCPUInfo,
 		ExtraNetworkInfo:  extraNetworkInfo,
 		ExtraTopologyInfo: extraTopologyInfo,
-		DieTopology:       &DieTopology{},
-	}, nil
+		DieTopology:       dieTopologyInfo,
+	}
+
+	// to populate package map after machine info is there
+	dieTopologyInfo.PackageMap = katalystMachineInfo.GetPackageMap()
+
+	return katalystMachineInfo, nil
 }
 
 // getMachineInfo is used to construct info.MachineInfo in cadvisor
