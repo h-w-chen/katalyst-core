@@ -139,7 +139,7 @@ func (m *MBMonitor) AdjustNumaMB(node int, avgMB, quota uint64, action MB_CONTRO
 	for _, ccd := range m.NumaMap[node] {
 		instances := m.Controller.GetInstancesByCCD(ccd)
 		if len(instances) == 0 {
-			general.Infof("no instance running on ccd %d", ccd)
+			// no instance on ccd, no need to adjust
 			continue
 		}
 
@@ -147,8 +147,7 @@ func (m *MBMonitor) AdjustNumaMB(node int, avgMB, quota uint64, action MB_CONTRO
 		entry := m.Controller.CCDCosMap[ccd][cos]
 		ul := 0
 		// ingore the hybird deployment for now
-		//if entry.Used {
-		{
+		if entry.Used {
 			switch action {
 			case MEMORY_BANDWIDTH_CONTROL_RAISE:
 				if entry.Cap == 0 {
