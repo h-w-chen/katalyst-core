@@ -171,7 +171,7 @@ func TestGetPowerSpec(t *testing.T) {
 				},
 			},
 			want: &PowerSpec{
-				Alert:      PowerAlertF2,
+				Alert:      PowerAlertP2,
 				Budget:     128,
 				InternalOp: InternalOpAuto,
 				AlertTime:  timeTest,

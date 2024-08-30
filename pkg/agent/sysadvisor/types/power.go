@@ -34,9 +34,9 @@ type (
 const (
 	// authentic power alert code
 	PowerAlertS0 PowerAlert = "s0"
-	PowerAlertF0 PowerAlert = "p0"
-	PowerAlertF1 PowerAlert = "p1"
-	PowerAlertF2 PowerAlert = "p2"
+	PowerAlertP0 PowerAlert = "p0"
+	PowerAlertP1 PowerAlert = "p1"
+	PowerAlertP2 PowerAlert = "p2"
 
 	// derivative power alert code which corresponds to NON-existent annotation
 	PowerAlertOK PowerAlert = "ok"
@@ -60,9 +60,9 @@ var (
 
 func init() {
 	powerAlertResponseTime[PowerAlertS0] = time.Minute * 2
-	powerAlertResponseTime[PowerAlertF0] = time.Minute * 30
-	powerAlertResponseTime[PowerAlertF1] = time.Hour * 1
-	powerAlertResponseTime[PowerAlertF2] = time.Hour * 4
+	powerAlertResponseTime[PowerAlertP0] = time.Minute * 30
+	powerAlertResponseTime[PowerAlertP1] = time.Hour * 1
+	powerAlertResponseTime[PowerAlertP2] = time.Hour * 4
 }
 
 func GetPowerAlertResponseTimeLimit(alert PowerAlert) (time.Duration, error) {
