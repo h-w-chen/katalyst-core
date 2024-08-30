@@ -173,6 +173,7 @@ func NewController(podEvictor plugin.PodEvictor,
 				podFetcher: podFetcher,
 				podEvictor: podEvictor,
 			},
+			// always have remote power capping service started, waiting for capping plugin to get capping instructions
 			capper:   capper.NewRemotePowerCapper(), //capper.NewPowerCapper(limiter),
 			strategy: &ruleBasedPowerStrategy{coefficient: linearDecay{b: defaultDecayB}},
 		},

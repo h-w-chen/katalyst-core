@@ -22,26 +22,26 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/component/capper"
 )
 
-type RemoteCapper struct {
+type remoteCapper struct {
 }
 
-func (r RemoteCapper) Init() error {
+func (r remoteCapper) Init() error {
 	// todo: if not enabled, return error unavailable
 	panic("implement me")
 }
 
-func (r RemoteCapper) Reset() {
+func (r remoteCapper) Reset() {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (r RemoteCapper) Cap(ctx context.Context, targetWatts, currWatt int) {
+func (r remoteCapper) Cap(ctx context.Context, targetWatts, currWatt int) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func New() *RemoteCapper {
-	return &RemoteCapper{}
+func New() capper.PowerCapper {
+	return &remoteCapper{}
 }
 
-var _ capper.PowerCapper = &RemoteCapper{}
+var _ capper.PowerCapper = &remoteCapper{}
