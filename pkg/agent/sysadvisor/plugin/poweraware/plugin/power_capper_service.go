@@ -34,8 +34,7 @@ const (
 	PowerCapAdvisorPlugin = "node_power_cap"
 )
 
-type powerCapAdvisorPluginServer struct {
-}
+type powerCapAdvisorPluginServer struct{}
 
 func (p powerCapAdvisorPluginServer) Init() error {
 	return nil
@@ -81,9 +80,14 @@ func (p powerCapAdvisorPluginServer) Cap(ctx context.Context, targetWatts, currW
 
 var _ advisorsvc.AdvisorServiceServer = &powerCapAdvisorPluginServer{}
 
+func new() *powerCapAdvisorPluginServer {
+	server := &powerCapAdvisorPluginServer{}
+	return server
+}
+
 func NewPowerCapAdvisorPluginServer(conf *config.Configuration, emitter metrics.MetricEmitter) (NodePowerCapper, *GRPCServer, error) {
 	// todo: emit significant metrics
-	powerCapAdvisor := &powerCapAdvisorPluginServer{}
+	powerCapAdvisor := new()
 
 	// todo: extract dir out of conf
 	socketPath := path.Join("/tmp/test", fmt.Sprintf("%s.sock", powerCapAdvisor.Name()))

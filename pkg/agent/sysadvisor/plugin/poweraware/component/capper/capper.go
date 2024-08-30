@@ -45,7 +45,7 @@ func (p powerCapper) Cap(_ context.Context, targetWatts, currWatt int) {
 }
 
 // todo: remove all local power capping code to qrm plugin (in katalyst-adapter repo)
-func NewPowerCapper(limiter power.PowerLimiter) PowerCapper {
+func NewLocalPowerCapper(limiter power.PowerLimiter) PowerCapper {
 	return &powerCapper{limiter: limiter}
 }
 
