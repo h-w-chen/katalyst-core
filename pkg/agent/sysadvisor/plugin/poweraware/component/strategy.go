@@ -76,7 +76,7 @@ func (p ruleBasedPowerStrategy) autoAction(actualWatt, desiredWatt int, ttl time
 		return types.InternalOpFreqCap
 	}
 
-	ttlF1, _ := types.GetPowerAlertResponseTimeLimit(types.PowerAlertF1)
+	ttlF1, _ := types.GetPowerAlertResponseTimeLimit(types.PowerAlertP1)
 	if ttl <= ttlF1 {
 		return types.InternalOpEvict
 	}

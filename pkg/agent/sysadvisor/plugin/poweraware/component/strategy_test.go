@@ -112,7 +112,7 @@ func Test_ruleBasedPowerStrategy_RecommendAction(t *testing.T) {
 			args: args{
 				actualWatt:  99,
 				desiredWatt: 88,
-				alert:       types.PowerAlertF1,
+				alert:       types.PowerAlertP1,
 				internalOp:  types.InternalOpThrottle,
 				ttl:         time.Second * 30,
 			},
@@ -127,7 +127,7 @@ func Test_ruleBasedPowerStrategy_RecommendAction(t *testing.T) {
 			args: args{
 				actualWatt:  99,
 				desiredWatt: 88,
-				alert:       types.PowerAlertF1,
+				alert:       types.PowerAlertP1,
 				internalOp:  types.InternalOpAuto,
 				ttl:         time.Minute * 60,
 			},
@@ -142,7 +142,7 @@ func Test_ruleBasedPowerStrategy_RecommendAction(t *testing.T) {
 			args: args{
 				actualWatt:  88,
 				desiredWatt: 88,
-				alert:       types.PowerAlertF1,
+				alert:       types.PowerAlertP1,
 				internalOp:  types.InternalOpAuto,
 				ttl:         time.Second * 60,
 			},
@@ -157,7 +157,7 @@ func Test_ruleBasedPowerStrategy_RecommendAction(t *testing.T) {
 			args: args{
 				actualWatt:  100,
 				desiredWatt: 88,
-				alert:       types.PowerAlertF1,
+				alert:       types.PowerAlertP1,
 				internalOp:  types.InternalOpAuto,
 				ttl:         -time.Minute * 5,
 			},

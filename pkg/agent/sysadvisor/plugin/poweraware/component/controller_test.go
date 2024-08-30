@@ -88,7 +88,7 @@ func (d *dummySpecFetcher) GetPowerSpec(ctx context.Context) (*types.PowerSpec, 
 	switch ctx.Value(ctxKeyTest) {
 	case "run_normal":
 		return &types.PowerSpec{
-			Alert: types.PowerAlertF1,
+			Alert: types.PowerAlertP1,
 		}, nil
 	case "run_abort_on_spec_fetcher_error":
 		return nil, errors.New("dummy spec fetcher error")

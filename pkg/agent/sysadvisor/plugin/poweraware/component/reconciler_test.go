@@ -74,7 +74,7 @@ func Test_powerReconciler_Reconcile_DryRun(t *testing.T) {
 			args: args{
 				ctx: context.TODO(),
 				desired: &types.PowerSpec{
-					Alert:      types.PowerAlertF0,
+					Alert:      types.PowerAlertP0,
 					Budget:     127,
 					InternalOp: types.InternalOpAuto,
 					AlertTime:  time.Time{},
@@ -97,7 +97,7 @@ func Test_powerReconciler_Reconcile_DryRun(t *testing.T) {
 			args: args{
 				ctx: context.TODO(),
 				desired: &types.PowerSpec{
-					Alert:      types.PowerAlertF0,
+					Alert:      types.PowerAlertP0,
 					Budget:     127,
 					InternalOp: types.InternalOpAuto,
 					AlertTime:  time.Time{},
