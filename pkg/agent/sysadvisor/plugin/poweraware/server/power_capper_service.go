@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package plugin
+package server
 
 import (
 	"context"
@@ -24,6 +24,7 @@ import (
 	"path"
 
 	"google.golang.org/grpc"
+	"k8s.io/klog/v2"
 
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/advisorsvc"
 	"github.com/kubewharf/katalyst-core/pkg/config"
@@ -34,7 +35,12 @@ const (
 	PowerCapAdvisorPlugin = "node_power_cap"
 )
 
-type powerCapAdvisorPluginServer struct{}
+type powerCapAdvisorPluginServer struct {
+	// todo: protection from concurrent access
+	activeClient      bool
+	latestCappingInst *cappingInstruction
+	notify            *fanoutNotifier
+}
 
 func (p powerCapAdvisorPluginServer) Init() error {
 	return nil
@@ -52,9 +58,34 @@ func (p powerCapAdvisorPluginServer) RemovePod(ctx context.Context, request *adv
 	return nil, errors.New("not implemented")
 }
 
-func (p powerCapAdvisorPluginServer) ListAndWatch(empty *advisorsvc.Empty, server advisorsvc.AdvisorService_ListAndWatchServer) error {
-	//TODO implement me
-	panic("implement me")
+func (p *powerCapAdvisorPluginServer) ListAndWatch(empty *advisorsvc.Empty, server advisorsvc.AdvisorService_ListAndWatchServer) error {
+	// todo: track the conn status of client
+	p.activeClient = true
+	ctx := server.Context()
+	ch := p.notify.Register(ctx)
+
+stream:
+	for {
+		select {
+		case <-ctx.Done(): // client disconnected
+			klog.Warningf("remote client disconnect")
+			break stream
+		case <-ch:
+			capInst := p.latestCappingInst
+			if capInst == nil {
+				break
+			}
+			resp := capInst.ToListAndWatchResponse()
+			err := server.Send(resp)
+			if err != nil {
+				break stream
+			}
+		}
+	}
+
+	p.notify.Unregister(ctx)
+	p.activeClient = false
+	return nil
 }
 
 func (p powerCapAdvisorPluginServer) Reset() {
@@ -62,32 +93,43 @@ func (p powerCapAdvisorPluginServer) Reset() {
 	panic("implement me")
 }
 
-func capToMessage(targetWatts, currWatt int) (map[string]string, error) {
-	if targetWatts <= currWatt {
+func capToMessage(targetWatts, currWatt int) (*cappingInstruction, error) {
+	if targetWatts >= currWatt {
 		return nil, errors.New("invalid power cap request")
 	}
 
-	return map[string]string{
-		"op-code":  "4",
-		"op-value": fmt.Sprintf("%d", currWatt-targetWatts),
+	return &cappingInstruction{
+		opCode:         "4",
+		opCurrentValue: fmt.Sprintf("%d", currWatt),
+		opTargetValue:  fmt.Sprintf("%d", targetWatts),
 	}, nil
 }
 
-func (p powerCapAdvisorPluginServer) Cap(ctx context.Context, targetWatts, currWatt int) {
-	// convert to message of map
-	// notify live client of such
+func (p *powerCapAdvisorPluginServer) Cap(ctx context.Context, targetWatts, currWatt int) {
+	capInst, err := capToMessage(targetWatts, currWatt)
+	if err != nil {
+		klog.Warningf("invalid cap request: %v", err)
+		return
+	}
+
+	p.latestCappingInst = capInst
+	//	if len(p.notify) == 0 {
+	p.notify.Notify()
+	//	}
 }
 
 var _ advisorsvc.AdvisorServiceServer = &powerCapAdvisorPluginServer{}
 
-func new() *powerCapAdvisorPluginServer {
-	server := &powerCapAdvisorPluginServer{}
+func newpPwerCapAdvisorPluginServer() *powerCapAdvisorPluginServer {
+	server := &powerCapAdvisorPluginServer{
+		notify: newNotifier(),
+	}
 	return server
 }
 
 func NewPowerCapAdvisorPluginServer(conf *config.Configuration, emitter metrics.MetricEmitter) (NodePowerCapper, *GRPCServer, error) {
 	// todo: emit significant metrics
-	powerCapAdvisor := new()
+	powerCapAdvisor := newpPwerCapAdvisorPluginServer()
 
 	// todo: extract dir out of conf
 	socketPath := path.Join("/tmp/test", fmt.Sprintf("%s.sock", powerCapAdvisor.Name()))
