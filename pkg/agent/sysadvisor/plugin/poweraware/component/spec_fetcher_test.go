@@ -37,10 +37,10 @@ func (m mockNodeFetcher) GetNode(ctx context.Context) (*v1.Node, error) {
 	return &v1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
-				"power_alert":       "s0",
-				"power_budget":      "128",
-				"power_internal_op": "8",
-				"power_alert_time":  "2024-06-01T19:15:58Z",
+				"tce.kubernetes.io/power-alert":       "s0",
+				"tce.kubernetes.io/power-budget":      "128",
+				"tce.kubernetes.io/power-internal-op": "8",
+				"tce.kubernetes.io/power-alert-time":  "2024-06-01T19:15:58Z",
 			},
 		},
 	}, nil
