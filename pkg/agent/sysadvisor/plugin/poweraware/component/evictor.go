@@ -23,7 +23,7 @@ import (
 	"k8s.io/klog/v2"
 
 	apiconsts "github.com/kubewharf/katalyst-api/pkg/consts"
-	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/plugin"
+	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/server"
 	"github.com/kubewharf/katalyst-core/pkg/config/generic"
 	"github.com/kubewharf/katalyst-core/pkg/metaserver/agent/pod"
 )
@@ -35,7 +35,7 @@ type LoadEvictor interface {
 type loadEvictor struct {
 	qosConfig  *generic.QoSConfiguration
 	podFetcher pod.PodFetcher
-	podEvictor plugin.PodEvictor
+	podEvictor server.PodEvictor
 }
 
 func (l loadEvictor) isBE(pod *v1.Pod) bool {
@@ -81,4 +81,4 @@ func (d *NoopPodEvictor) Evict(ctx context.Context, pod *v1.Pod) error {
 	return nil
 }
 
-var _ plugin.PodEvictor = &NoopPodEvictor{}
+var _ server.PodEvictor = &NoopPodEvictor{}

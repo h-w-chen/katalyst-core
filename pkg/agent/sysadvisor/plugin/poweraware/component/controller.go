@@ -27,7 +27,7 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/evictionmanager"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/component/capper"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/component/reader"
-	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/plugin"
+	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/server"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/types"
 	"github.com/kubewharf/katalyst-core/pkg/config"
 	"github.com/kubewharf/katalyst-core/pkg/config/generic"
@@ -126,12 +126,12 @@ func (p *powerAwareController) run(ctx context.Context) {
 	}
 }
 
-func GetPodEvictorBasedOnConfig(conf *config.Configuration, emitter metrics.MetricEmitter) (podEvictor plugin.PodEvictor, err error) {
-	if !general.IsNameEnabled(plugin.EvictionPluginNameNodePowerPressure,
+func GetPodEvictorBasedOnConfig(conf *config.Configuration, emitter metrics.MetricEmitter) (podEvictor server.PodEvictor, err error) {
+	if !general.IsNameEnabled(server.EvictionPluginNameNodePowerPressure,
 		evictionmanager.InnerEvictionPluginsDisabledByDefault,
 		conf.GenericEvictionConfiguration.InnerPlugins,
 	) {
-		general.Warningf(" %s is disabled", plugin.EvictionPluginNameNodePowerPressure)
+		general.Warningf(" %s is disabled", server.EvictionPluginNameNodePowerPressure)
 		podEvictor = &NoopPodEvictor{}
 		return
 	}
@@ -140,8 +140,8 @@ func GetPodEvictorBasedOnConfig(conf *config.Configuration, emitter metrics.Metr
 	return
 }
 
-func startPowerPressurePodEvictorService(conf *config.Configuration, emitter metrics.MetricEmitter) (plugin.PodEvictor, error) {
-	podEvictor, service, err := plugin.NewPowerPressureEvictPluginServer(conf, emitter)
+func startPowerPressurePodEvictorService(conf *config.Configuration, emitter metrics.MetricEmitter) (server.PodEvictor, error) {
+	podEvictor, service, err := server.NewPowerPressureEvictPluginServer(conf, emitter)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create power pressure eviction plugin server")
 	}
@@ -153,7 +153,7 @@ func startPowerPressurePodEvictorService(conf *config.Configuration, emitter met
 	return podEvictor, nil
 }
 
-func NewController(podEvictor plugin.PodEvictor,
+func NewController(podEvictor server.PodEvictor,
 	dryRun bool,
 	emitter metrics.MetricEmitter,
 	nodeFetcher node.NodeFetcher,

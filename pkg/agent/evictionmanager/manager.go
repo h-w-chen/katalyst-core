@@ -46,7 +46,7 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/evictionmanager/plugin/rootfs"
 	"github.com/kubewharf/katalyst-core/pkg/agent/evictionmanager/podkiller"
 	"github.com/kubewharf/katalyst-core/pkg/agent/evictionmanager/rule"
-	paplugin "github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/plugin"
+	paserver "github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/server"
 	"github.com/kubewharf/katalyst-core/pkg/client"
 	pkgconfig "github.com/kubewharf/katalyst-core/pkg/config"
 	"github.com/kubewharf/katalyst-core/pkg/config/generic"
@@ -134,7 +134,7 @@ func NewInnerEvictionPluginInitializers() map[string]plugin.InitFunc {
 	innerEvictionPluginInitializers[memory.EvictionPluginNameSystemMemoryPressure] = memory.NewSystemPressureEvictionPlugin
 	innerEvictionPluginInitializers[memory.EvictionPluginNameRssOveruse] = memory.NewRssOveruseEvictionPlugin
 	innerEvictionPluginInitializers[rootfs.EvictionPluginNamePodRootfsPressure] = rootfs.NewPodRootfsPressureEvictionPlugin
-	innerEvictionPluginInitializers[paplugin.EvictionPluginNameNodePowerPressure] = power.NewPowerPressureEndpoint
+	innerEvictionPluginInitializers[paserver.EvictionPluginNameNodePowerPressure] = power.NewPowerPressureEndpoint
 	return innerEvictionPluginInitializers
 }
 

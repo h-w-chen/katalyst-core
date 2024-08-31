@@ -24,7 +24,7 @@ import (
 
 	"github.com/kubewharf/katalyst-core/pkg/agent/evictionmanager/endpoint"
 	"github.com/kubewharf/katalyst-core/pkg/agent/evictionmanager/plugin"
-	paplugin "github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/plugin"
+	paserver "github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/server"
 	"github.com/kubewharf/katalyst-core/pkg/client"
 	"github.com/kubewharf/katalyst-core/pkg/config"
 	"github.com/kubewharf/katalyst-core/pkg/metaserver"
@@ -34,7 +34,7 @@ import (
 func NewPowerPressureEndpoint(_ *client.GenericClientSet, _ events.EventRecorder,
 	_ *metaserver.MetaServer, _ metrics.MetricEmitter, conf *config.Configuration,
 ) plugin.EvictionPlugin {
-	name := paplugin.EvictionPluginNameNodePowerPressure
+	name := paserver.EvictionPluginNameNodePowerPressure
 
 	// the expected unix socket path is {conf.PluginRegistrationDir}/{plugin-name}.sock
 	socketPath := path.Join(conf.PluginRegistrationDir, fmt.Sprintf("%s.sock", name))
