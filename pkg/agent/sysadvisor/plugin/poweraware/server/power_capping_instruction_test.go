@@ -30,7 +30,7 @@ func Test_cappingInstruction_ToListAndWatchResponse(t *testing.T) {
 	t.Parallel()
 
 	type fields struct {
-		opCode         string
+		opCode         powerCappingOpCode
 		opCurrentValue string
 		opTargetValue  string
 	}
@@ -192,6 +192,55 @@ func TestFromListAndWatchResponse(t *testing.T) {
 				return
 			}
 			assert.Equalf(t, tt.want, got, "FromListAndWatchResponse(%v)", tt.args.response)
+		})
+	}
+}
+
+func Test_capToMessage(t *testing.T) {
+	t.Parallel()
+
+	type args struct {
+		targetWatts int
+		currWatt    int
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *cappingInstruction
+		wantErr assert.ErrorAssertionFunc
+	}{
+		{
+			name: "happy path no error",
+			args: args{
+				targetWatts: 530,
+				currWatt:    567,
+			},
+			want: &cappingInstruction{
+				opCode:         "4",
+				opCurrentValue: "567",
+				opTargetValue:  "530",
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "target higher than current not allowed",
+			args: args{
+				targetWatts: 567,
+				currWatt:    530,
+			},
+			want:    nil,
+			wantErr: assert.Error,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got, err := capToMessage(tt.args.targetWatts, tt.args.currWatt)
+			if !tt.wantErr(t, err, fmt.Sprintf("capToMessage(%v, %v)", tt.args.targetWatts, tt.args.currWatt)) {
+				return
+			}
+			assert.Equalf(t, tt.want, got, "capToMessage(%v, %v)", tt.args.targetWatts, tt.args.currWatt)
 		})
 	}
 }

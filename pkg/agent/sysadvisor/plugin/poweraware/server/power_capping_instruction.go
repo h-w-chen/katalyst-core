@@ -17,13 +17,30 @@ limitations under the License.
 package server
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/advisorsvc"
 )
 
+type powerCappingOpCode string
+
+const (
+	keyOpCode         = "op-code"
+	keyOpCurrentValue = "op-current-value"
+	keyOpTargetValue  = "op-target-value"
+
+	opCap   powerCappingOpCode = "4"
+	opReset powerCappingOpCode = "-1"
+)
+
+var powerCappingReset = &cappingInstruction{
+	opCode: opReset,
+}
+
 type cappingInstruction struct {
-	opCode         string
+	opCode         powerCappingOpCode
 	opCurrentValue string
 	opTargetValue  string
 }
@@ -35,9 +52,9 @@ func (c cappingInstruction) ToListAndWatchResponse() *advisorsvc.ListAndWatchRes
 			CgroupPath: "",
 			CalculationResult: &advisorsvc.CalculationResult{
 				Values: map[string]string{
-					"op-code":          c.opCode,
-					"op-current-value": c.opCurrentValue,
-					"op-target-value":  c.opTargetValue,
+					keyOpCode:         string(c.opCode),
+					keyOpCurrentValue: c.opCurrentValue,
+					keyOpTargetValue:  c.opTargetValue,
 				},
 			},
 		}},
@@ -59,16 +76,16 @@ func getCappingInstruction(info *advisorsvc.CalculationInfo) (*cappingInstructio
 		return nil, errors.New("invalid data of empty Values map")
 	}
 
-	opCode, ok := values["op-code"]
+	opCode, ok := values[keyOpCode]
 	if !ok {
 		return nil, errors.New("op-code not found")
 	}
 
-	opCurrValue := values["op-current-value"]
-	opTargetValue := values["op-target-value"]
+	opCurrValue := values[keyOpCurrentValue]
+	opTargetValue := values[keyOpTargetValue]
 
 	return &cappingInstruction{
-		opCode:         opCode,
+		opCode:         powerCappingOpCode(opCode),
 		opCurrentValue: opCurrValue,
 		opTargetValue:  opTargetValue,
 	}, nil
@@ -91,4 +108,16 @@ func FromListAndWatchResponse(response *advisorsvc.ListAndWatchResponse) ([]*cap
 	}
 
 	return cis, nil
+}
+
+func capToMessage(targetWatts, currWatt int) (*cappingInstruction, error) {
+	if targetWatts >= currWatt {
+		return nil, errors.New("invalid power cap request")
+	}
+
+	return &cappingInstruction{
+		opCode:         opCap,
+		opCurrentValue: fmt.Sprintf("%d", currWatt),
+		opTargetValue:  fmt.Sprintf("%d", targetWatts),
+	}, nil
 }

@@ -68,11 +68,11 @@ func testClient(lis *bufconn.Listener, t *testing.T) {
 }
 
 // integration test takes lengthy time to finish; NOT to run as normal unit test
-func Test_powerCapAdvisorPluginServer_Cap(t *testing.T) {
+func Test_powerCapAdvisorPluginServer_Cap_Client_Recv(t *testing.T) {
 	t.Parallel()
 
 	lis := bufconn.Listen(101024 * 1024)
-	server := newpPwerCapAdvisorPluginServer()
+	server := newpPowerCapAdvisorPluginServer()
 	baseServer := grpc.NewServer()
 	advisorsvc.RegisterAdvisorServiceServer(baseServer, server)
 	go func() {

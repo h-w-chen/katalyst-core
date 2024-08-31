@@ -18,13 +18,17 @@ package server
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net"
+	"os"
 	"path"
+	"sync"
 
+	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"k8s.io/klog/v2"
+
+	"github.com/kubewharf/katalyst-api/pkg/plugins/registration"
 
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/advisorsvc"
 	"github.com/kubewharf/katalyst-core/pkg/config"
@@ -33,34 +37,36 @@ import (
 
 const (
 	PowerCapAdvisorPlugin = "node_power_cap"
+
+	metricPowerCappingTargetName  = "power-capping-target"
+	metricPowerCappingResetName   = "power-capping-reset"
+	metricPowerCappingNoActorName = "power-capping-no-actor"
 )
 
 type powerCapAdvisorPluginServer struct {
-	// todo: protection from concurrent access
-	activeClient      bool
+	sync.Mutex
 	latestCappingInst *cappingInstruction
 	notify            *fanoutNotifier
+	emitter           metrics.MetricEmitter
 }
 
-func (p powerCapAdvisorPluginServer) Init() error {
+func (p *powerCapAdvisorPluginServer) Init() error {
 	return nil
 }
 
-func (p powerCapAdvisorPluginServer) Name() string {
+func (p *powerCapAdvisorPluginServer) Name() string {
 	return PowerCapAdvisorPlugin
 }
 
-func (p powerCapAdvisorPluginServer) AddContainer(ctx context.Context, metadata *advisorsvc.ContainerMetadata) (*advisorsvc.AddContainerResponse, error) {
+func (p *powerCapAdvisorPluginServer) AddContainer(ctx context.Context, metadata *advisorsvc.ContainerMetadata) (*advisorsvc.AddContainerResponse, error) {
 	return nil, errors.New("not implemented")
 }
 
-func (p powerCapAdvisorPluginServer) RemovePod(ctx context.Context, request *advisorsvc.RemovePodRequest) (*advisorsvc.RemovePodResponse, error) {
+func (p *powerCapAdvisorPluginServer) RemovePod(ctx context.Context, request *advisorsvc.RemovePodRequest) (*advisorsvc.RemovePodResponse, error) {
 	return nil, errors.New("not implemented")
 }
 
 func (p *powerCapAdvisorPluginServer) ListAndWatch(empty *advisorsvc.Empty, server advisorsvc.AdvisorService_ListAndWatchServer) error {
-	// todo: track the conn status of client
-	p.activeClient = true
 	ctx := server.Context()
 	ch := p.notify.Register(ctx)
 
@@ -68,7 +74,7 @@ stream:
 	for {
 		select {
 		case <-ctx.Done(): // client disconnected
-			klog.Warningf("remote client disconnect")
+			klog.Warningf("remote client disconnected")
 			break stream
 		case <-ch:
 			capInst := p.latestCappingInst
@@ -84,25 +90,32 @@ stream:
 	}
 
 	p.notify.Unregister(ctx)
-	p.activeClient = false
 	return nil
 }
 
-func (p powerCapAdvisorPluginServer) Reset() {
-	//TODO implement me
-	panic("implement me")
-}
-
-func capToMessage(targetWatts, currWatt int) (*cappingInstruction, error) {
-	if targetWatts >= currWatt {
-		return nil, errors.New("invalid power cap request")
+func (p *powerCapAdvisorPluginServer) Reset() {
+	p.emitRawMetric(metricPowerCappingResetName, 1)
+	if p.notify.IsEmpty() {
+		p.emitRawMetric(metricPowerCappingNoActorName, 1)
 	}
 
-	return &cappingInstruction{
-		opCode:         "4",
-		opCurrentValue: fmt.Sprintf("%d", currWatt),
-		opTargetValue:  fmt.Sprintf("%d", targetWatts),
-	}, nil
+	p.Lock()
+	defer p.Unlock()
+
+	p.latestCappingInst = powerCappingReset
+	p.notify.Notify()
+}
+
+func (p *powerCapAdvisorPluginServer) emitRawMetric(name string, value int) {
+	if p.emitter == nil {
+		return
+	}
+
+	_ = p.emitter.StoreInt64(name,
+		int64(value),
+		metrics.MetricTypeNameRaw,
+		metrics.ConvertMapToTags(map[string]string{"pluginName": PowerCapAdvisorPlugin, "pluginType": registration.QoSResourcePlugin})...,
+	)
 }
 
 func (p *powerCapAdvisorPluginServer) Cap(ctx context.Context, targetWatts, currWatt int) {
@@ -112,15 +125,21 @@ func (p *powerCapAdvisorPluginServer) Cap(ctx context.Context, targetWatts, curr
 		return
 	}
 
+	p.emitRawMetric(metricPowerCappingTargetName, targetWatts)
+	if p.notify.IsEmpty() {
+		p.emitRawMetric(metricPowerCappingNoActorName, 1)
+	}
+
+	p.Lock()
+	defer p.Unlock()
+
 	p.latestCappingInst = capInst
-	//	if len(p.notify) == 0 {
 	p.notify.Notify()
-	//	}
 }
 
 var _ advisorsvc.AdvisorServiceServer = &powerCapAdvisorPluginServer{}
 
-func newpPwerCapAdvisorPluginServer() *powerCapAdvisorPluginServer {
+func newpPowerCapAdvisorPluginServer() *powerCapAdvisorPluginServer {
 	server := &powerCapAdvisorPluginServer{
 		notify: newNotifier(),
 	}
@@ -128,12 +147,16 @@ func newpPwerCapAdvisorPluginServer() *powerCapAdvisorPluginServer {
 }
 
 func NewPowerCapAdvisorPluginServer(conf *config.Configuration, emitter metrics.MetricEmitter) (NodePowerCapper, *GRPCServer, error) {
-	// todo: emit significant metrics
-	powerCapAdvisor := newpPwerCapAdvisorPluginServer()
+	powerCapAdvisor := newpPowerCapAdvisorPluginServer()
+	powerCapAdvisor.emitter = emitter
 
-	// todo: extract dir out of conf
-	socketPath := path.Join("/tmp/test", fmt.Sprintf("%s.sock", powerCapAdvisor.Name()))
-	// todo: delete file if exists
+	pluginRootFolder := conf.PluginRegistrationDir
+	socketPath := path.Join(pluginRootFolder, fmt.Sprintf("%s.sock", powerCapAdvisor.Name()))
+
+	if err := os.Remove(socketPath); err != nil {
+		return nil, nil, errors.Wrap(err, "failed to clean up the residue file")
+	}
+
 	sock, err := net.Listen("unix", socketPath)
 	if err != nil {
 		return nil, nil, fmt.Errorf("%v listen %s failed: %v", powerCapAdvisor.Name(), socketPath, err)
