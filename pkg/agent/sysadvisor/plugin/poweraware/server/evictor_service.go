@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package plugin
+package server
 
 import (
 	"context"
@@ -48,8 +48,8 @@ func (p *powerPressureEvictPluginServer) Reset(ctx context.Context) {
 	p.evicts = make(map[types.UID]*v1.Pod)
 }
 
-// Evict method sends out request to evict a pod, which will be received by a remote eviction plugin
-// the real eviction will be done by the (remote) eviction manager where the remote plugin is registered with
+// Evict method sends out request to evict a pod, which will be received by a remote eviction server
+// the real eviction will be done by the (remote) eviction manager where the remote server is registered with
 func (p *powerPressureEvictPluginServer) Evict(ctx context.Context, pod *v1.Pod) error {
 	if pod == nil {
 		return errors.New("unexpected nil pod")
