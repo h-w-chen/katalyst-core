@@ -45,7 +45,7 @@ const (
 
 type powerCapAdvisorPluginServer struct {
 	sync.Mutex
-	latestCappingInst *cappingInstruction
+	latestCappingInst *CappingInstruction
 	notify            *fanoutNotifier
 	emitter           metrics.MetricEmitter
 }

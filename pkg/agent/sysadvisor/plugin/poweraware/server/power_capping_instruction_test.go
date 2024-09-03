@@ -65,10 +65,10 @@ func Test_cappingInstruction_ToListAndWatchResponse(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			c := cappingInstruction{
-				opCode:         tt.fields.opCode,
-				opCurrentValue: tt.fields.opCurrentValue,
-				opTargetValue:  tt.fields.opTargetValue,
+			c := CappingInstruction{
+				OpCode:         tt.fields.opCode,
+				OpCurrentValue: tt.fields.opCurrentValue,
+				OpTargetValue:  tt.fields.opTargetValue,
 			}
 			eq := reflect.DeepEqual(tt.want, c.ToListAndWatchResponse())
 			assert.Truef(t, eq, "should be equal")
@@ -85,7 +85,7 @@ func Test_getCappingInstruction(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *cappingInstruction
+		want    *CappingInstruction
 		wantErr assert.ErrorAssertionFunc
 	}{
 		{
@@ -101,10 +101,10 @@ func Test_getCappingInstruction(t *testing.T) {
 					},
 				},
 			},
-			want: &cappingInstruction{
-				opCode:         "4",
-				opCurrentValue: "100",
-				opTargetValue:  "80",
+			want: &CappingInstruction{
+				OpCode:         "4",
+				OpCurrentValue: "100",
+				OpTargetValue:  "80",
 			},
 			wantErr: assert.NoError,
 		},
@@ -143,7 +143,7 @@ func TestFromListAndWatchResponse(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    []*cappingInstruction
+		want    []*CappingInstruction
 		wantErr assert.ErrorAssertionFunc
 	}{
 		{
@@ -170,14 +170,14 @@ func TestFromListAndWatchResponse(t *testing.T) {
 					},
 				},
 			},
-			want: []*cappingInstruction{
+			want: []*CappingInstruction{
 				{
-					opCode:         "4",
-					opCurrentValue: "555",
-					opTargetValue:  "500",
+					OpCode:         "4",
+					OpCurrentValue: "555",
+					OpTargetValue:  "500",
 				},
 				{
-					opCode: "-1",
+					OpCode: "-1",
 				},
 			},
 			wantErr: assert.NoError,
@@ -206,7 +206,7 @@ func Test_capToMessage(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *cappingInstruction
+		want    *CappingInstruction
 		wantErr assert.ErrorAssertionFunc
 	}{
 		{
@@ -215,10 +215,10 @@ func Test_capToMessage(t *testing.T) {
 				targetWatts: 530,
 				currWatt:    567,
 			},
-			want: &cappingInstruction{
-				opCode:         "4",
-				opCurrentValue: "567",
-				opTargetValue:  "530",
+			want: &CappingInstruction{
+				OpCode:         "4",
+				OpCurrentValue: "567",
+				OpTargetValue:  "530",
 			},
 			wantErr: assert.NoError,
 		},

@@ -29,6 +29,7 @@ type QRMPluginsConfiguration struct {
 	*MemoryQRMPluginConfig
 	*NetworkQRMPluginConfig
 	*IOQRMPluginConfig
+	*PowerQRMPluginConfig
 }
 
 func NewGenericQRMPluginConfiguration() *GenericQRMPluginConfiguration {
