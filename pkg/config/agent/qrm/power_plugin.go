@@ -21,3 +21,8 @@ type PowerQRMPluginConfig struct {
 	// for power resource, there is only one available though
 	PolicyName string
 }
+
+// NewPowerQRMPluginConfig returns a PowerQRMPluginConfig
+func NewPowerQRMPluginConfig() *PowerQRMPluginConfig {
+	return &PowerQRMPluginConfig{}
+}
