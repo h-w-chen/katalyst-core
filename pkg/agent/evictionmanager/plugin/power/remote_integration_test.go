@@ -1,3 +1,6 @@
+//go:build integration
+// +build integration
+
 /*
 Copyright 2022 The Katalyst Authors.
 
@@ -14,9 +17,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-//go:build integration
-// +build integration
-
 // integration test taking lengthy time; not to run as regular unit test
 package power
 
@@ -28,7 +28,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/plugin"
+	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/server"
 	"github.com/kubewharf/katalyst-core/pkg/config"
 	"github.com/kubewharf/katalyst-core/pkg/config/agent"
 	"github.com/kubewharf/katalyst-core/pkg/config/agent/global"
@@ -60,7 +60,7 @@ func TestPowerPressureEndpoint_RecoverService(t *testing.T) {
 	assert.Equal(t, 0, int(resp.ThresholdValue), "server not live; expected 0 value")
 
 	// starting a server, stuffing one evict, then meaningful resp is expected
-	podEvictor, service, err := plugin.NewPowerPressureEvictPluginServer(conf, dummyEmitter)
+	podEvictor, service, err := server.NewPowerPressureEvictPluginServer(conf, dummyEmitter)
 	if err != nil {
 		t.Errorf("failed to create pap eviction server: %v", err)
 		return
