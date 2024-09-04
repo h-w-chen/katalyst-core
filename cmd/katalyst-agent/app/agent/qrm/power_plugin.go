@@ -18,6 +18,7 @@ package qrm
 
 import (
 	"fmt"
+	"k8s.io/klog/v2"
 	"sync"
 
 	"github.com/kubewharf/katalyst-core/cmd/katalyst-agent/app/agent"
@@ -33,13 +34,16 @@ var powerPolicyInitializers sync.Map
 
 // RegisterPowerPolicyInitializer is used to register user-defined power resource plugin init functions
 func RegisterPowerPolicyInitializer(name string, initFunc agent.InitFunc) {
+	klog.V(6).Infof("pap: reg policy %s", name)
 	powerPolicyInitializers.Store(name, initFunc)
 }
 
 // getPowerPolicyInitializers returns those policies with initialized functions
 func getPowerPolicyInitializers() map[string]agent.InitFunc {
+	klog.V(6).Infof("pap: get all registered polices...")
 	agents := make(map[string]agent.InitFunc)
 	powerPolicyInitializers.Range(func(key, value interface{}) bool {
+		klog.V(6).Infof("pap: policy %v", key)
 		agents[key.(string)] = value.(agent.InitFunc)
 		return true
 	})
