@@ -73,13 +73,15 @@ func NewPowerAwarePlugin(
 	emitter := emitterPool.GetDefaultMetricsEmitter().WithTags(metricName)
 	podEvictor, err := component.GetPodEvictorBasedOnConfig(conf, emitter)
 	if err != nil {
-		return nil, err
+		general.Errorf("pap: evict: failed to create power eviction server", err)
+		general.Infof("pap: evict: downgrade to noop eviction")
+		podEvictor = &component.NoopPodEvictor{}
 	}
 
 	capper := capper.NewRemotePowerCapper(conf, emitter)
 	if capper == nil {
-		// todo: create a dummy capper?
-		general.Errorf("pap: failed to create power capping component")
+		general.Errorf("pap: cap: failed to create power capping component")
+		general.Infof("pap: cap: downgrade to no power capping")
 	}
 
 	controller := component.NewController(podEvictor,
