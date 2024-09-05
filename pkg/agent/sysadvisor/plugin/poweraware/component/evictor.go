@@ -51,9 +51,10 @@ func (l loadEvictor) isBE(pod *v1.Pod) bool {
 func (l loadEvictor) Evict(ctx context.Context, targetPercent int) {
 	pods, err := l.podFetcher.GetPodList(ctx, l.isBE)
 	if err != nil {
-		klog.Errorf("failed to get pods: %v", err)
+		klog.Errorf("pap: evict: failed to get pods: %v", err)
 		return
 	}
+	klog.V(6).Infof("pap: evict: there are %d BE pods", len(pods))
 
 	// discard pending requests not handled yet; we will provide a new sleet of evict requests anyway
 	l.podEvictor.Reset(ctx)

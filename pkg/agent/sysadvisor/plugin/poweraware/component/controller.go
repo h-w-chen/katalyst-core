@@ -138,7 +138,7 @@ func GetPodEvictorBasedOnConfig(conf *config.Configuration, emitter metrics.Metr
 		evictionmanager.InnerEvictionPluginsDisabledByDefault,
 		conf.GenericEvictionConfiguration.InnerPlugins,
 	) {
-		general.Warningf(" %s is disabled", server.EvictionPluginNameNodePowerPressure)
+		general.Warningf("pap: %s is disabled", server.EvictionPluginNameNodePowerPressure)
 		podEvictor = &NoopPodEvictor{}
 		return
 	}

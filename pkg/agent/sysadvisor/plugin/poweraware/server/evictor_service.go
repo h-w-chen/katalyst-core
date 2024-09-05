@@ -23,6 +23,7 @@ import (
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/klog/v2"
 
 	"github.com/kubewharf/katalyst-api/pkg/plugins/registration"
 	"github.com/kubewharf/katalyst-api/pkg/plugins/skeleton"
@@ -122,7 +123,9 @@ func (p *powerPressureEvictPluginServer) GetTopEvictionPods(ctx context.Context,
 	return resp, err
 }
 
+// GetEvictPods is called from a remote evict plugin client
 func (p *powerPressureEvictPluginServer) GetEvictPods(ctx context.Context, request *pluginapi.GetEvictPodsRequest) (*pluginapi.GetEvictPodsResponse, error) {
+	klog.V(6).Infof("pap: evict: GetEvictPods, with %d active pods", len(request.GetActivePods()))
 	activePods := map[types.UID]struct{}{}
 	for _, pod := range request.GetActivePods() {
 		if len(pod.GetUID()) > 0 { // just in case of invalid input
