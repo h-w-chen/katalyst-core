@@ -29,6 +29,7 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/config"
 	"github.com/kubewharf/katalyst-core/pkg/metaserver"
 	metricspool "github.com/kubewharf/katalyst-core/pkg/metrics/metrics-pool"
+	"github.com/kubewharf/katalyst-core/pkg/util/general"
 )
 
 const metricName = "advisor-poweraware"
@@ -76,6 +77,10 @@ func NewPowerAwarePlugin(
 	}
 
 	capper := capper.NewRemotePowerCapper(conf, emitter)
+	if capper == nil {
+		// todo: create a dummy capper?
+		general.Errorf("pap: failed to create power capping component")
+	}
 
 	controller := component.NewController(podEvictor,
 		conf.PowerAwarePluginOptions.DryRun,

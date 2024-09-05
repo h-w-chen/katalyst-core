@@ -55,7 +55,7 @@ func NewLocalPowerCapper(limiter power.PowerLimiter) PowerCapper {
 func NewRemotePowerCapper(conf *config.Configuration, emitter metrics.MetricEmitter) PowerCapper {
 	powerCapAdvisor, grpcServer, err := server.NewPowerCapAdvisorPluginServer(conf, emitter)
 	if err != nil {
-		klog.Errorf("failed to create power cap advisor service: %v", err)
+		klog.Errorf("pap: failed to create power cap advisor service: %v", err)
 		return nil
 	}
 

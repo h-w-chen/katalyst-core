@@ -60,10 +60,17 @@ type powerAwareController struct {
 }
 
 func (p *powerAwareController) Run(ctx context.Context) {
+	if p.powerLimitInitResetter == nil {
+		// todo: consider make it run downgraded w/ eviction ability only
+		klog.Errorf("pap: cannot setup power capping server; contrroller stop")
+	}
+
 	if err := p.powerReader.Init(); err != nil {
 		klog.Errorf("pap: failed to initialize power reader: %v; exited", err)
 		return
 	}
+
+	// todo: p.powerLimitInitResetter might be nil?
 	if err := p.powerLimitInitResetter.Init(); err != nil {
 		klog.Errorf("pap: failed to initialize power capping: %v; exited", err)
 		return

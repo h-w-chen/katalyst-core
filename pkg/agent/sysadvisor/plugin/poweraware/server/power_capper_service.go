@@ -153,7 +153,7 @@ func NewPowerCapAdvisorPluginServer(conf *config.Configuration, emitter metrics.
 	pluginRootFolder := conf.PluginRegistrationDir
 	socketPath := path.Join(pluginRootFolder, fmt.Sprintf("%s.sock", powerCapAdvisor.Name()))
 
-	if err := os.Remove(socketPath); err != nil {
+	if err := os.Remove(socketPath); err != nil && !os.IsNotExist(err) {
 		return nil, nil, errors.Wrap(err, "failed to clean up the residue file")
 	}
 
