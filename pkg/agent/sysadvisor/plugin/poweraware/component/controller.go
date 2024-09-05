@@ -159,7 +159,7 @@ func NewController(podEvictor server.PodEvictor,
 	nodeFetcher node.NodeFetcher,
 	qosConfig *generic.QoSConfiguration,
 	podFetcher pod.PodFetcher,
-	limiter power.PowerLimiter,
+	capper capper.PowerCapper,
 ) PowerAwareController {
 	return &powerAwareController{
 		emitter:     emitter,
@@ -173,11 +173,10 @@ func NewController(podEvictor server.PodEvictor,
 				podFetcher: podFetcher,
 				podEvictor: podEvictor,
 			},
-			// always have remote power capping service started, waiting for capping plugin to get capping instructions
-			capper:   capper.NewRemotePowerCapper(), //capper.NewPowerCapper(limiter),
+			capper:   capper,
 			strategy: &ruleBasedPowerStrategy{coefficient: linearDecay{b: defaultDecayB}},
 		},
-		powerLimitInitResetter: limiter,
+		powerLimitInitResetter: capper,
 		inFreqCap:              false,
 	}
 }

@@ -25,6 +25,7 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/metacache"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/component"
+	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/component/capper"
 	"github.com/kubewharf/katalyst-core/pkg/config"
 	"github.com/kubewharf/katalyst-core/pkg/metaserver"
 	metricspool "github.com/kubewharf/katalyst-core/pkg/metrics/metrics-pool"
@@ -74,12 +75,14 @@ func NewPowerAwarePlugin(
 		return nil, err
 	}
 
+	capper := capper.NewRemotePowerCapper(conf, emitter)
+
 	controller := component.NewController(podEvictor,
 		conf.PowerAwarePluginOptions.DryRun,
 		emitter,
 		metaServer.NodeFetcher, conf.QoSConfiguration,
 		metaServer.PodFetcher,
-		metaServer.ExternalManager)
+		capper)
 
 	return NewPowerAwarePluginWithController(pluginName, conf, controller)
 }

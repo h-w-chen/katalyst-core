@@ -18,9 +18,12 @@ package capper
 
 import (
 	"context"
+
 	"k8s.io/klog/v2"
 
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/server"
+	"github.com/kubewharf/katalyst-core/pkg/config"
+	"github.com/kubewharf/katalyst-core/pkg/metrics"
 	"github.com/kubewharf/katalyst-core/pkg/util/external/power"
 )
 
@@ -49,8 +52,8 @@ func NewLocalPowerCapper(limiter power.PowerLimiter) PowerCapper {
 	return &powerCapper{limiter: limiter}
 }
 
-func NewRemotePowerCapper() PowerCapper {
-	powerCapAdvisor, grpcServer, err := server.NewPowerCapAdvisorPluginServer(nil, nil)
+func NewRemotePowerCapper(conf *config.Configuration, emitter metrics.MetricEmitter) PowerCapper {
+	powerCapAdvisor, grpcServer, err := server.NewPowerCapAdvisorPluginServer(conf, emitter)
 	if err != nil {
 		klog.Errorf("failed to create power cap advisor service: %v", err)
 		return nil
