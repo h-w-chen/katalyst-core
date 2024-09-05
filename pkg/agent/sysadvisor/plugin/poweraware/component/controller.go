@@ -24,7 +24,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog/v2"
 
-	"github.com/kubewharf/katalyst-core/pkg/agent/evictionmanager"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/component/capper"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/component/reader"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/server"
@@ -35,7 +34,6 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/metaserver/agent/pod"
 	"github.com/kubewharf/katalyst-core/pkg/metrics"
 	"github.com/kubewharf/katalyst-core/pkg/util/external/power"
-	"github.com/kubewharf/katalyst-core/pkg/util/general"
 )
 
 // 8 seconds between actions since RAPL capping needs 4-6 seconds to stabilize itself
@@ -134,17 +132,7 @@ func (p *powerAwareController) run(ctx context.Context) {
 }
 
 func GetPodEvictorBasedOnConfig(conf *config.Configuration, emitter metrics.MetricEmitter) (podEvictor server.PodEvictor, err error) {
-	if !general.IsNameEnabled(server.EvictionPluginNameNodePowerPressure,
-		evictionmanager.InnerEvictionPluginsDisabledByDefault,
-		conf.GenericEvictionConfiguration.InnerPlugins,
-	) {
-		general.Warningf("pap: %s is disabled", server.EvictionPluginNameNodePowerPressure)
-		podEvictor = &NoopPodEvictor{}
-		return
-	}
-
-	podEvictor, err = startPowerPressurePodEvictorService(conf, emitter)
-	return
+	return startPowerPressurePodEvictorService(conf, emitter)
 }
 
 func startPowerPressurePodEvictorService(conf *config.Configuration, emitter metrics.MetricEmitter) (server.PodEvictor, error) {
