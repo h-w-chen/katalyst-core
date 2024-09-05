@@ -18,6 +18,7 @@ package component
 
 import (
 	"context"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/klog/v2"
@@ -64,9 +65,18 @@ func (l loadEvictor) Evict(ctx context.Context, targetPercent int) {
 		// not care much for returned error as power alert eviction is the best effort by design
 		_ = l.podEvictor.Evict(ctx, p)
 	}
-}
 
-var _ LoadEvictor = &loadEvictor{}
+	// todo: remove! this is for internal validatioon only. MUST remove before code is finalized
+	_ = l.podEvictor.Evict(ctx, &v1.Pod{
+		TypeMeta: metav1.TypeMeta{
+			Kind: "Pod",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "fake-pod",
+			UID:  "111-222-333",
+		},
+	})
+}
 
 // NoopPodEvictor does not really evict any pod other than counting the invocations;
 // used in unit test, or when eviction feature is disabled
