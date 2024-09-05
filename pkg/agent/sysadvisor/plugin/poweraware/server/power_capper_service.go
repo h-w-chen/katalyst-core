@@ -96,6 +96,8 @@ stream:
 func (p *powerCapAdvisorPluginServer) Reset() {
 	p.emitRawMetric(metricPowerCappingResetName, 1)
 	if p.notify.IsEmpty() {
+		// todo: log unavailability of down stream component
+		klog.Warningf("pap: no power capping plugin connected; Reset op is lost")
 		p.emitRawMetric(metricPowerCappingNoActorName, 1)
 	}
 
@@ -127,6 +129,7 @@ func (p *powerCapAdvisorPluginServer) Cap(ctx context.Context, targetWatts, curr
 
 	p.emitRawMetric(metricPowerCappingTargetName, targetWatts)
 	if p.notify.IsEmpty() {
+		klog.Warningf("pap: no power capping plugin connected; Cap op from %d to %d watt is lost", currWatt, targetWatts)
 		p.emitRawMetric(metricPowerCappingNoActorName, 1)
 	}
 
