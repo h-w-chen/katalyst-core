@@ -140,14 +140,15 @@ func (p *powerPressureEvictPluginServer) GetEvictPods(ctx context.Context, reque
 
 	pods := p.evicts
 	for _, v := range pods {
-		if _, ok := activePods[v.GetUID()]; ok {
-			evictPods = append(evictPods, &pluginapi.EvictPod{
-				Pod:                v,
-				Reason:             evictReason,
-				ForceEvict:         true,
-				EvictionPluginName: EvictionPluginNameNodePowerPressure,
-			})
-		}
+		// todo: enable below filter!
+		//		if _, ok := activePods[v.GetUID()]; ok {
+		evictPods = append(evictPods, &pluginapi.EvictPod{
+			Pod:                v,
+			Reason:             evictReason,
+			ForceEvict:         true,
+			EvictionPluginName: EvictionPluginNameNodePowerPressure,
+		})
+		//		}
 	}
 
 	return &pluginapi.GetEvictPodsResponse{EvictPods: evictPods}, nil
