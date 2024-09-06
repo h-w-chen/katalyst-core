@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package server
+package capper
 
 import (
 	"fmt"
@@ -36,7 +36,7 @@ const (
 	OpUnknown powerCappingOpCode = "-2"
 )
 
-var powerCappingReset = &CapInstruction{
+var PowerCapReset = &CapInstruction{
 	OpCode: OpReset,
 }
 
@@ -92,7 +92,7 @@ func getCappingInstructionFromCalcInfo(info *advisorsvc.CalculationInfo) (*CapIn
 	}, nil
 }
 
-func getCappingInstructionFromLWResp(response *advisorsvc.ListAndWatchResponse) ([]*CapInstruction, error) {
+func GetCappingInstructions(response *advisorsvc.ListAndWatchResponse) ([]*CapInstruction, error) {
 	if len(response.ExtraEntries) == 0 {
 		return nil, errors.New("no valid data of no capping instruction")
 	}
@@ -111,7 +111,7 @@ func getCappingInstructionFromLWResp(response *advisorsvc.ListAndWatchResponse) 
 	return cis, nil
 }
 
-func capToMessage(targetWatts, currWatt int) (*CapInstruction, error) {
+func NewCapInstruction(targetWatts, currWatt int) (*CapInstruction, error) {
 	if targetWatts >= currWatt {
 		return nil, errors.New("invalid power cap request")
 	}

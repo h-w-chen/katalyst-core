@@ -31,6 +31,7 @@ import (
 	"google.golang.org/grpc/test/bufconn"
 
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/advisorsvc"
+	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/capper"
 )
 
 func testClient(lis *bufconn.Listener, t *testing.T) {
@@ -59,7 +60,7 @@ func testClient(lis *bufconn.Listener, t *testing.T) {
 			t.Logf("test client failed to get next message in stream: %v", err)
 			break
 		}
-		capInsts, err := getCappingInstructionFromLWResp(lwResp)
+		capInsts, err := capper.GetCappingInstructions(lwResp)
 		for _, ci := range capInsts {
 			t.Logf("recv: %#v", ci)
 		}

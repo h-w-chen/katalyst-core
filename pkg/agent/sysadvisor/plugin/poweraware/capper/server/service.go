@@ -46,9 +46,9 @@ const (
 
 type powerCapService struct {
 	sync.Mutex
-	latestCappingInst *CapInstruction
-	notify            *fanoutNotifier
-	emitter           metrics.MetricEmitter
+	capInstruction *capper.CapInstruction
+	notify         *fanoutNotifier
+	emitter        metrics.MetricEmitter
 }
 
 func (p *powerCapService) Init() error {
@@ -78,7 +78,7 @@ stream:
 			klog.Warningf("remote client disconnected")
 			break stream
 		case <-ch:
-			capInst := p.latestCappingInst
+			capInst := p.capInstruction
 			if capInst == nil {
 				break
 			}
@@ -105,7 +105,7 @@ func (p *powerCapService) Reset() {
 	p.Lock()
 	defer p.Unlock()
 
-	p.latestCappingInst = powerCappingReset
+	p.capInstruction = capper.PowerCapReset
 	p.notify.Notify()
 }
 
@@ -122,7 +122,7 @@ func (p *powerCapService) emitRawMetric(name string, value int) {
 }
 
 func (p *powerCapService) Cap(ctx context.Context, targetWatts, currWatt int) {
-	capInst, err := capToMessage(targetWatts, currWatt)
+	capInst, err := capper.NewCapInstruction(targetWatts, currWatt)
 	if err != nil {
 		klog.Warningf("invalid cap request: %v", err)
 		return
@@ -137,7 +137,7 @@ func (p *powerCapService) Cap(ctx context.Context, targetWatts, currWatt int) {
 	p.Lock()
 	defer p.Unlock()
 
-	p.latestCappingInst = capInst
+	p.capInstruction = capInst
 	p.notify.Notify()
 }
 

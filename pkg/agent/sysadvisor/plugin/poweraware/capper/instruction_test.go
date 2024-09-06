@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package server
+package capper
 
 import (
 	"fmt"
@@ -236,7 +236,7 @@ func Test_capToMessage(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := capToMessage(tt.args.targetWatts, tt.args.currWatt)
+			got, err := NewCapInstruction(tt.args.targetWatts, tt.args.currWatt)
 			if !tt.wantErr(t, err, fmt.Sprintf("capToMessage(%v, %v)", tt.args.targetWatts, tt.args.currWatt)) {
 				return
 			}
