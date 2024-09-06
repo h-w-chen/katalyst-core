@@ -64,7 +64,7 @@ func Test_powerAwarePlugin_Name(t *testing.T) {
 		nil,
 		nil)
 
-	p, err := NewPowerAwarePluginWithController(expectedName,
+	p, err := newPowerAwarePluginWithController(expectedName,
 		&config.Configuration{
 			AgentConfiguration: &agentconf.AgentConfiguration{
 				StaticAgentConfiguration: &agentconf.StaticAgentConfiguration{

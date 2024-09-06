@@ -28,6 +28,7 @@ import (
 	"github.com/kubewharf/katalyst-api/pkg/plugins/registration"
 	"github.com/kubewharf/katalyst-api/pkg/plugins/skeleton"
 	pluginapi "github.com/kubewharf/katalyst-api/pkg/protocol/evictionplugin/v1alpha1"
+	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/evictor"
 	"github.com/kubewharf/katalyst-core/pkg/config"
 	"github.com/kubewharf/katalyst-core/pkg/metrics"
 )
@@ -140,15 +141,14 @@ func (p *powerPressureEvictPluginServer) GetEvictPods(ctx context.Context, reque
 
 	pods := p.evicts
 	for _, v := range pods {
-		// todo: enable below filter!
-		//		if _, ok := activePods[v.GetUID()]; ok {
-		evictPods = append(evictPods, &pluginapi.EvictPod{
-			Pod:                v,
-			Reason:             evictReason,
-			ForceEvict:         true,
-			EvictionPluginName: EvictionPluginNameNodePowerPressure,
-		})
-		//		}
+		if _, ok := activePods[v.GetUID()]; ok {
+			evictPods = append(evictPods, &pluginapi.EvictPod{
+				Pod:                v,
+				Reason:             evictReason,
+				ForceEvict:         true,
+				EvictionPluginName: EvictionPluginNameNodePowerPressure,
+			})
+		}
 	}
 
 	return &pluginapi.GetEvictPodsResponse{EvictPods: evictPods}, nil
@@ -162,7 +162,7 @@ func newPowerPressureEvictPluginServer() *powerPressureEvictPluginServer {
 	}
 }
 
-func NewPowerPressureEvictPluginServer(conf *config.Configuration, emitter metrics.MetricEmitter) (PodEvictor, *skeleton.PluginRegistrationWrapper, error) {
+func NewPowerPressureEvictPluginServer(conf *config.Configuration, emitter metrics.MetricEmitter) (evictor.PodEvictor, *skeleton.PluginRegistrationWrapper, error) {
 	plugin := newPowerPressureEvictPluginServer()
 	regWrapper, err := skeleton.NewRegistrationPluginWrapper(plugin,
 		[]string{conf.PluginRegistrationDir}, // unix socket dirs

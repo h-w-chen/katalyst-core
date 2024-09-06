@@ -19,7 +19,6 @@ package server
 import (
 	"context"
 	"fmt"
-	server2 "github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/server"
 	"net"
 	"sort"
 	"testing"
@@ -33,13 +32,14 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	evictionv1apha1 "github.com/kubewharf/katalyst-api/pkg/protocol/evictionplugin/v1alpha1"
+	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/evictor"
 )
 
-func setupGrpcServer(ctx context.Context) (PodEvictor, evictionv1apha1.EvictionPluginClient, func()) {
+func setupGrpcServer(ctx context.Context) (evictor.PodEvictor, evictionv1apha1.EvictionPluginClient, func()) {
 	buffer := 101024 * 1024
 	lis := bufconn.Listen(buffer)
 
-	server := &server2.powerPressureEvictPluginServer{}
+	server := &powerPressureEvictPluginServer{}
 	baseServer := grpc.NewServer()
 	evictionv1apha1.RegisterEvictionPluginServer(baseServer, server)
 	go func() {
@@ -159,7 +159,7 @@ func Test_powerPressureEvictPluginServer_ThresholdMet(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			p := &server2.powerPressureEvictPluginServer{
+			p := &powerPressureEvictPluginServer{
 				evicts: tt.fields.evicts,
 			}
 			got, err := p.ThresholdMet(tt.args.ctx, tt.args.empty)
@@ -240,20 +240,14 @@ func Test_powerPressureEvictPluginServer_GetTopEvictionPods(t *testing.T) {
 					{ObjectMeta: metav1.ObjectMeta{UID: "test1003"}},
 				},
 			},
-			wantErr: func(t assert.TestingT, err error, opts ...interface{}) bool {
-				if err != nil {
-					t.Errorf("unexpected error: %v", err)
-					return false
-				}
-				return true
-			},
+			wantErr: assert.NoError,
 		},
 	}
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			p := &server2.powerPressureEvictPluginServer{
+			p := &powerPressureEvictPluginServer{
 				evicts: tt.fields.evicts,
 			}
 			got, err := p.GetTopEvictionPods(tt.args.ctx, tt.args.request)

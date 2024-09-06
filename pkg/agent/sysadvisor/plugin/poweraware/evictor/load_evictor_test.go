@@ -142,7 +142,7 @@ func (m mockPodFetcher) GetPodList(ctx context.Context, podFilter func(*v1.Pod) 
 func Test_loadEvictor_Evict(t *testing.T) {
 	t.Parallel()
 
-	podEvictor := &NoopPodEvictor{}
+	podEvictor := &noopPodEvictor{}
 	l := loadEvictor{
 		qosConfig:  generic.NewQoSConfiguration(),
 		podFetcher: &mockPodFetcher{},

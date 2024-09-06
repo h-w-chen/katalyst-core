@@ -140,11 +140,11 @@ func (p *powerAwareController) run(ctx context.Context) {
 	}
 }
 
-func GetPodEvictorBasedOnConfig(conf *config.Configuration, emitter metrics.MetricEmitter) (podEvictor server2.PodEvictor, err error) {
+func GetPodEvictorBasedOnConfig(conf *config.Configuration, emitter metrics.MetricEmitter) (podEvictor evictor.PodEvictor, err error) {
 	return startPowerPressurePodEvictorService(conf, emitter)
 }
 
-func startPowerPressurePodEvictorService(conf *config.Configuration, emitter metrics.MetricEmitter) (server2.PodEvictor, error) {
+func startPowerPressurePodEvictorService(conf *config.Configuration, emitter metrics.MetricEmitter) (evictor.PodEvictor, error) {
 	podEvictor, service, err := server2.NewPowerPressureEvictPluginServer(conf, emitter)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create power pressure eviction plugin server")
@@ -157,7 +157,7 @@ func startPowerPressurePodEvictorService(conf *config.Configuration, emitter met
 	return podEvictor, nil
 }
 
-func NewController(podEvictor server2.PodEvictor,
+func NewController(podEvictor evictor.PodEvictor,
 	dryRun bool,
 	emitter metrics.MetricEmitter,
 	nodeFetcher node.NodeFetcher,

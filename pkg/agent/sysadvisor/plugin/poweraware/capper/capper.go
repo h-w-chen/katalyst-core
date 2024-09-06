@@ -23,3 +23,19 @@ type PowerCapper interface {
 	Reset()
 	Cap(ctx context.Context, targetWatts, currWatt int)
 }
+
+// noopCapper is placeholder for disabled power capping server
+type noopCapper struct {
+}
+
+func (n noopCapper) Init() error {
+	return nil
+}
+
+func (n noopCapper) Reset() {}
+
+func (n noopCapper) Cap(ctx context.Context, targetWatts, currWatt int) {}
+
+func NewNoopCapper() PowerCapper {
+	return &noopCapper{}
+}

@@ -172,14 +172,12 @@ func NewPowerCapAdvisorPluginServer(conf *config.Configuration, emitter metrics.
 	return powerCapAdvisor, NewGRPCServer(server, sock), nil
 }
 
-func NewRemotePowerCapper(conf *config.Configuration, emitter metrics.MetricEmitter) capper.PowerCapper {
+func NewRemotePowerCapper(conf *config.Configuration, emitter metrics.MetricEmitter) (capper.PowerCapper, error) {
 	powerCapAdvisor, grpcServer, err := NewPowerCapAdvisorPluginServer(conf, emitter)
 	if err != nil {
-		klog.Errorf("pap: failed to create power cap advisor service: %v", err)
-		return nil
+		return nil, errors.Wrap(err, "failed to create power capping server")
 	}
 
 	grpcServer.Run()
-
-	return powerCapAdvisor
+	return powerCapAdvisor, nil
 }

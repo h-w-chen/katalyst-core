@@ -18,11 +18,13 @@ package poweraware
 
 import (
 	"context"
-	"errors"
+
+	"github.com/pkg/errors"
 
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/metacache"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin"
-	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/capper/server"
+	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/capper"
+	capserver "github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/capper/server"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/controller"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/evictor"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/reader"
@@ -71,21 +73,33 @@ func NewPowerAwarePlugin(
 	_ metacache.MetaCache,
 ) (plugin.SysAdvisorPlugin, error) {
 	emitter := emitterPool.GetDefaultMetricsEmitter().WithTags(metricName)
-	podEvictor, err := controller.GetPodEvictorBasedOnConfig(conf, emitter)
-	if err != nil {
-		general.Errorf("pap: evict: failed to create power eviction server: %v", err)
-		general.Infof("pap: evict: downgrade to noop eviction")
-		podEvictor = &evictor.NoopPodEvictor{}
+
+	// avoid returning error as that would exit whole application
+	// failure of its components should limit affect inside this plugin only
+	// whole service shall be downgraded, but running nonetheless
+	var podEvictor evictor.PodEvictor
+	if conf.Disabled || conf.DisablePowerPressureEvict {
+		podEvictor = evictor.NewNoopPodEvictor()
+	} else {
+		var err error
+		if podEvictor, err = controller.GetPodEvictorBasedOnConfig(conf, emitter); err != nil {
+			general.Errorf("pap: failed to create power aware plugin: %v", err)
+		}
 	}
 
-	powerCapper := server.NewRemotePowerCapper(conf, emitter)
-	if powerCapper == nil {
-		general.Errorf("pap: cap: failed to create power capping component")
-		general.Infof("pap: cap: downgrade to no power capping")
+	var powerCapper capper.PowerCapper
+	if conf.Disabled || conf.DisablePowerCapping {
+		powerCapper = capper.NewNoopCapper()
+	} else {
+		var err error
+		if powerCapper, err = capserver.NewRemotePowerCapper(conf, emitter); err != nil {
+			general.Errorf("pap: failed to create power aware plugin: %v", err)
+		}
 	}
 
 	// todo: use the reader collecting power readings from malachite
-	// we may temporarily have a local reader on top of ipmi, before malachite is ready
+	// we may temporarily have a local reader on top of ipmi (in dev branch), before malachite is ready
+	// todo: consider plugin fashion for reader to hook in
 	var powerReader reader.PowerReader
 
 	powerController := controller.NewController(podEvictor,
@@ -96,10 +110,10 @@ func NewPowerAwarePlugin(
 		powerReader,
 		powerCapper)
 
-	return NewPowerAwarePluginWithController(pluginName, conf, powerController)
+	return newPowerAwarePluginWithController(pluginName, conf, powerController)
 }
 
-func NewPowerAwarePluginWithController(pluginName string, conf *config.Configuration, controller controller.PowerAwareController) (plugin.SysAdvisorPlugin, error) {
+func newPowerAwarePluginWithController(pluginName string, conf *config.Configuration, controller controller.PowerAwareController) (plugin.SysAdvisorPlugin, error) {
 	return &powerAwarePlugin{
 		name:       pluginName,
 		disabled:   conf.PowerAwarePluginOptions.Disabled,

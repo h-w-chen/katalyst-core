@@ -14,46 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package server
+package evictor
 
 import (
 	"context"
 	v1 "k8s.io/api/core/v1"
 )
 
+// PodEvictor is the adapter interface for underlying eviction mechanism
 type PodEvictor interface {
 	Reset(ctx context.Context)
 	Evict(ctx context.Context, pod *v1.Pod) error
 }
-
-//type NodePowerCapper = capper.PowerCapper
-//
-////interface {
-////	Init() error
-////	Reset()
-////	Cap(ctx context.Context, targetWatts, currWatt int)
-////}
-//
-//type GRPCServer struct {
-//	server   *grpc.Server
-//	listener net.Listener
-//}
-//
-//func (gs GRPCServer) Run() {
-//	go func() {
-//		_ = gs.server.Serve(gs.listener)
-//		defer func(lis net.Listener) {
-//			err := lis.Close()
-//			if err != nil {
-//				klog.Warningf("socket listener failed to close: %v", err)
-//			}
-//		}(gs.listener)
-//	}()
-//}
-//
-//func NewGRPCServer(server *grpc.Server, lis net.Listener) *GRPCServer {
-//	return &GRPCServer{
-//		server:   server,
-//		listener: lis,
-//	}
-//}

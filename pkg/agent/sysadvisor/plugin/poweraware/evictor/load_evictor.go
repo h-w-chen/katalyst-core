@@ -22,11 +22,11 @@ import (
 	"k8s.io/klog/v2"
 
 	apiconsts "github.com/kubewharf/katalyst-api/pkg/consts"
-	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/evictor/server"
 	"github.com/kubewharf/katalyst-core/pkg/config/generic"
 	"github.com/kubewharf/katalyst-core/pkg/metaserver/agent/pod"
 )
 
+// LoadEvictor is the interface used in advisor policy
 type LoadEvictor interface {
 	Evict(ctx context.Context, targetPercent int)
 }
@@ -34,7 +34,7 @@ type LoadEvictor interface {
 type loadEvictor struct {
 	qosConfig  *generic.QoSConfiguration
 	podFetcher pod.PodFetcher
-	podEvictor server.PodEvictor
+	podEvictor PodEvictor
 }
 
 func (l loadEvictor) isBE(pod *v1.Pod) bool {
@@ -68,7 +68,7 @@ func (l loadEvictor) Evict(ctx context.Context, targetPercent int) {
 
 func NewPowerEvictServer(qosConfig *generic.QoSConfiguration,
 	podFetcher pod.PodFetcher,
-	podEvictor server.PodEvictor,
+	podEvictor PodEvictor,
 ) LoadEvictor {
 	return &loadEvictor{
 		qosConfig:  qosConfig,
@@ -77,18 +77,20 @@ func NewPowerEvictServer(qosConfig *generic.QoSConfiguration,
 	}
 }
 
-// NoopPodEvictor does not really evict any pod other than counting the invocations;
+// noopPodEvictor does not really evict any pod other than counting the invocations;
 // used in unit test, or when eviction feature is disabled
-type NoopPodEvictor struct {
+type noopPodEvictor struct {
 	called int
 }
 
-func (d *NoopPodEvictor) Reset(ctx context.Context) {}
+func (d *noopPodEvictor) Reset(ctx context.Context) {}
 
-func (d *NoopPodEvictor) Evict(ctx context.Context, pod *v1.Pod) error {
+func (d *noopPodEvictor) Evict(ctx context.Context, pod *v1.Pod) error {
 	// dummy does no op, besides recording called times
 	d.called += 1
 	return nil
 }
 
-var _ server.PodEvictor = &NoopPodEvictor{}
+func NewNoopPodEvictor() PodEvictor {
+	return &noopPodEvictor{}
+}

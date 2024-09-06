@@ -17,8 +17,10 @@ limitations under the License.
 package poweraware
 
 type PowerAwarePluginOptions struct {
-	Disabled bool
-	DryRun   bool
+	Disabled                  bool
+	DryRun                    bool
+	DisablePowerCapping       bool
+	DisablePowerPressureEvict bool
 }
 
 // NewPowerAwarePluginOptions creates a new Options with a default config.
