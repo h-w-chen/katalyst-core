@@ -59,6 +59,7 @@ var (
 )
 
 func init() {
+	// todo: update response deadlines for power alert levels in line with power management team
 	powerAlertResponseTime[PowerAlertS0] = time.Minute * 2
 	powerAlertResponseTime[PowerAlertP0] = time.Minute * 30
 	powerAlertResponseTime[PowerAlertP1] = time.Hour * 1

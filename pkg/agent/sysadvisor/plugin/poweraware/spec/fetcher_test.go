@@ -25,7 +25,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/component"
 	"github.com/kubewharf/katalyst-core/pkg/metaserver/agent/node"
 )
 
@@ -84,7 +83,7 @@ func Test_specFetcherByNodeAnnotation_GetPowerSpec(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			s := component.specFetcherByNodeAnnotation{
+			s := specFetcherByNodeAnnotation{
 				nodeFetcher: tt.fields.nodeFetcher,
 			}
 			got, err := s.GetPowerSpec(tt.args.ctx)
