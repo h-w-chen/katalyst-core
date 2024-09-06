@@ -18,8 +18,8 @@ package server
 
 import (
 	"fmt"
+
 	"github.com/pkg/errors"
-	"strconv"
 
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/advisorsvc"
 )
@@ -36,17 +36,17 @@ const (
 	OpUnknown powerCappingOpCode = "-2"
 )
 
-var powerCappingReset = &CappingInstruction{
+var powerCappingReset = &CapInstruction{
 	OpCode: OpReset,
 }
 
-type CappingInstruction struct {
+type CapInstruction struct {
 	OpCode         powerCappingOpCode
 	OpCurrentValue string
 	OpTargetValue  string
 }
 
-func (c CappingInstruction) ToListAndWatchResponse() *advisorsvc.ListAndWatchResponse {
+func (c CapInstruction) ToListAndWatchResponse() *advisorsvc.ListAndWatchResponse {
 	return &advisorsvc.ListAndWatchResponse{
 		PodEntries: nil,
 		ExtraEntries: []*advisorsvc.CalculationInfo{{
@@ -62,7 +62,7 @@ func (c CappingInstruction) ToListAndWatchResponse() *advisorsvc.ListAndWatchRes
 	}
 }
 
-func getCappingInstruction(info *advisorsvc.CalculationInfo) (*CappingInstruction, error) {
+func getCappingInstructionFromCalcInfo(info *advisorsvc.CalculationInfo) (*CapInstruction, error) {
 	if info == nil {
 		return nil, errors.New("invalid data of nil CalculationInfo")
 	}
@@ -85,22 +85,22 @@ func getCappingInstruction(info *advisorsvc.CalculationInfo) (*CappingInstructio
 	opCurrValue := values[keyOpCurrentValue]
 	opTargetValue := values[keyOpTargetValue]
 
-	return &CappingInstruction{
+	return &CapInstruction{
 		OpCode:         powerCappingOpCode(opCode),
 		OpCurrentValue: opCurrValue,
 		OpTargetValue:  opTargetValue,
 	}, nil
 }
 
-func FromListAndWatchResponse(response *advisorsvc.ListAndWatchResponse) ([]*CappingInstruction, error) {
+func getCappingInstructionFromLWResp(response *advisorsvc.ListAndWatchResponse) ([]*CapInstruction, error) {
 	if len(response.ExtraEntries) == 0 {
 		return nil, errors.New("no valid data of no capping instruction")
 	}
 
 	count := len(response.ExtraEntries)
-	cis := make([]*CappingInstruction, count)
+	cis := make([]*CapInstruction, count)
 	for i, calcInfo := range response.ExtraEntries {
-		ci, err := getCappingInstruction(calcInfo)
+		ci, err := getCappingInstructionFromCalcInfo(calcInfo)
 		if err != nil {
 			return nil, err
 		}
@@ -111,36 +111,14 @@ func FromListAndWatchResponse(response *advisorsvc.ListAndWatchResponse) ([]*Cap
 	return cis, nil
 }
 
-func capToMessage(targetWatts, currWatt int) (*CappingInstruction, error) {
+func capToMessage(targetWatts, currWatt int) (*CapInstruction, error) {
 	if targetWatts >= currWatt {
 		return nil, errors.New("invalid power cap request")
 	}
 
-	return &CappingInstruction{
+	return &CapInstruction{
 		OpCode:         OpCap,
 		OpCurrentValue: fmt.Sprintf("%d", currWatt),
 		OpTargetValue:  fmt.Sprintf("%d", targetWatts),
 	}, nil
-}
-
-func ToCappingRequest(ci *CappingInstruction) (opCode powerCappingOpCode, targetValue, currentValue int) {
-	if ci == nil {
-		return OpUnknown, 0, 0
-	}
-
-	opCode = ci.OpCode
-	if OpReset == opCode {
-		return
-	}
-
-	var err error
-	if targetValue, err = strconv.Atoi(ci.OpTargetValue); err != nil {
-		return OpUnknown, 0, 0
-	}
-
-	if currentValue, err = strconv.Atoi(ci.OpCurrentValue); err != nil {
-		return OpUnknown, 0, 0
-	}
-
-	return
 }

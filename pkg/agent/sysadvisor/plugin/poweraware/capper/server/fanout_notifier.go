@@ -20,7 +20,7 @@ import (
 	"context"
 	"sync"
 
-	"k8s.io/klog/v2"
+	"github.com/kubewharf/katalyst-core/pkg/util/general"
 )
 
 type fanoutNotifier struct {
@@ -41,12 +41,12 @@ func (n *fanoutNotifier) Notify() {
 	for c, v := range n.receptacles {
 		clientErr := c.Err()
 		if clientErr != nil {
-			klog.Warningf("client communication failed: %v", clientErr)
+			general.Warningf("pap: power capping server: client communication failed: %v", clientErr)
 			break
 		}
 
 		if len(v) >= 1 {
-			klog.Warningf("client not fetching req timely")
+			general.Warningf("pap: power capping server: client not fetching req timely")
 			break
 		}
 		v <- struct{}{}
@@ -65,11 +65,12 @@ func (n *fanoutNotifier) Register(ctx context.Context) <-chan struct{} {
 	defer n.Unlock()
 
 	if ch, ok := n.receptacles[ctx]; ok {
-		klog.Warningf("signal slot already registered")
+		general.Warningf("pap: power capping server: signal slot already registered")
 		return ch
 	}
 
-	ctxChan := make(chan struct{}, 1) // chan of size 1 to decouple producer and consumer
+	// chan of size 1 to decouple producer and consumer
+	ctxChan := make(chan struct{}, 1)
 	n.receptacles[ctx] = ctxChan
 	return ctxChan
 }

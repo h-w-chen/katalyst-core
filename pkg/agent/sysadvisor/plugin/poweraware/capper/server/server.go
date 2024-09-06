@@ -20,28 +20,29 @@ import (
 	"net"
 
 	"google.golang.org/grpc"
-	"k8s.io/klog/v2"
+
+	"github.com/kubewharf/katalyst-core/pkg/util/general"
 )
 
-type GRPCServer struct {
+type grpcServer struct {
 	server   *grpc.Server
 	listener net.Listener
 }
 
-func (gs GRPCServer) Run() {
+func (gs grpcServer) Run() {
 	go func() {
 		_ = gs.server.Serve(gs.listener)
 		defer func(lis net.Listener) {
 			err := lis.Close()
 			if err != nil {
-				klog.Warningf("socket listener failed to close: %v", err)
+				general.Warningf("pap: power capping server: listener failed to close: %v", err)
 			}
 		}(gs.listener)
 	}()
 }
 
-func NewGRPCServer(server *grpc.Server, lis net.Listener) *GRPCServer {
-	return &GRPCServer{
+func newGRPCServer(server *grpc.Server, lis net.Listener) *grpcServer {
+	return &grpcServer{
 		server:   server,
 		listener: lis,
 	}

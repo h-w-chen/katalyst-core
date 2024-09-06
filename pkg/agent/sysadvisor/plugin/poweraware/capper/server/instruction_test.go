@@ -65,7 +65,7 @@ func Test_cappingInstruction_ToListAndWatchResponse(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			c := CappingInstruction{
+			c := CapInstruction{
 				OpCode:         tt.fields.opCode,
 				OpCurrentValue: tt.fields.opCurrentValue,
 				OpTargetValue:  tt.fields.opTargetValue,
@@ -85,7 +85,7 @@ func Test_getCappingInstruction(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *CappingInstruction
+		want    *CapInstruction
 		wantErr assert.ErrorAssertionFunc
 	}{
 		{
@@ -101,7 +101,7 @@ func Test_getCappingInstruction(t *testing.T) {
 					},
 				},
 			},
-			want: &CappingInstruction{
+			want: &CapInstruction{
 				OpCode:         "4",
 				OpCurrentValue: "100",
 				OpTargetValue:  "80",
@@ -125,7 +125,7 @@ func Test_getCappingInstruction(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := getCappingInstruction(tt.args.info)
+			got, err := getCappingInstructionFromCalcInfo(tt.args.info)
 			if !tt.wantErr(t, err, fmt.Sprintf("getCappingInstruction(%v)", tt.args.info)) {
 				return
 			}
@@ -143,7 +143,7 @@ func TestFromListAndWatchResponse(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    []*CappingInstruction
+		want    []*CapInstruction
 		wantErr assert.ErrorAssertionFunc
 	}{
 		{
@@ -170,7 +170,7 @@ func TestFromListAndWatchResponse(t *testing.T) {
 					},
 				},
 			},
-			want: []*CappingInstruction{
+			want: []*CapInstruction{
 				{
 					OpCode:         "4",
 					OpCurrentValue: "555",
@@ -187,7 +187,7 @@ func TestFromListAndWatchResponse(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := FromListAndWatchResponse(tt.args.response)
+			got, err := getCappingInstructionFromLWResp(tt.args.response)
 			if !tt.wantErr(t, err, fmt.Sprintf("FromListAndWatchResponse(%v)", tt.args.response)) {
 				return
 			}
@@ -206,7 +206,7 @@ func Test_capToMessage(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *CappingInstruction
+		want    *CapInstruction
 		wantErr assert.ErrorAssertionFunc
 	}{
 		{
@@ -215,7 +215,7 @@ func Test_capToMessage(t *testing.T) {
 				targetWatts: 530,
 				currWatt:    567,
 			},
-			want: &CappingInstruction{
+			want: &CapInstruction{
 				OpCode:         "4",
 				OpCurrentValue: "567",
 				OpTargetValue:  "530",

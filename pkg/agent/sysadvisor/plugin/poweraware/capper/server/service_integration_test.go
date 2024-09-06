@@ -22,13 +22,15 @@ package server
 import (
 	"context"
 	"fmt"
-	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/advisorsvc"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/test/bufconn"
 	"net"
 	"testing"
 	"time"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/test/bufconn"
+
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/advisorsvc"
 )
 
 func testClient(lis *bufconn.Listener, t *testing.T) {
@@ -57,7 +59,7 @@ func testClient(lis *bufconn.Listener, t *testing.T) {
 			t.Logf("test client failed to get next message in stream: %v", err)
 			break
 		}
-		capInsts, err := FromListAndWatchResponse(lwResp)
+		capInsts, err := getCappingInstructionFromLWResp(lwResp)
 		for _, ci := range capInsts {
 			t.Logf("recv: %#v", ci)
 		}
@@ -72,7 +74,7 @@ func Test_powerCapAdvisorPluginServer_Cap_Client_Recv(t *testing.T) {
 	t.Parallel()
 
 	lis := bufconn.Listen(101024 * 1024)
-	server := newpPowerCapAdvisorPluginServer()
+	server := newpPowerService()
 	baseServer := grpc.NewServer()
 	advisorsvc.RegisterAdvisorServiceServer(baseServer, server)
 	go func() {

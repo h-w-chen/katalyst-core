@@ -19,7 +19,6 @@ package server
 import (
 	"context"
 	"fmt"
-	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/capper"
 	"net"
 	"os"
 	"path"
@@ -32,6 +31,7 @@ import (
 	"github.com/kubewharf/katalyst-api/pkg/plugins/registration"
 
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/advisorsvc"
+	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/capper"
 	"github.com/kubewharf/katalyst-core/pkg/config"
 	"github.com/kubewharf/katalyst-core/pkg/metrics"
 )
@@ -44,30 +44,30 @@ const (
 	metricPowerCappingNoActorName = "power-capping-no-actor"
 )
 
-type powerCapAdvisorPluginServer struct {
+type powerCapService struct {
 	sync.Mutex
-	latestCappingInst *CappingInstruction
+	latestCappingInst *CapInstruction
 	notify            *fanoutNotifier
 	emitter           metrics.MetricEmitter
 }
 
-func (p *powerCapAdvisorPluginServer) Init() error {
+func (p *powerCapService) Init() error {
 	return nil
 }
 
-func (p *powerCapAdvisorPluginServer) Name() string {
+func (p *powerCapService) Name() string {
 	return PowerCapAdvisorPlugin
 }
 
-func (p *powerCapAdvisorPluginServer) AddContainer(ctx context.Context, metadata *advisorsvc.ContainerMetadata) (*advisorsvc.AddContainerResponse, error) {
+func (p *powerCapService) AddContainer(ctx context.Context, metadata *advisorsvc.ContainerMetadata) (*advisorsvc.AddContainerResponse, error) {
 	return nil, errors.New("not implemented")
 }
 
-func (p *powerCapAdvisorPluginServer) RemovePod(ctx context.Context, request *advisorsvc.RemovePodRequest) (*advisorsvc.RemovePodResponse, error) {
+func (p *powerCapService) RemovePod(ctx context.Context, request *advisorsvc.RemovePodRequest) (*advisorsvc.RemovePodResponse, error) {
 	return nil, errors.New("not implemented")
 }
 
-func (p *powerCapAdvisorPluginServer) ListAndWatch(empty *advisorsvc.Empty, server advisorsvc.AdvisorService_ListAndWatchServer) error {
+func (p *powerCapService) ListAndWatch(empty *advisorsvc.Empty, server advisorsvc.AdvisorService_ListAndWatchServer) error {
 	ctx := server.Context()
 	ch := p.notify.Register(ctx)
 
@@ -94,7 +94,7 @@ stream:
 	return nil
 }
 
-func (p *powerCapAdvisorPluginServer) Reset() {
+func (p *powerCapService) Reset() {
 	p.emitRawMetric(metricPowerCappingResetName, 1)
 	if p.notify.IsEmpty() {
 		// todo: log unavailability of down stream component
@@ -109,7 +109,7 @@ func (p *powerCapAdvisorPluginServer) Reset() {
 	p.notify.Notify()
 }
 
-func (p *powerCapAdvisorPluginServer) emitRawMetric(name string, value int) {
+func (p *powerCapService) emitRawMetric(name string, value int) {
 	if p.emitter == nil {
 		return
 	}
@@ -121,7 +121,7 @@ func (p *powerCapAdvisorPluginServer) emitRawMetric(name string, value int) {
 	)
 }
 
-func (p *powerCapAdvisorPluginServer) Cap(ctx context.Context, targetWatts, currWatt int) {
+func (p *powerCapService) Cap(ctx context.Context, targetWatts, currWatt int) {
 	capInst, err := capToMessage(targetWatts, currWatt)
 	if err != nil {
 		klog.Warningf("invalid cap request: %v", err)
@@ -141,17 +141,17 @@ func (p *powerCapAdvisorPluginServer) Cap(ctx context.Context, targetWatts, curr
 	p.notify.Notify()
 }
 
-var _ advisorsvc.AdvisorServiceServer = &powerCapAdvisorPluginServer{}
+var _ advisorsvc.AdvisorServiceServer = &powerCapService{}
 
-func newpPowerCapAdvisorPluginServer() *powerCapAdvisorPluginServer {
-	server := &powerCapAdvisorPluginServer{
+func newpPowerService() *powerCapService {
+	server := &powerCapService{
 		notify: newNotifier(),
 	}
 	return server
 }
 
-func NewPowerCapAdvisorPluginServer(conf *config.Configuration, emitter metrics.MetricEmitter) (capper.PowerCapper, *GRPCServer, error) {
-	powerCapAdvisor := newpPowerCapAdvisorPluginServer()
+func newPowerCapService(conf *config.Configuration, emitter metrics.MetricEmitter) (capper.PowerCapper, *grpcServer, error) {
+	powerCapAdvisor := newpPowerService()
 	powerCapAdvisor.emitter = emitter
 
 	pluginRootFolder := conf.PluginRegistrationDir
@@ -169,11 +169,11 @@ func NewPowerCapAdvisorPluginServer(conf *config.Configuration, emitter metrics.
 	server := grpc.NewServer()
 	advisorsvc.RegisterAdvisorServiceServer(server, powerCapAdvisor)
 
-	return powerCapAdvisor, NewGRPCServer(server, sock), nil
+	return powerCapAdvisor, newGRPCServer(server, sock), nil
 }
 
 func NewRemotePowerCapper(conf *config.Configuration, emitter metrics.MetricEmitter) (capper.PowerCapper, error) {
-	powerCapAdvisor, grpcServer, err := NewPowerCapAdvisorPluginServer(conf, emitter)
+	powerCapAdvisor, grpcServer, err := newPowerCapService(conf, emitter)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create power capping server")
 	}

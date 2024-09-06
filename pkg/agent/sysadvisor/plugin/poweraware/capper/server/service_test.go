@@ -26,11 +26,11 @@ import (
 func Test_powerCapAdvisorPluginServer_Reset(t *testing.T) {
 	t.Parallel()
 
-	pcs := newpPowerCapAdvisorPluginServer()
+	pcs := newpPowerService()
 	pcs.Reset()
 
 	assert.Equal(t,
-		&CappingInstruction{OpCode: "-1"},
+		&CapInstruction{OpCode: "-1"},
 		pcs.latestCappingInst,
 		"the latest power capping instruction should be RESET",
 	)
@@ -39,11 +39,11 @@ func Test_powerCapAdvisorPluginServer_Reset(t *testing.T) {
 func Test_powerCapAdvisorPluginServer_Cap(t *testing.T) {
 	t.Parallel()
 
-	pcs := newpPowerCapAdvisorPluginServer()
+	pcs := newpPowerService()
 	pcs.Cap(context.TODO(), 111, 123)
 
 	assert.Equal(t,
-		&CappingInstruction{
+		&CapInstruction{
 			OpCode:         "4",
 			OpCurrentValue: "123",
 			OpTargetValue:  "111",
