@@ -18,12 +18,13 @@ package evictor
 
 import (
 	"context"
+
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/klog/v2"
 
 	apiconsts "github.com/kubewharf/katalyst-api/pkg/consts"
 	"github.com/kubewharf/katalyst-core/pkg/config/generic"
 	"github.com/kubewharf/katalyst-core/pkg/metaserver/agent/pod"
+	"github.com/kubewharf/katalyst-core/pkg/util/general"
 )
 
 // LoadEvictor is the interface used in advisor policy
@@ -50,10 +51,11 @@ func (l loadEvictor) isBE(pod *v1.Pod) bool {
 func (l loadEvictor) Evict(ctx context.Context, targetPercent int) {
 	pods, err := l.podFetcher.GetPodList(ctx, l.isBE)
 	if err != nil {
-		klog.Errorf("pap: evict: failed to get pods: %v", err)
+		general.Errorf("pap: evict: failed to get pods: %v", err)
 		return
 	}
-	klog.V(6).Infof("pap: evict: there are %d BE pods, %d%%", len(pods), targetPercent)
+
+	general.InfofV(6, "pap: evict: there are %d BE pods; going to evict %d%%", len(pods), targetPercent)
 
 	// discard pending requests not handled yet; we will provide a new sleet of evict requests anyway
 	l.podEvictor.Reset(ctx)
@@ -86,7 +88,6 @@ type noopPodEvictor struct {
 func (d *noopPodEvictor) Reset(ctx context.Context) {}
 
 func (d *noopPodEvictor) Evict(ctx context.Context, pod *v1.Pod) error {
-	// dummy does no op, besides recording called times
 	d.called += 1
 	return nil
 }
