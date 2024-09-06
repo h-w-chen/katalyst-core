@@ -27,16 +27,15 @@ import (
 	"github.com/kubewharf/katalyst-api/pkg/plugins/registration"
 	"github.com/kubewharf/katalyst-api/pkg/plugins/skeleton"
 	pluginapi "github.com/kubewharf/katalyst-api/pkg/protocol/evictionplugin/v1alpha1"
+
+	"github.com/kubewharf/katalyst-core/pkg/agent/evictionmanager/plugin/power"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/evictor"
 	"github.com/kubewharf/katalyst-core/pkg/config"
 	"github.com/kubewharf/katalyst-core/pkg/metrics"
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
 )
 
-const (
-	EvictionPluginNameNodePowerPressure = "node_power_pressure"
-	evictReason                         = "host under power pressure"
-)
+const evictReason = "host under power pressure"
 
 type powerPressureEvictPluginServer struct {
 	mutex  sync.Mutex
@@ -65,7 +64,7 @@ func (p *powerPressureEvictPluginServer) Evict(ctx context.Context, pod *v1.Pod)
 }
 
 func (p *powerPressureEvictPluginServer) Name() string {
-	return EvictionPluginNameNodePowerPressure
+	return power.EvictionPluginNameNodePowerPressure
 }
 
 func (p *powerPressureEvictPluginServer) Start() error {
@@ -146,7 +145,7 @@ func (p *powerPressureEvictPluginServer) GetEvictPods(ctx context.Context, reque
 				Pod:                v,
 				Reason:             evictReason,
 				ForceEvict:         true,
-				EvictionPluginName: EvictionPluginNameNodePowerPressure,
+				EvictionPluginName: power.EvictionPluginNameNodePowerPressure,
 			})
 		}
 	}
@@ -169,7 +168,7 @@ func NewPowerPressureEvictPluginServer(conf *config.Configuration, emitter metri
 		[]string{conf.PluginRegistrationDir}, // unix socket dirs
 		func(key string, value int64) {
 			_ = emitter.StoreInt64(key, value, metrics.MetricTypeNameCount, metrics.ConvertMapToTags(map[string]string{
-				"pluginName": EvictionPluginNameNodePowerPressure,
+				"pluginName": power.EvictionPluginNameNodePowerPressure,
 				"pluginType": registration.EvictionPlugin,
 			})...)
 		})
