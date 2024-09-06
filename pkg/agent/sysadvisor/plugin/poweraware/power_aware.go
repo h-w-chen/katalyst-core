@@ -78,25 +78,25 @@ func NewPowerAwarePlugin(
 		podEvictor = &evictor.NoopPodEvictor{}
 	}
 
-	capper := server.NewRemotePowerCapper(conf, emitter)
-	if capper == nil {
+	powerCapper := server.NewRemotePowerCapper(conf, emitter)
+	if powerCapper == nil {
 		general.Errorf("pap: cap: failed to create power capping component")
 		general.Infof("pap: cap: downgrade to no power capping")
 	}
 
 	// todo: use the reader collecting power readings from malachite
 	// we may temporarily have a local reader on top of ipmi, before malachite is ready
-	var reader reader.PowerReader
+	var powerReader reader.PowerReader
 
-	controller := controller.NewController(podEvictor,
+	powerController := controller.NewController(podEvictor,
 		conf.PowerAwarePluginOptions.DryRun,
 		emitter,
 		metaServer.NodeFetcher, conf.QoSConfiguration,
 		metaServer.PodFetcher,
-		reader,
-		capper)
+		powerReader,
+		powerCapper)
 
-	return NewPowerAwarePluginWithController(pluginName, conf, controller)
+	return NewPowerAwarePluginWithController(pluginName, conf, powerController)
 }
 
 func NewPowerAwarePluginWithController(pluginName string, conf *config.Configuration, controller controller.PowerAwareController) (plugin.SysAdvisorPlugin, error) {
