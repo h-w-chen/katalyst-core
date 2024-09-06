@@ -57,7 +57,10 @@ type powerAwareController struct {
 	powerReader reader.PowerReader
 	reconciler  PowerReconciler
 	powerCapper capper.PowerCapper
-	inFreqCap   bool
+	podEvictor  evictor.PodEvictor
+
+	// inFreqCap is flag whether node is state of power capping via CPU frequency adjustment
+	inFreqCap bool
 }
 
 func (p *powerAwareController) Run(ctx context.Context) {
@@ -65,19 +68,21 @@ func (p *powerAwareController) Run(ctx context.Context) {
 		general.Errorf("pap: no power reader is provided; contrroller stopped")
 		return
 	}
-
-	if p.powerCapper == nil {
-		klog.Errorf("pap: cannot setup power capping server; controller stopped")
-		return
-	}
-
-	// evict server sanity check?
-
 	if err := p.powerReader.Init(); err != nil {
 		klog.Errorf("pap: failed to initialize power reader: %v; controller exited", err)
 		return
 	}
 
+	if p.podEvictor == nil {
+		klog.Errorf("pap: no pod eviction server is provided; controller stopped")
+		return
+	}
+	p.podEvictor.Reset(ctx)
+
+	if p.powerCapper == nil {
+		klog.Errorf("pap: no power capping server is provided; controller stopped")
+		return
+	}
 	if err := p.powerCapper.Init(); err != nil {
 		klog.Errorf("pap: failed to initialize power capping: %v; roller exited", err)
 		return
@@ -157,8 +162,8 @@ func startPowerPressurePodEvictorService(conf *config.Configuration, emitter met
 	return podEvictor, nil
 }
 
-func NewController(podEvictor evictor.PodEvictor,
-	dryRun bool,
+func NewController(dryRun bool,
+	podEvictor evictor.PodEvictor,
 	emitter metrics.MetricEmitter,
 	nodeFetcher node.NodeFetcher,
 	qosConfig *generic.QoSConfiguration,
@@ -170,6 +175,8 @@ func NewController(podEvictor evictor.PodEvictor,
 		emitter:     emitter,
 		specFetcher: spec.NewFetcher(nodeFetcher),
 		powerReader: reader,
+		podEvictor:  podEvictor,
+		powerCapper: capper,
 		reconciler: &powerReconciler{
 			dryRun:      dryRun,
 			priorAction: action.PowerAction{},
@@ -177,7 +184,6 @@ func NewController(podEvictor evictor.PodEvictor,
 			capper:      capper,
 			strategy:    strategy.NewRuleBasedPowerStrategy(),
 		},
-		powerCapper: capper,
-		inFreqCap:   false,
+		inFreqCap: false,
 	}
 }

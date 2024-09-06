@@ -18,14 +18,15 @@ package controller
 
 import (
 	"context"
-	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/reader"
-	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/spec"
 	"testing"
 
 	"github.com/pkg/errors"
 
+	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/capper"
+	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/evictor"
+	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/reader"
+	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/spec"
 	metricspool "github.com/kubewharf/katalyst-core/pkg/metrics/metrics-pool"
-	"github.com/kubewharf/katalyst-core/pkg/util/external/power"
 )
 
 type dummySpecFetcher struct {
@@ -59,17 +60,26 @@ type dummyPowerReconciler struct {
 	called bool
 }
 
-type dummyPowerLimitResetter struct {
-	power.InitResetter
+type dummyPodEvictor struct {
+	evictor.PodEvictor
+	resetCalled bool
+}
+
+func (d *dummyPodEvictor) Reset(ctx context.Context) {
+	d.resetCalled = true
+}
+
+type dummyPowerCapper struct {
+	capper.PowerCapper
 	resetCalled bool
 	initCalled  bool
 }
 
-func (ca *dummyPowerLimitResetter) Reset() {
+func (ca *dummyPowerCapper) Reset() {
 	ca.resetCalled = true
 }
 
-func (dsr *dummyPowerLimitResetter) Init() error {
+func (dsr *dummyPowerCapper) Init() error {
 	dsr.initCalled = true
 	return nil
 }
@@ -113,13 +123,13 @@ func Test_powerAwareController_run_normal(t *testing.T) {
 	dummyEmitter := metricspool.DummyMetricsEmitterPool{}.GetDefaultMetricsEmitter().WithTags("advisor-poweraware")
 	depSpecFetcher := dummySpecFetcher{}
 	depPowerReader := &dummyPowerReader{}
-	depPowerReconciler := &dummyPowerReconciler{}
+	depPowerCapper := &dummyPowerReconciler{}
 
 	controller := powerAwareController{
 		emitter:     dummyEmitter,
 		specFetcher: &depSpecFetcher,
 		powerReader: depPowerReader,
-		reconciler:  depPowerReconciler,
+		reconciler:  depPowerCapper,
 	}
 
 	ctx := context.TODO()
@@ -134,7 +144,7 @@ func Test_powerAwareController_run_normal(t *testing.T) {
 		t.Errorf("expected power reader been calledGet, got %v", depPowerReader.calledGet)
 	}
 
-	if !depPowerReconciler.called {
+	if !depPowerCapper.called {
 		t.Errorf("expected power reconciler been calledGet, got %v", depPowerReader.calledGet)
 	}
 }
@@ -168,7 +178,7 @@ func Test_powerAwareController_run_return_on_None_alert(t *testing.T) {
 	t.Parallel()
 	depSpecFetcher := dummySpecFetcher{}
 	depPowerReader := &dummyPowerReader{}
-	depInitResetter := &dummyPowerLimitResetter{}
+	depInitResetter := &dummyPowerCapper{}
 
 	controller := powerAwareController{
 		specFetcher: &depSpecFetcher,
@@ -197,7 +207,7 @@ func Test_powerAwareController_run_return_on_Pause_op(t *testing.T) {
 	t.Parallel()
 	depSpecFetcher := dummySpecFetcher{}
 	depPowerReader := &dummyPowerReader{}
-	depInitResetter := &dummyPowerLimitResetter{}
+	depInitResetter := &dummyPowerCapper{}
 
 	controller := powerAwareController{
 		specFetcher: &depSpecFetcher,
@@ -234,14 +244,16 @@ func (dsr *dummyErrorPowerReader) Init() error {
 func Test_powerAwareController_Run_does_Init_Cleanup(t *testing.T) {
 	t.Parallel()
 
-	depSpecFetcher := dummySpecFetcher{}
+	depSpecFetcher := &dummySpecFetcher{}
 	depPowerReader := &dummyPowerReader{}
-	depInitResetter := &dummyPowerLimitResetter{}
+	depPodEvictor := &dummyPodEvictor{}
+	depInitResetter := &dummyPowerCapper{}
 
 	controller := powerAwareController{
-		specFetcher: &depSpecFetcher,
+		specFetcher: depSpecFetcher,
 		powerReader: depPowerReader,
 		powerCapper: depInitResetter,
+		podEvictor:  depPodEvictor,
 	}
 
 	ctx := context.Background()

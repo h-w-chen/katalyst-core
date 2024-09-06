@@ -18,13 +18,14 @@ package controller
 
 import (
 	"context"
+	"testing"
+	"time"
+
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/capper"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/controller/action"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/controller/action/strategy"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/evictor"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/spec"
-	"testing"
-	"time"
 )
 
 type dummyStrategy struct {
@@ -34,8 +35,8 @@ type dummyStrategy struct {
 func (p dummyStrategy) RecommendAction(_, _ int, _ spec.PowerAlert, _ spec.InternalOp, _ time.Duration,
 ) action.PowerAction {
 	return action.PowerAction{
-		op:  spec.InternalOpFreqCap,
-		arg: 127,
+		Op:  spec.InternalOpFreqCap,
+		Arg: 127,
 	}
 }
 
@@ -66,8 +67,8 @@ func Test_powerReconciler_Reconcile_DryRun(t *testing.T) {
 			fields: fields{
 				dryRun: true,
 				priorAction: action.PowerAction{
-					op:  spec.InternalOpEvict,
-					arg: 127,
+					Op:  spec.InternalOpEvict,
+					Arg: 127,
 				},
 				evictor:  nil,
 				capper:   nil,
@@ -89,8 +90,8 @@ func Test_powerReconciler_Reconcile_DryRun(t *testing.T) {
 			fields: fields{
 				dryRun: true,
 				priorAction: action.PowerAction{
-					op:  spec.InternalOpFreqCap,
-					arg: 127,
+					Op:  spec.InternalOpFreqCap,
+					Arg: 127,
 				},
 				evictor:  nil,
 				capper:   nil,

@@ -102,8 +102,8 @@ func NewPowerAwarePlugin(
 	// todo: consider plugin fashion for reader to hook in
 	var powerReader reader.PowerReader
 
-	powerController := controller.NewController(podEvictor,
-		conf.PowerAwarePluginOptions.DryRun,
+	powerController := controller.NewController(conf.PowerAwarePluginOptions.DryRun,
+		podEvictor,
 		emitter,
 		metaServer.NodeFetcher, conf.QoSConfiguration,
 		metaServer.PodFetcher,

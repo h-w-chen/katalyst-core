@@ -18,15 +18,16 @@ package controller
 
 import (
 	"context"
+	"time"
+
+	"github.com/pkg/errors"
+
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/capper"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/controller/action"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/controller/action/strategy"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/evictor"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/spec"
-	"time"
-
-	"github.com/pkg/errors"
-	"k8s.io/klog/v2"
+	"github.com/kubewharf/katalyst-core/pkg/util/general"
 )
 
 type PowerReconciler interface {
@@ -59,14 +60,13 @@ func (p *powerReconciler) Reconcile(ctx context.Context, desired *spec.PowerSpec
 			// to throttle duplicate logs
 			return false, nil
 		}
-		klog.Infof("pap: dryRun: %s", action)
+		general.Infof("pap: dryRun: %s", action)
 		p.priorAction = action
 		return false, nil
 	}
 
-	klog.V(6).Infof("pap: reconcile action %#v", action)
+	general.InfofV(6, "pap: reconcile action %#v", action)
 
-	// todo: suppress actions too often??
 	switch action.Op {
 	case spec.InternalOpFreqCap:
 		p.capper.Cap(ctx, action.Arg, actual)
@@ -75,7 +75,7 @@ func (p *powerReconciler) Reconcile(ctx context.Context, desired *spec.PowerSpec
 		p.evictor.Evict(ctx, action.Arg)
 		return false, nil
 	default:
-		// no op
+		// todo: add feature of pod suppressions (with their resource usage)
 		return false, nil
 	}
 }

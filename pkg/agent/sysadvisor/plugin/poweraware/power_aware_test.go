@@ -55,8 +55,8 @@ func Test_powerAwarePlugin_Name(t *testing.T) {
 	}
 	dummyEmitterPool := metricspool.DummyMetricsEmitterPool{}
 	dummyController := controller.NewController(
-		&evictor.NoopPodEvictor{},
 		expectedDryRun,
+		evictor.NewNoopPodEvictor(),
 		dummyEmitterPool.GetDefaultMetricsEmitter(),
 		stubMetaServer.NodeFetcher,
 		nil,
@@ -136,7 +136,7 @@ func Test_powerAwarePlugin_Init(t *testing.T) {
 				name:     tt.fields.name,
 				disabled: tt.fields.disabled,
 				dryRun:   tt.fields.dryRun,
-				controller: controller.NewController(&evictor.NoopPodEvictor{}, false, dummyEmitter,
+				controller: controller.NewController(false, evictor.NewNoopPodEvictor(), dummyEmitter,
 					tt.fields.nodeFetcher, nil, nil, nil, nil,
 				),
 			}
