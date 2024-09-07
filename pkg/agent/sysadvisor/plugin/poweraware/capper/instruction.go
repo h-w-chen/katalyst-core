@@ -18,22 +18,23 @@ package capper
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/pkg/errors"
 
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/advisorsvc"
 )
 
-type powerCappingOpCode string
+type PowerCapOpCode string
 
 const (
 	keyOpCode         = "op-code"
 	keyOpCurrentValue = "op-current-value"
 	keyOpTargetValue  = "op-target-value"
 
-	OpCap     powerCappingOpCode = "4"
-	OpReset   powerCappingOpCode = "-1"
-	OpUnknown powerCappingOpCode = "-2"
+	OpCap     PowerCapOpCode = "4"
+	OpReset   PowerCapOpCode = "-1"
+	OpUnknown PowerCapOpCode = "-2"
 )
 
 var PowerCapReset = &CapInstruction{
@@ -41,7 +42,7 @@ var PowerCapReset = &CapInstruction{
 }
 
 type CapInstruction struct {
-	OpCode         powerCappingOpCode
+	OpCode         PowerCapOpCode
 	OpCurrentValue string
 	OpTargetValue  string
 }
@@ -60,6 +61,24 @@ func (c CapInstruction) ToListAndWatchResponse() *advisorsvc.ListAndWatchRespons
 			},
 		}},
 	}
+}
+
+func (c CapInstruction) ToCapRequest() (opCode PowerCapOpCode, targetValue, currentValue int) {
+	opCode = c.OpCode
+	if OpReset == opCode {
+		return OpReset, 0, 0
+	}
+
+	var err error
+	if targetValue, err = strconv.Atoi(c.OpTargetValue); err != nil {
+		return OpUnknown, 0, 0
+	}
+
+	if currentValue, err = strconv.Atoi(c.OpCurrentValue); err != nil {
+		return OpUnknown, 0, 0
+	}
+
+	return opCode, targetValue, currentValue
 }
 
 func getCappingInstructionFromCalcInfo(info *advisorsvc.CalculationInfo) (*CapInstruction, error) {
@@ -86,7 +105,7 @@ func getCappingInstructionFromCalcInfo(info *advisorsvc.CalculationInfo) (*CapIn
 	opTargetValue := values[keyOpTargetValue]
 
 	return &CapInstruction{
-		OpCode:         powerCappingOpCode(opCode),
+		OpCode:         PowerCapOpCode(opCode),
 		OpCurrentValue: opCurrValue,
 		OpTargetValue:  opTargetValue,
 	}, nil

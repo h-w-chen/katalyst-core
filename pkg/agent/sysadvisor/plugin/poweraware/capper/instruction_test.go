@@ -30,7 +30,7 @@ func Test_cappingInstruction_ToListAndWatchResponse(t *testing.T) {
 	t.Parallel()
 
 	type fields struct {
-		opCode         powerCappingOpCode
+		opCode         PowerCapOpCode
 		opCurrentValue string
 		opTargetValue  string
 	}
