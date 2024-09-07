@@ -98,9 +98,9 @@ func NewPowerAwarePlugin(
 	}
 
 	// todo: use the reader collecting power readings from malachite
-	// we may temporarily have a local reader on top of ipmi (in dev branch), before malachite is ready
+	// we temporarily have a local reader on top of ipmi (in dev branch), before malachite is ready
 	// todo: consider plugin fashion for reader to hook in
-	var powerReader reader.PowerReader
+	powerReader := reader.NewIPMIPowerReader()
 
 	powerController := controller.NewController(conf.PowerAwarePluginOptions.DryRun,
 		podEvictor,
