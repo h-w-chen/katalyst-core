@@ -37,7 +37,8 @@ import (
 )
 
 const (
-	PowerCapAdvisorPlugin = "node_power_cap"
+	// ServiceNamePowerCap also is the unix socket name of the server is listening on
+	ServiceNamePowerCap = "node_power_cap"
 
 	metricPowerCappingTargetName  = "power-capping-target"
 	metricPowerCappingResetName   = "power-capping-reset"
@@ -56,7 +57,7 @@ func (p *powerCapService) Init() error {
 }
 
 func (p *powerCapService) Name() string {
-	return PowerCapAdvisorPlugin
+	return ServiceNamePowerCap
 }
 
 func (p *powerCapService) AddContainer(ctx context.Context, metadata *advisorsvc.ContainerMetadata) (*advisorsvc.AddContainerResponse, error) {
@@ -117,7 +118,7 @@ func (p *powerCapService) emitRawMetric(name string, value int) {
 	_ = p.emitter.StoreInt64(name,
 		int64(value),
 		metrics.MetricTypeNameRaw,
-		metrics.ConvertMapToTags(map[string]string{"pluginName": PowerCapAdvisorPlugin, "pluginType": registration.QoSResourcePlugin})...,
+		metrics.ConvertMapToTags(map[string]string{"pluginName": ServiceNamePowerCap, "pluginType": registration.QoSResourcePlugin})...,
 	)
 }
 
