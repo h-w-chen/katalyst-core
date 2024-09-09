@@ -25,8 +25,7 @@ type PowerCapper interface {
 }
 
 // noopCapper is placeholder for disabled power capping server
-type noopCapper struct {
-}
+type noopCapper struct{}
 
 func (n noopCapper) Init() error {
 	return nil
