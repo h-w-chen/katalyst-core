@@ -83,7 +83,7 @@ func NewPowerAwarePlugin(
 	if conf.Disabled || conf.DisablePowerPressureEvict {
 		podEvictor = evictor.NewNoopPodEvictor()
 	} else {
-		if podEvictor, err = evictserver.GetPodEvictorBasedOnConfig(conf, emitter); err != nil {
+		if podEvictor, err = evictserver.NewPowerPressureEvictionPlugin(conf, emitter); err != nil {
 			general.Errorf("pap: failed to create power aware plugin: %v", err)
 		}
 	}
@@ -92,7 +92,7 @@ func NewPowerAwarePlugin(
 	if conf.Disabled || conf.DisablePowerCapping {
 		powerCapper = capper.NewNoopCapper()
 	} else {
-		if powerCapper, err = capserver.NewPowerCapper(conf, emitter); err != nil {
+		if powerCapper, err = capserver.NewPowerCapPlugin(conf, emitter); err != nil {
 			general.Errorf("pap: failed to create power aware plugin: %v", err)
 		}
 	}

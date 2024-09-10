@@ -180,7 +180,7 @@ func newPowerPressureEvictService(conf *config.Configuration, emitter metrics.Me
 	return plugin, regWrapper, nil
 }
 
-func GetPodEvictorBasedOnConfig(conf *config.Configuration, emitter metrics.MetricEmitter) (podEvictor evictor.PodEvictor, err error) {
+func NewPowerPressureEvictionPlugin(conf *config.Configuration, emitter metrics.MetricEmitter) (podEvictor evictor.PodEvictor, err error) {
 	return startPowerPressurePodEvictorService(conf, emitter)
 }
 

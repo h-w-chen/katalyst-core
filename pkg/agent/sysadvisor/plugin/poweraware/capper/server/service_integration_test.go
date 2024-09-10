@@ -75,9 +75,9 @@ func Test_powerCapAdvisorPluginServer_Cap_Client_Recv(t *testing.T) {
 	t.Parallel()
 
 	lis := bufconn.Listen(101024 * 1024)
-	server := newpPowerCapServer()
+	svc := newPowerCapService()
 	baseServer := grpc.NewServer()
-	advisorsvc.RegisterAdvisorServiceServer(baseServer, server)
+	advisorsvc.RegisterAdvisorServiceServer(baseServer, svc)
 	go func() {
 		if err := baseServer.Serve(lis); err != nil {
 			fmt.Printf("error serving server: %v/n", err)
@@ -92,7 +92,7 @@ func Test_powerCapAdvisorPluginServer_Cap_Client_Recv(t *testing.T) {
 	// elapse a bit to let client has established connection via LW, then
 	time.Sleep(time.Second * 1)
 	// test server to send out capping requests
-	server.Cap(context.TODO(), 80, 100)
+	svc.Cap(context.TODO(), 80, 100)
 	// expecting client-1 receive such capping req
 
 	// start 2nd test client at background
@@ -102,12 +102,12 @@ func Test_powerCapAdvisorPluginServer_Cap_Client_Recv(t *testing.T) {
 
 	// wait a while for test-2 LW
 	time.Sleep(time.Second * 1)
-	server.Cap(context.TODO(), 80, 95)
+	svc.Cap(context.TODO(), 80, 95)
 	// expecting test-1 + test-2 both receive above capping req
 
 	// continue with one more
 	time.Sleep(time.Second * 1)
-	server.Cap(context.TODO(), 80, 90)
+	svc.Cap(context.TODO(), 80, 90)
 	// expecting test-1, test-2 both receive
 
 	// test-1 has already received 3 req; hence it is going to disconnect
@@ -115,18 +115,18 @@ func Test_powerCapAdvisorPluginServer_Cap_Client_Recv(t *testing.T) {
 
 	// continue with more reqs
 	time.Sleep(time.Second * 1)
-	server.Cap(context.TODO(), 80, 85)
+	svc.Cap(context.TODO(), 80, 85)
 	// expecting test-2 receive it
 
 	// and test-2 disconnect itself, after having received 3 req
 
 	// server is still able to attempt to send out more reqs, whether there is alive client or not
 	time.Sleep(time.Second * 1)
-	server.Cap(context.TODO(), 78, 84)
+	svc.Cap(context.TODO(), 78, 84)
 	time.Sleep(time.Second * 1)
-	server.Cap(context.TODO(), 78, 83)
+	svc.Cap(context.TODO(), 78, 83)
 	time.Sleep(time.Second * 1)
-	server.Cap(context.TODO(), 78, 82)
+	svc.Cap(context.TODO(), 78, 82)
 
 	time.Sleep(time.Second * 5)
 }

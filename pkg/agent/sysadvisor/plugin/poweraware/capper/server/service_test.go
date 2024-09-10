@@ -28,7 +28,7 @@ import (
 func Test_powerCapAdvisorPluginServer_Reset(t *testing.T) {
 	t.Parallel()
 
-	pcs := newpPowerCapServer()
+	pcs := newPowerCapService()
 	pcs.Reset()
 
 	assert.Equal(t,
@@ -41,7 +41,7 @@ func Test_powerCapAdvisorPluginServer_Reset(t *testing.T) {
 func Test_powerCapAdvisorPluginServer_Cap(t *testing.T) {
 	t.Parallel()
 
-	pcs := newpPowerCapServer()
+	pcs := newPowerCapService()
 	pcs.Cap(context.TODO(), 111, 123)
 
 	assert.Equal(t,
