@@ -16,7 +16,18 @@ limitations under the License.
 
 package machine
 
-import "k8s.io/apimachinery/pkg/util/sets"
+import (
+	"fmt"
+	"io"
+	"os"
+	"path"
+	"path/filepath"
+	"strconv"
+	"strings"
+
+	"github.com/spf13/afero"
+	"k8s.io/apimachinery/pkg/util/sets"
+)
 
 // DieTopology keeps the relationship of dies(CCDs), numa, package, and socket
 type DieTopology struct {
@@ -37,18 +48,138 @@ type DieTopology struct {
 	NUMAs          int           // os made sub numa node number
 	NUMAsInPackage map[int][]int // mapping from Package to Numa nodes
 
-	Dies       int           // number of die(CCD)s on whole machine
-	DiesInNuma map[int][]int // mapping from Numa to CCDs
+	Dies       int              // number of die(CCD)s on whole machine
+	DiesInNuma map[int]sets.Int // mapping from Numa to CCDs
 
 	DieSize   int           // how many cpu on a die(CCD)
 	CPUsInDie map[int][]int // mapping from CCD to cpus
 }
 
-func NewDieTopology(siblingMap map[int]sets.Int) *DieTopology {
+func NewDieTopology(siblingMap map[int]sets.Int) (*DieTopology, error) {
 	topo := &DieTopology{}
 	topo.NUMAsInPackage = GetNUMAsInPackage(siblingMap)
 
-	// todo: stuff more info needed for mbm-poc
+	// in mbm-poc phase, discover other die topology info by looking at /sys/devices/system/cpu/ tree
+	// the critical for mbm-pod is numa node -> die -> cpu list
+	fs := afero.NewOsFs()
+	cpus, err := getCPUs(fs)
+	if err != nil {
+		return nil, err
+	}
+	topo.DiesInNuma = getDiesInNuma(cpus)
+	topo.NUMAs = len(topo.DiesInNuma)
+	topo.CPUsInDie = getCPUsInDie(cpus)
+	topo.Dies = len(topo.CPUsInDie)
 
-	return topo
+	return topo, nil
+}
+
+func getDiesInNuma(cpus []*cpuDev) map[int]sets.Int {
+	result := make(map[int]sets.Int)
+	for _, cpu := range cpus {
+		if _, ok := result[cpu.numaNode]; !ok {
+			result[cpu.numaNode] = make(sets.Int)
+		}
+		result[cpu.numaNode].Insert(cpu.ccd)
+	}
+	return result
+}
+
+func getCPUsInDie(cpus []*cpuDev) map[int][]int {
+	result := make(map[int][]int)
+	for _, cpu := range cpus {
+		if _, ok := result[cpu.ccd]; !ok {
+			result[cpu.ccd] = make([]int, 0)
+		}
+		result[cpu.ccd] = append(result[cpu.ccd], cpu.id)
+	}
+	return result
+}
+
+type cpuDev struct {
+	id       int
+	numaNode int
+	ccd      int
+}
+
+const rootPath = "/sys/devices/system/cpu/"
+
+func getCPU(fs afero.Fs, id int) (*cpuDev, error) {
+	cpuPath := path.Join(rootPath, fmt.Sprintf("cpu%d", id))
+
+	// numa node is as of "nodeX/" folder
+	numaNode := -1
+	if err := afero.Walk(fs, cpuPath, func(path string, info os.FileInfo, err error) error {
+		if !info.IsDir() {
+			return nil
+		}
+
+		baseName := strings.TrimPrefix(path, cpuPath)
+		if len(baseName) == 0 {
+			return nil
+		}
+
+		if !strings.HasPrefix(baseName, "/node") {
+			return filepath.SkipDir
+		}
+
+		node := strings.TrimPrefix(baseName, "/node")
+		if numaNode, err = strconv.Atoi(node); err != nil {
+			return err
+		}
+		return filepath.SkipAll
+	}); err != nil && err != filepath.SkipAll {
+		return nil, err
+	}
+
+	// CCD is as of cache/index3/id
+	ccd := -1
+	var idContent []byte
+	ccdPath := path.Join(cpuPath, "cache/index3/id")
+	var f afero.File
+	f, err := fs.Open(ccdPath)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	if idContent, err = io.ReadAll(f); err != nil {
+		return nil, err
+	}
+	if ccd, err = strconv.Atoi(string(idContent)); err != nil {
+		return nil, err
+	}
+
+	return &cpuDev{
+		id:       id,
+		numaNode: numaNode,
+		ccd:      ccd,
+	}, nil
+}
+
+func getCPUTotalNumber(fs afero.Fs) int {
+	// get the cpu number by looking for "/sys/devices/system/cpu/cpu*"
+	id := 0
+	for {
+		cpuPath := path.Join(rootPath, fmt.Sprintf("cpu%d", id))
+		if _, err := fs.Stat(cpuPath); err != nil {
+			break
+		}
+		id++
+	}
+
+	return id
+}
+
+func getCPUs(fs afero.Fs) ([]*cpuDev, error) {
+	numCPU := getCPUTotalNumber(fs)
+	cpus := make([]*cpuDev, numCPU)
+
+	var err error
+	for i := 0; i < numCPU; i++ {
+		if cpus[i], err = getCPU(fs, i); err != nil {
+			return nil, err
+		}
+	}
+
+	return cpus, nil
 }

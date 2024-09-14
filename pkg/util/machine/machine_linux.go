@@ -58,7 +58,10 @@ func GetKatalystMachineInfo(conf *global.MachineInfoConfiguration) (*KatalystMac
 		return nil, err
 	}
 
-	dieTopologyInfo := NewDieTopology(extraTopologyInfo.SiblingNumaMap)
+	dieTopologyInfo, err := NewDieTopology(extraTopologyInfo.SiblingNumaMap)
+	if err != nil {
+		return nil, err
+	}
 
 	katalystMachineInfo := &KatalystMachineInfo{
 		MachineInfo:       machineInfo,
@@ -69,9 +72,6 @@ func GetKatalystMachineInfo(conf *global.MachineInfoConfiguration) (*KatalystMac
 		ExtraTopologyInfo: extraTopologyInfo,
 		DieTopology:       dieTopologyInfo,
 	}
-
-	// to populate package map after machine info is there
-	dieTopologyInfo.NUMAsInPackage = katalystMachineInfo.GetPackageMap()
 
 	return katalystMachineInfo, nil
 }
