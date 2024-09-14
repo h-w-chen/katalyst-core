@@ -66,7 +66,7 @@ func Test_getCPUs(t *testing.T) {
 	t.Parallel()
 	dummyFs := afero.NewMemMapFs()
 	dummyFs.MkdirAll("/sys/devices/system/cpu/cpu0/node5", 0777)
-	afero.WriteFile(dummyFs, "/sys/devices/system/cpu/cpu0/cache/index3/id", []byte("20"), 0444)
+	afero.WriteFile(dummyFs, "/sys/devices/system/cpu/cpu0/cache/index3/id", []byte("20\n"), 0444)
 	dummyFs.MkdirAll("/sys/devices/system/cpu/cpu1/node6", 0777)
 	afero.WriteFile(dummyFs, "/sys/devices/system/cpu/cpu1/cache/index3/id", []byte("22"), 0444)
 

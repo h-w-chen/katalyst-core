@@ -124,7 +124,7 @@ func getCPU(fs afero.Fs, id int) (*cpuDev, error) {
 		}
 
 		node := strings.TrimPrefix(baseName, "/node")
-		if numaNode, err = strconv.Atoi(node); err != nil {
+		if numaNode, err = parseInt(node); err != nil {
 			return err
 		}
 		return filepath.SkipAll
@@ -145,7 +145,7 @@ func getCPU(fs afero.Fs, id int) (*cpuDev, error) {
 	if idContent, err = io.ReadAll(f); err != nil {
 		return nil, err
 	}
-	if ccd, err = strconv.Atoi(string(idContent)); err != nil {
+	if ccd, err = parseInt(string(idContent)); err != nil {
 		return nil, err
 	}
 
@@ -182,4 +182,8 @@ func getCPUs(fs afero.Fs) ([]*cpuDev, error) {
 	}
 
 	return cpus, nil
+}
+
+func parseInt(s string) (int, error) {
+	return strconv.Atoi(strings.TrimSpace(s))
 }
