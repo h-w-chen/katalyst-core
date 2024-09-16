@@ -25,6 +25,7 @@ import (
 	"github.com/spf13/afero"
 
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl"
+	"github.com/kubewharf/katalyst-core/pkg/util/general"
 )
 
 type MBA struct {
@@ -41,7 +42,8 @@ func (m MBA) CreateResctrlControlGroup(fs afero.Fs) error {
 
 	cpulistFilePath := path.Join(nodeCtrlGroup, resctrl.CPUList)
 	cpus := intsTostrs(m.cpus)
-	cpuslist := strings.Join(cpus, "\n")
+	cpuslist := strings.Join(cpus, ",")
+	general.InfofV(6, "mbm: node %d cpus: %s", m.numaNode, cpuslist)
 	return afero.WriteFile(fs, cpulistFilePath, []byte(cpuslist), resctrl.FilePerm)
 }
 

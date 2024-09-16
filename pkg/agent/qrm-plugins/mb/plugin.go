@@ -17,7 +17,11 @@ limitations under the License.
 package mb
 
 import (
+	"github.com/pkg/errors"
+	"github.com/spf13/afero"
+
 	"github.com/kubewharf/katalyst-core/cmd/katalyst-agent/app/agent"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl/mba"
 	"github.com/kubewharf/katalyst-core/pkg/config"
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
 	"github.com/kubewharf/katalyst-core/pkg/util/machine"
@@ -34,7 +38,24 @@ func (c controller) Name() string {
 func (c controller) Start() error {
 	general.InfofV(6, "mbm: plugin component starting ....")
 	general.InfofV(6, "mbm: numa-CCD-cpu topology: \n%s", c.dieTopology)
-	panic("timpl me")
+
+	nodesByPackage := make(map[int]int)
+	for packageID, numas := range c.dieTopology.NUMAsInPackage {
+		for _, numa := range numas {
+			nodesByPackage[numa] = packageID
+		}
+	}
+
+	mbaManager, err := mba.New(nodesByPackage, c.dieTopology.DiesInNuma, c.dieTopology.CPUsInDie)
+	if err != nil {
+		return errors.Wrap(err, "failed to create mba manager")
+	}
+
+	if err := mbaManager.CreateResctrlLayout(afero.NewOsFs()); err != nil {
+		return errors.Wrap(err, "failed to create resctrl mba layout")
+	}
+
+	panic("impl me")
 }
 
 func (c controller) Stop() error {

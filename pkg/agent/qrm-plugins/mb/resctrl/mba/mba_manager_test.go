@@ -23,6 +23,7 @@ import (
 
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 func TestMBAManager_CleanupResctrlLayout(t *testing.T) {
@@ -102,7 +103,8 @@ func TestNew(t *testing.T) {
 	t.Parallel()
 	type args struct {
 		packageByNode map[int]int
-		cpusByNode    map[int][]int
+		diesByNode    map[int]sets.Int
+		cpusByDie     map[int][]int
 	}
 	tests := []struct {
 		name    string
@@ -114,7 +116,13 @@ func TestNew(t *testing.T) {
 			name: "happy path no error",
 			args: args{
 				packageByNode: map[int]int{0: 0, 1: 0, 2: 1, 3: 1},
-				cpusByNode: map[int][]int{
+				diesByNode: map[int]sets.Int{
+					0: sets.NewInt(0),
+					1: sets.NewInt(1),
+					2: sets.NewInt(2),
+					3: sets.NewInt(3),
+				},
+				cpusByDie: map[int][]int{
 					0: {0, 1, 2},
 					1: {3, 4, 5},
 					2: {6, 7, 8},
@@ -157,11 +165,11 @@ func TestNew(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := New(tt.args.packageByNode, tt.args.cpusByNode)
-			if !tt.wantErr(t, err, fmt.Sprintf("New(%v, %v)", tt.args.packageByNode, tt.args.cpusByNode)) {
+			got, err := New(tt.args.packageByNode, tt.args.diesByNode, tt.args.cpusByDie)
+			if !tt.wantErr(t, err, fmt.Sprintf("New(%v, %v)", tt.args.packageByNode, tt.args.cpusByDie)) {
 				return
 			}
-			assert.Equalf(t, tt.want, got, "New(%v, %v)", tt.args.packageByNode, tt.args.cpusByNode)
+			assert.Equalf(t, tt.want, got, "New(%v, %v)", tt.args.packageByNode, tt.args.cpusByDie)
 		})
 	}
 }

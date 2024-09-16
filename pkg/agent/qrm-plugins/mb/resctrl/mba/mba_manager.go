@@ -17,10 +17,9 @@ limitations under the License.
 package mba
 
 import (
-	"os"
-
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 // MBAManager manages MBA (memory bandwidth allocation) control-groups
@@ -32,13 +31,13 @@ type MBAManager struct {
 // CreateResctrlLayout ensures resctrl file system layout in line with MBAs
 func (m MBAManager) CreateResctrlLayout(fs afero.Fs) error {
 	if err := m.CleanupResctrlLayout(fs); err != nil {
-		return err
+		return errors.Wrap(err, "failed to clean up resctrl mba folder")
 	}
 
 	for _, mbas := range m.mbasByPackage {
 		for _, mba := range mbas {
 			if err := mba.CreateResctrlControlGroup(fs); err != nil {
-				return err
+				return errors.Wrap(err, "failed to create ctrl group")
 			}
 		}
 	}
@@ -50,7 +49,11 @@ func (m MBAManager) CleanupResctrlLayout(fs afero.Fs) error {
 	for _, mbas := range m.mbasByPackage {
 		for numaNode, _ := range mbas {
 			nodeCtrlGroup := getNodeMBAFolder(numaNode)
-			if err := fs.Remove(nodeCtrlGroup); err != nil && !errors.Is(err, os.ErrNotExist) {
+			if _, err := fs.Stat(nodeCtrlGroup); err != nil {
+				// todo: more stringent error checking
+				continue
+			}
+			if err := fs.Remove(nodeCtrlGroup); err != nil {
 				return err
 			}
 		}
@@ -59,20 +62,25 @@ func (m MBAManager) CleanupResctrlLayout(fs afero.Fs) error {
 	return nil
 }
 
-func New(packageByNode map[int]int, cpusByNode map[int][]int) (*MBAManager, error) {
+func New(packageByNode map[int]int, diesByNode map[int]sets.Int, cpusByDie map[int][]int) (*MBAManager, error) {
 	manager := &MBAManager{
 		mbasByPackage: make(MBAPackage),
 	}
 
-	for node, cpus := range cpusByNode {
+	for node, dies := range diesByNode {
 		packageID, ok := packageByNode[node]
 		if !ok {
 			return nil, errors.Errorf("invalid mba data: failed to locate package for numa node %d", node)
 		}
 
+		var nodeCPUS []int
+		for die, _ := range dies {
+			nodeCPUS = append(nodeCPUS, cpusByDie[die]...)
+		}
+
 		mba := &MBA{
 			numaNode:       node,
-			cpus:           cpus,
+			cpus:           nodeCPUS,
 			sharingPackage: packageID,
 		}
 
