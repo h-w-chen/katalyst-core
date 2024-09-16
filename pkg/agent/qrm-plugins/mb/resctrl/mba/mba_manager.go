@@ -30,7 +30,7 @@ type MBAManager struct {
 
 // CreateResctrlLayout ensures resctrl file system layout in line with MBAs
 func (m MBAManager) CreateResctrlLayout(fs afero.Fs) error {
-	if err := m.CleanupResctrlLayout(fs); err != nil {
+	if err := m.cleanupResctrlLayout(fs); err != nil {
 		return errors.Wrap(err, "failed to clean up resctrl mba folder")
 	}
 
@@ -45,11 +45,12 @@ func (m MBAManager) CreateResctrlLayout(fs afero.Fs) error {
 	return nil
 }
 
-func (m MBAManager) CleanupResctrlLayout(fs afero.Fs) error {
+func (m MBAManager) cleanupResctrlLayout(fs afero.Fs) error {
 	for _, mbas := range m.mbasByPackage {
 		for numaNode, _ := range mbas {
 			nodeCtrlGroup := getNodeMBAFolder(numaNode)
 			if _, err := fs.Stat(nodeCtrlGroup); err != nil {
+				// assuming folder not exist
 				// todo: more stringent error checking
 				continue
 			}
@@ -60,6 +61,23 @@ func (m MBAManager) CleanupResctrlLayout(fs afero.Fs) error {
 	}
 
 	return nil
+}
+
+func getMBA(packageID, nodeID int, dies sets.Int, cpusByDie map[int][]int) (*MBA, error) {
+	var nodeCPUS []int
+	for die, _ := range dies {
+		dieCPUS, ok := cpusByDie[die]
+		if !ok {
+			return nil, errors.Errorf("invalid mba data: failed to locate cpus for die %d", die)
+		}
+		nodeCPUS = append(nodeCPUS, dieCPUS...)
+	}
+
+	return &MBA{
+		numaNode:       nodeID,
+		cpus:           nodeCPUS,
+		sharingPackage: packageID,
+	}, nil
 }
 
 func New(packageByNode map[int]int, diesByNode map[int]sets.Int, cpusByDie map[int][]int) (*MBAManager, error) {
@@ -73,15 +91,9 @@ func New(packageByNode map[int]int, diesByNode map[int]sets.Int, cpusByDie map[i
 			return nil, errors.Errorf("invalid mba data: failed to locate package for numa node %d", node)
 		}
 
-		var nodeCPUS []int
-		for die, _ := range dies {
-			nodeCPUS = append(nodeCPUS, cpusByDie[die]...)
-		}
-
-		mba := &MBA{
-			numaNode:       node,
-			cpus:           nodeCPUS,
-			sharingPackage: packageID,
+		mba, err := getMBA(packageID, node, dies, cpusByDie)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get numa node mba")
 		}
 
 		if _, ok := manager.mbasByPackage[packageID]; !ok {

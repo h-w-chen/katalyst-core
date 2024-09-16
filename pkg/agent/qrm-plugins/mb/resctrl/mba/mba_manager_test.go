@@ -49,7 +49,7 @@ func TestMBAManager_CleanupResctrlLayout(t *testing.T) {
 			name: "happy path clean fs",
 			fields: fields{
 				packages: 1,
-				mbasByPackage: map[int]map[int]*MBA{
+				mbasByPackage: map[int]mbaGroup{
 					0: {
 						1: {numaNode: 1, cpus: []int{2, 3}, sharingPackage: 0},
 					},
@@ -64,7 +64,7 @@ func TestMBAManager_CleanupResctrlLayout(t *testing.T) {
 			name: "happy path with existent folders",
 			fields: fields{
 				packages: 1,
-				mbasByPackage: map[int]map[int]*MBA{
+				mbasByPackage: map[int]mbaGroup{
 					0: {
 						1: {numaNode: 1, cpus: []int{2, 3}, sharingPackage: 0},
 					},
@@ -84,8 +84,8 @@ func TestMBAManager_CleanupResctrlLayout(t *testing.T) {
 				packages:      tt.fields.packages,
 				mbasByPackage: tt.fields.mbasByPackage,
 			}
-			if err := m.CleanupResctrlLayout(tt.args.fs); (err != nil) != tt.wantErr {
-				t.Errorf("CleanupResctrlLayout() error = %v, wantErr %v", err, tt.wantErr)
+			if err := m.cleanupResctrlLayout(tt.args.fs); (err != nil) != tt.wantErr {
+				t.Errorf("cleanupResctrlLayout() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
 			for _, mbas := range tt.fields.mbasByPackage {
@@ -131,7 +131,7 @@ func TestNew(t *testing.T) {
 			},
 			want: &MBAManager{
 				packages: 2,
-				mbasByPackage: map[int]map[int]*MBA{
+				mbasByPackage: map[int]mbaGroup{
 					0: {
 						0: {
 							numaNode:       0,

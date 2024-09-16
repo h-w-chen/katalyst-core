@@ -16,6 +16,9 @@ limitations under the License.
 
 package mba
 
+// mbaGroup keeps the MBAs (num noes) that share one MB package
+type mbaGroup map[int]*MBA
+
 // MBAPackage puts the MBA control-groups that share NPS* memory bandwidth resources in one slot
 // e.g. in NPS1 machine with 4 numa per socket, numa nodes 0-3 in package 0, 4-7 package 1
-type MBAPackage map[int]map[int]*MBA
+type MBAPackage map[int]mbaGroup
