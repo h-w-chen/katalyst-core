@@ -27,15 +27,15 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/util/machine"
 )
 
-type controller struct {
+type plugin struct {
 	dieTopology *machine.DieTopology
 }
 
-func (c controller) Name() string {
+func (c plugin) Name() string {
 	return "mb_plugin"
 }
 
-func (c controller) Start() error {
+func (c plugin) Start() error {
 	general.InfofV(6, "mbm: plugin component starting ....")
 	general.InfofV(6, "mbm: numa-CCD-cpu topology: \n%s", c.dieTopology)
 
@@ -58,16 +58,16 @@ func (c controller) Start() error {
 	panic("impl me")
 }
 
-func (c controller) Stop() error {
+func (c plugin) Stop() error {
 	panic("impl me")
 }
 
 func NewComponent(agentCtx *agent.GenericContext, conf *config.Configuration,
 	_ interface{}, agentName string,
 ) (bool, agent.Component, error) {
-	mbController := &controller{
+	mbPlugin := &plugin{
 		dieTopology: agentCtx.DieTopology,
 	}
 
-	return true, &agent.PluginWrapper{GenericPlugin: mbController}, nil
+	return true, &agent.PluginWrapper{GenericPlugin: mbPlugin}, nil
 }
