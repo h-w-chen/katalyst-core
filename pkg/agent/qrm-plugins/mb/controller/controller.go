@@ -24,13 +24,22 @@ import (
 
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/allocator"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/numapackage"
+	"github.com/kubewharf/katalyst-core/pkg/util/general"
 )
 
-const intervalMBController = time.Second * 1
+const (
+	intervalMBController = time.Second * 1
+
+	TotalPackageMB         = 115_000 // 115 GB
+	SOCKETReverseMBPerNode = 30_000  // 30 GB MB reserved for SOCKET app per numa node
+)
 
 type Controller struct {
 	mbMonitor   monitor.Monitor
 	mbAllocator allocator.Allocator
+
+	packageManager *numapackage.Manager
 }
 
 func (c Controller) Run(ctx context.Context) {
@@ -38,6 +47,62 @@ func (c Controller) Run(ctx context.Context) {
 }
 
 func (c Controller) run(ctx context.Context) {
+	for _, p := range c.packageManager.GetPackages() {
+		if p.GetMode() == numapackage.MBAllocationModeHardPreempt {
+			c.preemptPackage(ctx, p)
+			continue
+		}
+
+		c.adjustPackage(ctx, p)
+	}
+}
+
+func (c Controller) preemptPackage(ctx context.Context, p numapackage.MBPackage) {
+	// reserve certain MB for the admitting unit
+	var mbToReserve int
+	for _, u := range p.GetUnits() {
+		switch u.GetLifeCyclePhase() {
+		case numapackage.UnitPhaseAdmitted:
+			if u.GetTaskType() == numapackage.TaskTypeSOCKET {
+				mbToReserve += len(u.GetNUMANodes()) * SOCKETReverseMBPerNode
+			}
+		case numapackage.UnitPhaseReserved:
+			mbToReserve += len(u.GetNUMANodes()) * 10_000 // 10GB reservation per node
+		}
+	}
+
+	mbToAllocate := TotalPackageMB - mbToReserve
+	var mbInUse int
+	for _, u := range p.GetUnits() {
+		if u.GetLifeCyclePhase() == numapackage.UnitPhaseReserved {
+			continue
+		}
+
+		for _, n := range u.GetNUMANodes() {
+			mbs, err := c.mbMonitor.GetMB(n)
+			if err != nil {
+				general.Warningf("mbm: failed to get numa node %d MB usage: %v", n, err)
+				return
+			}
+
+			for _, mb := range mbs {
+				mbInUse += mb
+			}
+		}
+	}
+	_ = mbToAllocate
+	// todo: allocate mbToAllocate properly to other units y=than in admit/reserved phase
+
+	for _, u := range p.GetUnits() {
+		if u.GetLifeCyclePhase() == numapackage.UnitPhaseAdmitted &&
+			u.GetTaskType() == numapackage.TaskTypeSOCKET {
+			u.SetPhase(numapackage.UnitPhaseReserved)
+		}
+	}
+	// todo: allocate reserved MB to units of reserved phase
+}
+
+func (c Controller) adjustPackage(ctx context.Context, p numapackage.MBPackage) {
 	panic("impl")
 }
 
