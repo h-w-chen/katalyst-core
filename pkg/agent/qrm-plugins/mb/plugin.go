@@ -64,6 +64,13 @@ func (p plugin) Start() error {
 	p.cancel = cancel
 
 	go func() {
+		defer func() {
+			err := recover()
+			if err != nil {
+				general.Errorf("mbm: background run exited, due to error: %v", err)
+			}
+		}()
+
 		mbController.Run(ctx)
 	}()
 
