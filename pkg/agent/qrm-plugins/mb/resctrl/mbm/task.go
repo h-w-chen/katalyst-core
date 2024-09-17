@@ -27,6 +27,8 @@ import (
 
 const tmplProcTaskFolder = "/proc/%d/task"
 
+// todo: support pod across numa nodes
+
 type Task struct {
 	numaNode  int
 	pod       *v1.Pod

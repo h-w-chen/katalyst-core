@@ -28,6 +28,8 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
 )
 
+// todo: support pod across numa nodes
+
 type MBA struct {
 	numaNode       int
 	cpus           []int
