@@ -33,6 +33,7 @@ const (
 
 	TotalPackageMB         = 115_000 // 115 GB
 	SOCKETReverseMBPerNode = 30_000  // 30 GB MB reserved for SOCKET app per numa node
+	SocketLoungeMB         = 40_000  // 4GB MB reserved as lounge size (ear marked for SOCKET pods overflow only)
 )
 
 type Controller struct {
@@ -57,41 +58,31 @@ func (c Controller) run(ctx context.Context) {
 	}
 }
 
-func (c Controller) preemptPackage(ctx context.Context, p numapackage.MBPackage) {
-	// reserve certain MB for the admitting unit
-	var mbToReserve int
+func categorizeUnitsInPreemptPackage(p numapackage.MBPackage) (toReserves, others []numapackage.MBUnit) {
 	for _, u := range p.GetUnits() {
-		switch u.GetLifeCyclePhase() {
-		case numapackage.UnitPhaseAdmitted:
-			if u.GetTaskType() == numapackage.TaskTypeSOCKET {
-				mbToReserve += len(u.GetNUMANodes()) * SOCKETReverseMBPerNode
-			}
-		case numapackage.UnitPhaseReserved:
-			mbToReserve += len(u.GetNUMANodes()) * 10_000 // 10GB reservation per node
-		}
-	}
-
-	mbToAllocate := TotalPackageMB - mbToReserve
-	var mbInUse int
-	for _, u := range p.GetUnits() {
-		if u.GetLifeCyclePhase() == numapackage.UnitPhaseReserved {
+		if u.GetLifeCyclePhase() == numapackage.UnitPhaseAdmitted && u.GetTaskType() == numapackage.TaskTypeSOCKET ||
+			u.GetLifeCyclePhase() == numapackage.UnitPhaseReserved {
+			toReserves = append(toReserves, u)
 			continue
 		}
 
-		for _, n := range u.GetNUMANodes() {
-			mbs, err := c.mbMonitor.GetMB(n)
-			if err != nil {
-				general.Warningf("mbm: failed to get numa node %d MB usage: %v", n, err)
-				return
-			}
-
-			for _, mb := range mbs {
-				mbInUse += mb
-			}
-		}
+		others = append(others, u)
 	}
-	_ = mbToAllocate
-	// todo: allocate mbToAllocate properly to other units y=than in admit/reserved phase
+	return
+}
+
+// preemptPackage is called if package is in "hard-limit" preemption phase
+func (c Controller) preemptPackage(ctx context.Context, p numapackage.MBPackage) {
+	allocs, err := getPreemptyAllocs(p, c.mbMonitor)
+	if err != nil {
+		general.Warningf("mbm: failed to set hard limits for admitted units due to error %v", err)
+		return
+	}
+
+	if err := c.SetMBAllocs(allocs); err != nil {
+		general.Warningf("mbm: failed to set hard limits for package %d due to error %v", p.GetID(), err)
+		return
+	}
 
 	for _, u := range p.GetUnits() {
 		if u.GetLifeCyclePhase() == numapackage.UnitPhaseAdmitted &&
@@ -99,9 +90,13 @@ func (c Controller) preemptPackage(ctx context.Context, p numapackage.MBPackage)
 			u.SetPhase(numapackage.UnitPhaseReserved)
 		}
 	}
-	// todo: allocate reserved MB to units of reserved phase
 }
 
+func (c Controller) SetMBAllocs(mbs []mbAlloc) error {
+	panic("impl")
+}
+
+// adjustPackage is called when package is in regular state other than "hard-limiting"
 func (c Controller) adjustPackage(ctx context.Context, p numapackage.MBPackage) {
 	panic("impl")
 }

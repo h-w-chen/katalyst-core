@@ -18,12 +18,12 @@ package monitor
 
 type Monitor interface {
 	// GetMB gets the CCD's MB of the numa node
-	GetMB(node int) (map[int]int, error)
+	GetMB(node int) map[int]int
 }
 
 type monitor struct{}
 
-func (m monitor) GetMB(node int) (map[int]int, error) {
+func (m monitor) GetMB(node int) map[int]int {
 	// sum up all mon groups starting with "node_X_pid_*"
 	// and ctrl group "node_X"
 	panic("impl getMB")
