@@ -61,7 +61,7 @@ func (c Controller) run(ctx context.Context) {
 
 // preemptPackage is called if package is in "hard-limit" preemption phase
 func (c Controller) preemptPackage(ctx context.Context, p numapackage.MBPackage) {
-	allocs, err := getPreemptyAllocs(p, c.mbMonitor)
+	allocs, err := calcPreemptAllocs(p, c.mbMonitor)
 	if err != nil {
 		general.Warningf("mbm: failed to set hard limits for admitted units due to error %v", err)
 		return
