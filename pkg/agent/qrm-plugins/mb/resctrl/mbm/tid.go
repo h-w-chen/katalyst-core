@@ -14,18 +14,29 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package resctrl
+package mbm
 
-const (
-	FsRoot     = "/sys/fs/resctrl"
-	FolderPerm = 0755
-	FilePerm   = 0644
+import (
+	"fmt"
 
-	// NumaFolderPrefix makes the folder like "node_X"
-	NumaFolderPrefix = "node_"
-
-	CPUList = "cpus_list"
-
-	MonGroupRoot = "/sys/fs/resctrl/mon_groups"
-	TasksFile    = "tasks"
+	"github.com/spf13/afero"
 )
+
+func getThreads(fs afero.Fs, pid int) ([]string, error) {
+	taskFolder := fmt.Sprintf(tmplProcTaskFolder, pid)
+	infos, err := afero.ReadDir(fs, taskFolder)
+	if err != nil {
+		return nil, err
+	}
+
+	tids := make([]string, len(infos))
+	for i, info := range infos {
+		if !info.IsDir() {
+			continue
+		}
+
+		tids[i] = info.Name()
+	}
+
+	return tids, nil
+}

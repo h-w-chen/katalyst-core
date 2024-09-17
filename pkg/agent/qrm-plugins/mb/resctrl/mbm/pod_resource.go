@@ -14,18 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package resctrl
+package mbm
 
-const (
-	FsRoot     = "/sys/fs/resctrl"
-	FolderPerm = 0755
-	FilePerm   = 0644
-
-	// NumaFolderPrefix makes the folder like "node_X"
-	NumaFolderPrefix = "node_"
-
-	CPUList = "cpus_list"
-
-	MonGroupRoot = "/sys/fs/resctrl/mon_groups"
-	TasksFile    = "tasks"
+import (
+	v1 "k8s.io/api/core/v1"
 )
+
+type PodResource interface {
+	GetPid(pod *v1.Pod) (int, error)
+	GetNumaNode(pod *v1.Pod) (int, error)
+}
+
+// todo: impl katalyst based pod resource interface

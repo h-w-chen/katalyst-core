@@ -14,18 +14,28 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package resctrl
+package mbm
 
-const (
-	FsRoot     = "/sys/fs/resctrl"
-	FolderPerm = 0755
-	FilePerm   = 0644
-
-	// NumaFolderPrefix makes the folder like "node_X"
-	NumaFolderPrefix = "node_"
-
-	CPUList = "cpus_list"
-
-	MonGroupRoot = "/sys/fs/resctrl/mon_groups"
-	TasksFile    = "tasks"
+import (
+	"github.com/pkg/errors"
+	"github.com/spf13/afero"
+	v1 "k8s.io/api/core/v1"
 )
+
+type TaskManager struct {
+	podResource PodResource
+}
+
+func (t TaskManager) NewTask(pod *v1.Pod) (*Task, error) {
+	node, err := t.podResource.GetNumaNode(pod)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get numa node of pod")
+	}
+
+	pid, err := t.podResource.GetPid(pod)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get pid of pod")
+	}
+
+	return newTask(afero.NewOsFs(), pod, node, pid)
+}
