@@ -17,10 +17,13 @@ limitations under the License.
 package mb
 
 import (
+	"context"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 
 	"github.com/kubewharf/katalyst-core/cmd/katalyst-agent/app/agent"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl/mba"
 	"github.com/kubewharf/katalyst-core/pkg/config"
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
@@ -29,24 +32,25 @@ import (
 
 type plugin struct {
 	dieTopology *machine.DieTopology
+	cancel      context.CancelFunc
 }
 
-func (c plugin) Name() string {
+func (p plugin) Name() string {
 	return "mb_plugin"
 }
 
-func (c plugin) Start() error {
+func (p plugin) Start() error {
 	general.InfofV(6, "mbm: plugin component starting ....")
-	general.InfofV(6, "mbm: numa-CCD-cpu topology: \n%s", c.dieTopology)
+	general.InfofV(6, "mbm: numa-CCD-cpu topology: \n%s", p.dieTopology)
 
 	nodesByPackage := make(map[int]int)
-	for packageID, numas := range c.dieTopology.NUMAsInPackage {
+	for packageID, numas := range p.dieTopology.NUMAsInPackage {
 		for _, numa := range numas {
 			nodesByPackage[numa] = packageID
 		}
 	}
 
-	mbaManager, err := mba.New(nodesByPackage, c.dieTopology.DiesInNuma, c.dieTopology.CPUsInDie)
+	mbaManager, err := mba.New(nodesByPackage, p.dieTopology.DiesInNuma, p.dieTopology.CPUsInDie)
 	if err != nil {
 		return errors.Wrap(err, "failed to create mba manager")
 	}
@@ -55,10 +59,18 @@ func (c plugin) Start() error {
 		return errors.Wrap(err, "failed to create resctrl mba layout")
 	}
 
-	panic("impl me")
+	mbController := controller.New()
+	ctx, cancel := context.WithCancel(context.Background())
+	p.cancel = cancel
+
+	go func() {
+		mbController.Run(ctx)
+	}()
+
+	return nil
 }
 
-func (c plugin) Stop() error {
+func (p plugin) Stop() error {
 	panic("impl me")
 }
 
