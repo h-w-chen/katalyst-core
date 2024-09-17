@@ -31,9 +31,10 @@ import (
 const (
 	intervalMBController = time.Second * 1
 
-	TotalPackageMB         = 115_000 // 115 GB
-	SOCKETReverseMBPerNode = 30_000  // 30 GB MB reserved for SOCKET app per numa node
-	SocketLoungeMB         = 40_000  // 4GB MB reserved as lounge size (ear marked for SOCKET pods overflow only)
+	TotalPackageMB         = 116_000 // 116 GB
+	SocketNodeMaxMB        = 60_000  // 60GBps max for socket (if one node)
+	SOCKETReverseMBPerNode = 35_000  // 35 GB MB reserved for SOCKET app per numa node
+	SocketLoungeMB         = 60_000  // 6GB MB reserved as lounge size (ear marked for SOCKET pods overflow only)
 )
 
 type Controller struct {
@@ -58,19 +59,6 @@ func (c Controller) run(ctx context.Context) {
 	}
 }
 
-func categorizeUnitsInPreemptPackage(p numapackage.MBPackage) (toReserves, others []numapackage.MBUnit) {
-	for _, u := range p.GetUnits() {
-		if u.GetLifeCyclePhase() == numapackage.UnitPhaseAdmitted && u.GetTaskType() == numapackage.TaskTypeSOCKET ||
-			u.GetLifeCyclePhase() == numapackage.UnitPhaseReserved {
-			toReserves = append(toReserves, u)
-			continue
-		}
-
-		others = append(others, u)
-	}
-	return
-}
-
 // preemptPackage is called if package is in "hard-limit" preemption phase
 func (c Controller) preemptPackage(ctx context.Context, p numapackage.MBPackage) {
 	allocs, err := getPreemptyAllocs(p, c.mbMonitor)
@@ -92,12 +80,19 @@ func (c Controller) preemptPackage(ctx context.Context, p numapackage.MBPackage)
 	}
 }
 
-func (c Controller) SetMBAllocs(mbs []mbAlloc) error {
-	panic("impl")
-}
-
 // adjustPackage is called when package is in regular state other than "hard-limiting"
 func (c Controller) adjustPackage(ctx context.Context, p numapackage.MBPackage) {
+	allocs, err := calcSoftAllocs(p.GetUnits(), TotalPackageMB, SocketLoungeMB, c.mbMonitor)
+	if err != nil {
+		general.Errorf("mbm: failed to calc soft limits for package %d: %v", p.GetID(), err)
+	}
+	if err := c.SetMBAllocs(allocs); err != nil {
+		general.Warningf("mbm: failed to set soft limits for package %d due to error %v", p.GetID(), err)
+		return
+	}
+}
+
+func (c Controller) SetMBAllocs(mbs []mbAlloc) error {
 	panic("impl")
 }
 

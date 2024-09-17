@@ -24,7 +24,7 @@ type UnitPhase string
 
 const (
 	MBAllocationModeHardPreempt MBAllocationMode = "hard-preempt"
-	MBAllocationModeSoftAdjust  MBAllocationMode = "soft-adjus"
+	MBAllocationModeSoftAdjust  MBAllocationMode = "soft-adjust"
 
 	TaskTypeSOCKET      = "socket"
 	TaskTypeLowPriority = "low-priority"

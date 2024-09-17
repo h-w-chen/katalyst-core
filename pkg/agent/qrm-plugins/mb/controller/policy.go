@@ -27,7 +27,7 @@ type mbAlloc struct {
 	mbUpperBound int // MB in MBps
 }
 
-func getUnitMBUsage(u numapackage.MBUnit, mbMonitor monitor.Monitor) int {
+func getUnitMB(u numapackage.MBUnit, mbMonitor monitor.Monitor) int {
 	var sum int
 	for _, n := range u.GetNUMANodes() {
 		for _, mb := range mbMonitor.GetMB(n) {
@@ -38,14 +38,33 @@ func getUnitMBUsage(u numapackage.MBUnit, mbMonitor monitor.Monitor) int {
 	return sum
 }
 
-func getGroupMBUsages(units []numapackage.MBUnit, mbMonitor monitor.Monitor) (hiMB, loMB int) {
+func getGroupMB(units []numapackage.MBUnit, mbMonitor monitor.Monitor) int {
+	sum := 0
 	for _, u := range units {
-		uMB := getUnitMBUsage(u, mbMonitor)
+		sum += getUnitMB(u, mbMonitor)
+	}
+
+	return sum
+}
+
+func getHiLoGroupMBs(units []numapackage.MBUnit, mbMonitor monitor.Monitor) (hiMB, loMB int) {
+	hiUnits, loUnis := divideUnitsIntoHiLo(units)
+	hiMB, loMB = getGroupMB(hiUnits, mbMonitor), getGroupMB(loUnis, mbMonitor)
+	return
+}
+
+func divideUnitsIntoHiLo(units []numapackage.MBUnit) (hi, lo []numapackage.MBUnit) {
+	for _, u := range units {
 		if u.GetTaskType() == numapackage.TaskTypeSOCKET {
-			hiMB += uMB
-		} else {
-			loMB += uMB
+			hi = append(hi, u)
+			continue
 		}
+
+		lo = append(lo, u)
 	}
 	return
+}
+
+func prorateAlloc(own, total, allocatable int) int {
+	return int(float64(allocatable) * float64(own) / float64(total))
 }

@@ -21,10 +21,6 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/numapackage"
 )
 
-func prorateAlloc(own, total, allocatable int) int {
-	return allocatable / total * own
-}
-
 func getHardAllocForUnit(unit numapackage.MBUnit, ownUSage, allHiUsages, allLowUSages, totalAllocatable int) int {
 	if unit.GetTaskType() == numapackage.TaskTypeSOCKET {
 		return prorateAlloc(ownUSage, allLowUSages+allHiUsages, totalAllocatable) + prorateAlloc(ownUSage, allHiUsages, SocketLoungeMB)
@@ -34,7 +30,7 @@ func getHardAllocForUnit(unit numapackage.MBUnit, ownUSage, allHiUsages, allLowU
 
 // calcHardAllocs distributes non-reserved bandwidth to given group of units in proportion to their current usages
 func calcHardAllocs(units []numapackage.MBUnit, mb int, mbHiReserved int, mbMonitor monitor.Monitor) ([]mbAlloc, error) {
-	hiMB, loMB := getGroupMBUsages(units, mbMonitor)
+	hiMB, loMB := getHiLoGroupMBs(units, mbMonitor)
 
 	// mbHiReserved shall be always left for SOCKETs if any
 	if hiMB > 0 {
@@ -43,7 +39,7 @@ func calcHardAllocs(units []numapackage.MBUnit, mb int, mbHiReserved int, mbMoni
 
 	result := make([]mbAlloc, len(units))
 	for i, u := range units {
-		mbCurr := getUnitMBUsage(u, mbMonitor)
+		mbCurr := getUnitMB(u, mbMonitor)
 		result[i] = mbAlloc{
 			unit:         u,
 			mbUpperBound: getHardAllocForUnit(u, mbCurr, hiMB, loMB, mb),
@@ -63,6 +59,19 @@ func calcReserveAllocs(unitToReserves []numapackage.MBUnit) ([]mbAlloc, error) {
 	}
 
 	return results, nil
+}
+
+func categorizeUnitsInPreemptPackage(p numapackage.MBPackage) (toReserves, others []numapackage.MBUnit) {
+	for _, u := range p.GetUnits() {
+		if u.GetLifeCyclePhase() == numapackage.UnitPhaseAdmitted && u.GetTaskType() == numapackage.TaskTypeSOCKET ||
+			u.GetLifeCyclePhase() == numapackage.UnitPhaseReserved {
+			toReserves = append(toReserves, u)
+			continue
+		}
+
+		others = append(others, u)
+	}
+	return
 }
 
 func getPreemptyAllocs(p numapackage.MBPackage, mbMonitor monitor.Monitor) ([]mbAlloc, error) {

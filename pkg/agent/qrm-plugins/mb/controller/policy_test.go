@@ -85,12 +85,12 @@ func Test_getGroupMBUsages(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			gotHiMB, gotLoMB := getGroupMBUsages(tt.args.units, tt.args.mbMonitor)
+			gotHiMB, gotLoMB := getHiLoGroupMBs(tt.args.units, tt.args.mbMonitor)
 			if gotHiMB != tt.wantHiMB {
-				t.Errorf("getGroupMBUsages() gotHiMB = %v, want %v", gotHiMB, tt.wantHiMB)
+				t.Errorf("getHiLoGroupMBs() gotHiMB = %v, want %v", gotHiMB, tt.wantHiMB)
 			}
 			if gotLoMB != tt.wantLoMB {
-				t.Errorf("getGroupMBUsages() gotLoMB = %v, want %v", gotLoMB, tt.wantLoMB)
+				t.Errorf("getHiLoGroupMBs() gotLoMB = %v, want %v", gotLoMB, tt.wantLoMB)
 			}
 		})
 	}
