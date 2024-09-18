@@ -62,7 +62,7 @@ func (c Controller) run(ctx context.Context) {
 
 // preemptPackage is called if package is in "hard-limit" preemption phase
 func (c Controller) preemptPackage(ctx context.Context, p apppool.PoolsPackage) {
-	allocs, err := c.mbPolicy.CalcPreemptAllocs(p.GetUnits(), policy.TotalPackageMB, policy.SocketLoungeMB, c.mbMonitor)
+	allocs, err := c.mbPolicy.CalcPreemptAllocs(p.GetUnits(), policy.TotalPackageMB, policy.SocketLoungeMB)
 	if err != nil {
 		general.Warningf("mbm: failed to set hard limits for admitted units due to error %v", err)
 		return
@@ -83,7 +83,7 @@ func (c Controller) preemptPackage(ctx context.Context, p apppool.PoolsPackage) 
 
 // adjustPackage is called when package is in regular state other than "hard-limiting"
 func (c Controller) adjustPackage(ctx context.Context, p apppool.PoolsPackage) {
-	allocs, err := c.mbPolicy.CalcSoftAllocs(p.GetUnits(), policy.TotalPackageMB, policy.SocketLoungeMB, c.mbMonitor)
+	allocs, err := c.mbPolicy.CalcSoftAllocs(p.GetUnits(), policy.TotalPackageMB, policy.SocketLoungeMB)
 	if err != nil {
 		general.Errorf("mbm: failed to calc soft limits for package %d: %v", p.GetID(), err)
 	}
@@ -100,7 +100,7 @@ func New(resctrlManager *mba.MBAManager) *Controller {
 	return &Controller{
 		mbMonitor:   mbMonitor,
 		mbAllocator: mbAllocator,
-		mbPolicy:    policy.New(),
+		mbPolicy:    policy.New(mbMonitor),
 		deliver:     policydeliver.New(mbMonitor, mbAllocator),
 	}
 }

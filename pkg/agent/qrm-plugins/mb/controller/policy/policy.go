@@ -24,22 +24,26 @@ import (
 type MBAllocPolicy interface {
 
 	// CalcSoftAllocs returns MB allocations to various mb units in regular mode (prioritizing Socket pods)
-	CalcSoftAllocs(units []apppool.Pool, mb int, mbHiReserved int, mbMonitor monitor.Monitor) ([]MBAlloc, error)
+	CalcSoftAllocs(units []apppool.Pool, mb int, mbHiReserved int) ([]MBAlloc, error)
 
 	// CalcPreemptAllocs returns MB allocations in hard limit preempt mode (to ensure bandwidth reserved for admitting Socket pod)
-	CalcPreemptAllocs(units []apppool.Pool, mb int, mbHiReserved int, mbMonitor monitor.Monitor) ([]MBAlloc, error)
+	CalcPreemptAllocs(units []apppool.Pool, mb int, mbHiReserved int) ([]MBAlloc, error)
 }
 
-type mbAllocPolicy struct{}
-
-func (m mbAllocPolicy) CalcSoftAllocs(units []apppool.Pool, mb int, mbHiReserved int, mbMonitor monitor.Monitor) ([]MBAlloc, error) {
-	return calcSoftAllocs(units, mb, mbHiReserved, mbMonitor)
+type mbAllocPolicy struct {
+	mbMonitor monitor.Monitor
 }
 
-func (m mbAllocPolicy) CalcPreemptAllocs(units []apppool.Pool, mb int, mbHiReserved int, mbMonitor monitor.Monitor) ([]MBAlloc, error) {
-	return calcPreemptAllocs(units, mb, mbHiReserved, mbMonitor)
+func (m mbAllocPolicy) CalcSoftAllocs(units []apppool.Pool, mb int, mbHiReserved int) ([]MBAlloc, error) {
+	return calcSoftAllocs(units, mb, mbHiReserved, m.mbMonitor)
 }
 
-func New() MBAllocPolicy {
-	return &mbAllocPolicy{}
+func (m mbAllocPolicy) CalcPreemptAllocs(units []apppool.Pool, mb int, mbHiReserved int) ([]MBAlloc, error) {
+	return calcPreemptAllocs(units, mb, mbHiReserved, m.mbMonitor)
+}
+
+func New(mbMonitor monitor.Monitor) MBAllocPolicy {
+	return &mbAllocPolicy{
+		mbMonitor: mbMonitor,
+	}
 }
