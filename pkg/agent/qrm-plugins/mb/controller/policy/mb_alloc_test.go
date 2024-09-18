@@ -134,8 +134,8 @@ func Test_ccdDistributeMB(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			if got := CcdDistributeMB(tt.args.total, tt.args.mbCCD); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("CcdDistributeMB() = %v, want %v", got, tt.want)
+			if got := distributeCCDMBs(tt.args.total, tt.args.mbCCD); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("distributeCCDMBs() = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -74,14 +74,14 @@ func Test_calcSoftAllocs(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := CalcSoftAllocs(tt.args.units, tt.args.mb, tt.args.mbHiReserved, tt.args.mbMonitor)
+			got, err := calcSoftAllocs(tt.args.units, tt.args.mb, tt.args.mbHiReserved, tt.args.mbMonitor)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("CalcSoftAllocs() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("calcSoftAllocs() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			for i := 0; i < 4; i++ {
 				if !reflect.DeepEqual(got[i].MBUpperBound, tt.want[i]) {
-					t.Errorf("CalcSoftAllocs() for lo node %d got = %v, want %v", i, got[i].MBUpperBound, tt.want[i])
+					t.Errorf("calcSoftAllocs() for lo node %d got = %v, want %v", i, got[i].MBUpperBound, tt.want[i])
 				}
 			}
 		})

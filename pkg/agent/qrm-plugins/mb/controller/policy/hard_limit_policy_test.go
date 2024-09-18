@@ -78,13 +78,13 @@ func Test_calcPreemptAllocs(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := CalcPreemptAllocs(tt.args.units, tt.args.mbMonitor)
+			got, err := calcPreemptAllocs(tt.args.units, 116000, 6000, tt.args.mbMonitor)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("CalcPreemptAllocs() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("calcPreemptAllocs() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("CalcPreemptAllocs() got = %v, want %v", got, tt.want)
+				t.Errorf("calcPreemptAllocs() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -21,8 +21,8 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/numapackage"
 )
 
-// CalcSoftAllocs distributes package bandwidth to given group of units in proportion to their current usages
-func CalcSoftAllocs(units []numapackage.MBUnit, mb int, mbHiReserved int, mbMonitor monitor.Monitor) ([]MBUnitAlloc, error) {
+// calcSoftAllocs distributes package bandwidth to given group of units in proportion to their current usages
+func calcSoftAllocs(units []numapackage.MBUnit, mb int, mbHiReserved int, mbMonitor monitor.Monitor) ([]MBUnitAlloc, error) {
 	hiUnits, loUnits := divideUnitsIntoHiLo(units)
 
 	hiMB := getGroupMB(hiUnits, mbMonitor)

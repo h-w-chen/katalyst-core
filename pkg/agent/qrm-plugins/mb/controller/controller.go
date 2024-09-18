@@ -37,6 +37,8 @@ type Controller struct {
 	mbMonitor   monitor.Monitor
 	mbAllocator allocator.Allocator
 
+	mbPolicy policy.MBAllocPolicy
+
 	packageManager *numapackage.Manager
 }
 
@@ -57,7 +59,7 @@ func (c Controller) run(ctx context.Context) {
 
 // preemptPackage is called if package is in "hard-limit" preemption phase
 func (c Controller) preemptPackage(ctx context.Context, p numapackage.MBPackage) {
-	allocs, err := policy.CalcPreemptAllocs(p.GetUnits(), c.mbMonitor)
+	allocs, err := c.mbPolicy.CalcPreemptAllocs(p.GetUnits(), policy.TotalPackageMB, policy.SocketLoungeMB, c.mbMonitor)
 	if err != nil {
 		general.Warningf("mbm: failed to set hard limits for admitted units due to error %v", err)
 		return
@@ -78,7 +80,7 @@ func (c Controller) preemptPackage(ctx context.Context, p numapackage.MBPackage)
 
 // adjustPackage is called when package is in regular state other than "hard-limiting"
 func (c Controller) adjustPackage(ctx context.Context, p numapackage.MBPackage) {
-	allocs, err := policy.CalcSoftAllocs(p.GetUnits(), policy.TotalPackageMB, policy.SocketLoungeMB, c.mbMonitor)
+	allocs, err := c.mbPolicy.CalcSoftAllocs(p.GetUnits(), policy.TotalPackageMB, policy.SocketLoungeMB, c.mbMonitor)
 	if err != nil {
 		general.Errorf("mbm: failed to calc soft limits for package %d: %v", p.GetID(), err)
 	}
@@ -92,7 +94,7 @@ func (c Controller) SetMBAllocs(mbs []policy.MBUnitAlloc) error {
 	for _, alloc := range mbs {
 		for _, node := range alloc.Unit.GetNUMANodes() {
 			ccdCurrs := c.mbMonitor.GetMB(node)
-			ccdAllocs := policy.CcdDistributeMB(alloc.MBUpperBound, ccdCurrs)
+			ccdAllocs := c.mbPolicy.DistributeCCDMBs(alloc.MBUpperBound, ccdCurrs)
 			if err := c.mbAllocator.AllocateMB(node, ccdAllocs); err != nil {
 				return err
 			}
@@ -106,5 +108,6 @@ func New() *Controller {
 	return &Controller{
 		mbMonitor:   nil,
 		mbAllocator: nil,
+		mbPolicy:    policy.New(),
 	}
 }

@@ -74,7 +74,7 @@ func divideGroupIntoReserveOrOthers(units []numapackage.MBUnit) (toReserves, oth
 	return
 }
 
-func CalcPreemptAllocs(units []numapackage.MBUnit, mbMonitor monitor.Monitor) ([]MBUnitAlloc, error) {
+func calcPreemptAllocs(units []numapackage.MBUnit, mb int, mbHiReserved int, mbMonitor monitor.Monitor) ([]MBUnitAlloc, error) {
 	unitToReserves, unitOthers := divideGroupIntoReserveOrOthers(units)
 	allocToReserves, err := getReserveAllocs(unitToReserves)
 	if err != nil {
@@ -86,8 +86,8 @@ func CalcPreemptAllocs(units []numapackage.MBUnit, mbMonitor monitor.Monitor) ([
 		mbToReserve += len(u.GetNUMANodes()) * SOCKETReverseMBPerNode
 	}
 
-	mbToAllocate := TotalPackageMB - mbToReserve
-	allocToHardLimits, err := getHardAllocs(unitOthers, mbToAllocate, SocketLoungeMB, mbMonitor)
+	mbToAllocate := mb - mbToReserve
+	allocToHardLimits, err := getHardAllocs(unitOthers, mbToAllocate, mbHiReserved, mbMonitor)
 	if err != nil {
 		return nil, err
 	}
