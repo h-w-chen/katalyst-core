@@ -16,7 +16,7 @@ limitations under the License.
 
 package policy
 
-import "github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/numapackage"
+import "github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/apppool"
 
 const (
 	TotalPackageMB = 116_000 // 116 GB
@@ -29,8 +29,8 @@ const (
 	NodeMinMB = 4_000 // each node at least 4GB to avoid starvation
 )
 
-// MBUnitAlloc keeps the total MB allocated to a Unit
-type MBUnitAlloc struct {
-	Unit         numapackage.MBUnit
+// MBAlloc keeps the total MB allocated to an AppPool; it is the unit of MB adjustment produced by mb policy
+type MBAlloc struct {
+	AppPool      apppool.Pool
 	MBUpperBound int // MB in MBps
 }

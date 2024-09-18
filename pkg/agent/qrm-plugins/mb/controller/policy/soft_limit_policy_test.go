@@ -20,8 +20,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/apppool"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
-	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/numapackage"
 )
 
 func Test_calcSoftAllocs(t *testing.T) {
@@ -29,16 +29,16 @@ func Test_calcSoftAllocs(t *testing.T) {
 
 	mU0 := new(mockMBUnit)
 	mU0.On("GetNUMANodes").Return([]int{0})
-	mU0.On("GetTaskType").Return(numapackage.TaskTypeLowPriority)
+	mU0.On("GetTaskType").Return(apppool.TaskTypeLowPriority)
 	mU1 := new(mockMBUnit)
 	mU1.On("GetNUMANodes").Return([]int{1})
-	mU1.On("GetTaskType").Return(numapackage.TaskTypeSOCKET)
+	mU1.On("GetTaskType").Return(apppool.TaskTypeSOCKET)
 	mU2 := new(mockMBUnit)
 	mU2.On("GetNUMANodes").Return([]int{2})
-	mU2.On("GetTaskType").Return(numapackage.TaskTypeSOCKET)
+	mU2.On("GetTaskType").Return(apppool.TaskTypeSOCKET)
 	mU3 := new(mockMBUnit)
 	mU3.On("GetNUMANodes").Return([]int{3})
-	mU3.On("GetTaskType").Return(numapackage.TaskTypeLowPriority)
+	mU3.On("GetTaskType").Return(apppool.TaskTypeLowPriority)
 
 	mMonitor := new(mockMonitor)
 	mMonitor.On("GetMB", 0).Return(map[int]int{0: 6_000, 1: 6_000})
@@ -47,7 +47,7 @@ func Test_calcSoftAllocs(t *testing.T) {
 	mMonitor.On("GetMB", 3).Return(map[int]int{6: 5_000, 7: 5_000})
 
 	type args struct {
-		units        []numapackage.MBUnit
+		units        []apppool.Pool
 		mb           int
 		mbHiReserved int
 		mbMonitor    monitor.Monitor
@@ -61,7 +61,7 @@ func Test_calcSoftAllocs(t *testing.T) {
 		{
 			name: "happy path of 4 numa nodes (2 hi, 2 lo), 8 CCDs",
 			args: args{
-				units:        []numapackage.MBUnit{mU0, mU1, mU2, mU3},
+				units:        []apppool.Pool{mU0, mU1, mU2, mU3},
 				mb:           116_000,
 				mbHiReserved: 6_000,
 				mbMonitor:    mMonitor,

@@ -20,8 +20,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/apppool"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
-	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/numapackage"
 )
 
 func Test_calcPreemptAllocs(t *testing.T) {
@@ -29,20 +29,20 @@ func Test_calcPreemptAllocs(t *testing.T) {
 
 	mU0 := new(mockMBUnit)
 	mU0.On("GetNUMANodes").Return([]int{0})
-	mU0.On("GetTaskType").Return(numapackage.TaskTypeLowPriority)
-	mU0.On("GetLifeCyclePhase").Return(numapackage.UnitPhaseRunning)
+	mU0.On("GetTaskType").Return(apppool.TaskTypeLowPriority)
+	mU0.On("GetLifeCyclePhase").Return(apppool.UnitPhaseRunning)
 	mU1 := new(mockMBUnit)
 	mU1.On("GetNUMANodes").Return([]int{1})
-	mU1.On("GetTaskType").Return(numapackage.TaskTypeSOCKET)
-	mU1.On("GetLifeCyclePhase").Return(numapackage.UnitPhaseAdmitted)
+	mU1.On("GetTaskType").Return(apppool.TaskTypeSOCKET)
+	mU1.On("GetLifeCyclePhase").Return(apppool.UnitPhaseAdmitted)
 	mU2 := new(mockMBUnit)
 	mU2.On("GetNUMANodes").Return([]int{2})
-	mU2.On("GetTaskType").Return(numapackage.TaskTypeSOCKET)
-	mU2.On("GetLifeCyclePhase").Return(numapackage.UnitPhaseRunning)
+	mU2.On("GetTaskType").Return(apppool.TaskTypeSOCKET)
+	mU2.On("GetLifeCyclePhase").Return(apppool.UnitPhaseRunning)
 	mU3 := new(mockMBUnit)
 	mU3.On("GetNUMANodes").Return([]int{3})
-	mU3.On("GetTaskType").Return(numapackage.TaskTypeLowPriority)
-	mU3.On("GetLifeCyclePhase").Return(numapackage.UnitPhaseRunning)
+	mU3.On("GetTaskType").Return(apppool.TaskTypeLowPriority)
+	mU3.On("GetLifeCyclePhase").Return(apppool.UnitPhaseRunning)
 
 	mMonitor := new(mockMonitor)
 	mMonitor.On("GetMB", 0).Return(map[int]int{0: 6_000, 1: 6_000})
@@ -50,26 +50,26 @@ func Test_calcPreemptAllocs(t *testing.T) {
 	mMonitor.On("GetMB", 3).Return(map[int]int{6: 5_000, 7: 5_000})
 
 	type args struct {
-		units     []numapackage.MBUnit
+		units     []apppool.Pool
 		mbMonitor monitor.Monitor
 	}
 	tests := []struct {
 		name    string
 		args    args
-		want    []MBUnitAlloc
+		want    []MBAlloc
 		wantErr bool
 	}{
 		{
 			name: "happy path of 4 numa nodes, 1 in hi admit, 1 hi run, 2 lo run",
 			args: args{
-				units:     []numapackage.MBUnit{mU3, mU2, mU1, mU0},
+				units:     []apppool.Pool{mU3, mU2, mU1, mU0},
 				mbMonitor: mMonitor,
 			},
-			want: []MBUnitAlloc{
-				{Unit: mU3, MBUpperBound: 10416},
-				{Unit: mU2, MBUpperBound: 58083},
-				{Unit: mU0, MBUpperBound: 12500},
-				{Unit: mU1, MBUpperBound: 35000},
+			want: []MBAlloc{
+				{AppPool: mU3, MBUpperBound: 10416},
+				{AppPool: mU2, MBUpperBound: 58083},
+				{AppPool: mU0, MBUpperBound: 12500},
+				{AppPool: mU1, MBUpperBound: 35000},
 			},
 			wantErr: false,
 		},

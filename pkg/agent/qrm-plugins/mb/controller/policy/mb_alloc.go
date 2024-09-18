@@ -17,11 +17,11 @@ limitations under the License.
 package policy
 
 import (
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/apppool"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
-	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/numapackage"
 )
 
-func getUnitMB(u numapackage.MBUnit, mbMonitor monitor.Monitor) int {
+func getUnitMB(u apppool.Pool, mbMonitor monitor.Monitor) int {
 	var sum int
 	for _, n := range u.GetNUMANodes() {
 		for _, mb := range mbMonitor.GetMB(n) {
@@ -32,7 +32,7 @@ func getUnitMB(u numapackage.MBUnit, mbMonitor monitor.Monitor) int {
 	return sum
 }
 
-func getGroupMB(units []numapackage.MBUnit, mbMonitor monitor.Monitor) int {
+func getGroupMB(units []apppool.Pool, mbMonitor monitor.Monitor) int {
 	sum := 0
 	for _, u := range units {
 		sum += getUnitMB(u, mbMonitor)
@@ -41,15 +41,15 @@ func getGroupMB(units []numapackage.MBUnit, mbMonitor monitor.Monitor) int {
 	return sum
 }
 
-func getHiLoGroupMBs(units []numapackage.MBUnit, mbMonitor monitor.Monitor) (hiMB, loMB int) {
+func getHiLoGroupMBs(units []apppool.Pool, mbMonitor monitor.Monitor) (hiMB, loMB int) {
 	hiUnits, loUnis := divideUnitsIntoHiLo(units)
 	hiMB, loMB = getGroupMB(hiUnits, mbMonitor), getGroupMB(loUnis, mbMonitor)
 	return
 }
 
-func divideUnitsIntoHiLo(units []numapackage.MBUnit) (hi, lo []numapackage.MBUnit) {
+func divideUnitsIntoHiLo(units []apppool.Pool) (hi, lo []apppool.Pool) {
 	for _, u := range units {
-		if u.GetTaskType() == numapackage.TaskTypeSOCKET {
+		if u.GetTaskType() == apppool.TaskTypeSOCKET {
 			hi = append(hi, u)
 			continue
 		}
@@ -59,29 +59,6 @@ func divideUnitsIntoHiLo(units []numapackage.MBUnit) (hi, lo []numapackage.MBUni
 	return
 }
 
-func prorateAlloc(own, total, allocatable int) int {
+func ProrateAlloc(own, total, allocatable int) int {
 	return int(float64(allocatable) * float64(own) / float64(total))
-}
-
-func distributeCCDMBs(total int, mbCCD map[int]int) map[int]int {
-	currMB := 0
-	for _, v := range mbCCD {
-		currMB += v
-	}
-
-	// if all are in very small a fraction, treat them equally
-	if currMB <= int(float64(total)*0.4) {
-		ccdAllocs := make(map[int]int)
-		for ccd, _ := range mbCCD {
-			ccdAllocs[ccd] = total / len(mbCCD)
-		}
-		return ccdAllocs
-	}
-
-	ccdAllocs := make(map[int]int)
-	for ccd, v := range mbCCD {
-		ccdAllocs[ccd] = prorateAlloc(v, currMB, total)
-	}
-
-	return ccdAllocs
 }

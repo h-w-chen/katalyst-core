@@ -14,15 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package numapackage
+package apppool
 
 type Manager struct{}
 
-func (m Manager) GetPackage(packageID int) MBPackage {
+func (m Manager) GetPackage(packageID int) PoolsPackage {
 	panic("impl")
 }
 
-func (m Manager) GetPackages() []MBPackage {
+func (m Manager) GetPackages() []PoolsPackage {
 	panic("impl")
 }
 

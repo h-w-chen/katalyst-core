@@ -17,18 +17,17 @@ limitations under the License.
 package policy
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/mock"
 
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/apppool"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
-	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/numapackage"
 )
 
 type mockMBUnit struct {
 	mock.Mock
-	numapackage.MBUnit
+	apppool.Pool
 }
 
 func (m *mockMBUnit) GetNUMANodes() []int {
@@ -36,14 +35,14 @@ func (m *mockMBUnit) GetNUMANodes() []int {
 	return args.Get(0).([]int)
 }
 
-func (m *mockMBUnit) GetTaskType() numapackage.TaskType {
+func (m *mockMBUnit) GetTaskType() apppool.TaskType {
 	args := m.Called()
-	return numapackage.TaskType(args.String(0))
+	return apppool.TaskType(args.String(0))
 }
 
-func (m *mockMBUnit) GetLifeCyclePhase() numapackage.UnitPhase {
+func (m *mockMBUnit) GetLifeCyclePhase() apppool.UnitPhase {
 	args := m.Called()
-	return numapackage.UnitPhase(args.String(0))
+	return apppool.UnitPhase(args.String(0))
 }
 
 type mockMonitor struct {
@@ -61,14 +60,14 @@ func Test_getGroupMBUsages(t *testing.T) {
 
 	mMBUnit := new(mockMBUnit)
 	mMBUnit.On("GetNUMANodes").Return([]int{4, 5})
-	mMBUnit.On("GetTaskType").Return(numapackage.TaskTypeSOCKET)
+	mMBUnit.On("GetTaskType").Return(apppool.TaskTypeSOCKET)
 
 	mMonitor := new(mockMonitor)
 	mMonitor.On("GetMB", 4).Return(map[int]int{8: 3, 9: 12})
 	mMonitor.On("GetMB", 5).Return(map[int]int{10: 4, 11: 15})
 
 	type args struct {
-		units     []numapackage.MBUnit
+		units     []apppool.Pool
 		mbMonitor monitor.Monitor
 	}
 	tests := []struct {
@@ -80,7 +79,7 @@ func Test_getGroupMBUsages(t *testing.T) {
 		{
 			name: "happy path of 2 units",
 			args: args{
-				units:     []numapackage.MBUnit{mMBUnit},
+				units:     []apppool.Pool{mMBUnit},
 				mbMonitor: mMonitor,
 			},
 			wantHiMB: 34,
@@ -97,61 +96,6 @@ func Test_getGroupMBUsages(t *testing.T) {
 			}
 			if gotLoMB != tt.wantLoMB {
 				t.Errorf("getHiLoGroupMBs() gotLoMB = %v, want %v", gotLoMB, tt.wantLoMB)
-			}
-		})
-	}
-}
-
-func Test_ccdDistributeMB(t *testing.T) {
-	t.Parallel()
-	type args struct {
-		total int
-		mbCCD map[int]int
-	}
-	tests := []struct {
-		name string
-		args args
-		want map[int]int
-	}{
-		{
-			name: "happy path of equal ccds",
-			args: args{
-				total: 100,
-				mbCCD: map[int]int{6: 20, 7: 20},
-			},
-			want: map[int]int{6: 50, 7: 50},
-		},
-		{
-			name: "proportional distribution",
-			args: args{
-				total: 90,
-				mbCCD: map[int]int{6: 80, 7: 40},
-			},
-			want: map[int]int{6: 60, 7: 30},
-		},
-		{
-			name: "treat as equal when both are too small",
-			args: args{
-				total: 60_000,
-				mbCCD: map[int]int{6: 5_000, 7: 15_000},
-			},
-			want: map[int]int{6: 30_000, 7: 30_000},
-		},
-		{
-			name: "equally split for preempt node",
-			args: args{
-				total: 35_000,
-				mbCCD: map[int]int{6: 0, 7: 0},
-			},
-			want: map[int]int{6: 17_500, 7: 17_500},
-		},
-	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			if got := distributeCCDMBs(tt.args.total, tt.args.mbCCD); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("distributeCCDMBs() = %v, want %v", got, tt.want)
 			}
 		})
 	}

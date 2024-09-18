@@ -17,32 +17,26 @@ limitations under the License.
 package policy
 
 import (
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/apppool"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
-	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/numapackage"
 )
 
 type MBAllocPolicy interface {
-	// DistributeCCDMBs distributes total mb to CCDs
-	DistributeCCDMBs(total int, mbCCD map[int]int) map[int]int
 
 	// CalcSoftAllocs returns MB allocations to various mb units in regular mode (prioritizing Socket pods)
-	CalcSoftAllocs(units []numapackage.MBUnit, mb int, mbHiReserved int, mbMonitor monitor.Monitor) ([]MBUnitAlloc, error)
+	CalcSoftAllocs(units []apppool.Pool, mb int, mbHiReserved int, mbMonitor monitor.Monitor) ([]MBAlloc, error)
 
 	// CalcPreemptAllocs returns MB allocations in hard limit preempt mode (to ensure bandwidth reserved for admitting Socket pod)
-	CalcPreemptAllocs(units []numapackage.MBUnit, mb int, mbHiReserved int, mbMonitor monitor.Monitor) ([]MBUnitAlloc, error)
+	CalcPreemptAllocs(units []apppool.Pool, mb int, mbHiReserved int, mbMonitor monitor.Monitor) ([]MBAlloc, error)
 }
 
 type mbAllocPolicy struct{}
 
-func (m mbAllocPolicy) DistributeCCDMBs(total int, mbCCD map[int]int) map[int]int {
-	return distributeCCDMBs(total, mbCCD)
-}
-
-func (m mbAllocPolicy) CalcSoftAllocs(units []numapackage.MBUnit, mb int, mbHiReserved int, mbMonitor monitor.Monitor) ([]MBUnitAlloc, error) {
+func (m mbAllocPolicy) CalcSoftAllocs(units []apppool.Pool, mb int, mbHiReserved int, mbMonitor monitor.Monitor) ([]MBAlloc, error) {
 	return calcSoftAllocs(units, mb, mbHiReserved, mbMonitor)
 }
 
-func (m mbAllocPolicy) CalcPreemptAllocs(units []numapackage.MBUnit, mb int, mbHiReserved int, mbMonitor monitor.Monitor) ([]MBUnitAlloc, error) {
+func (m mbAllocPolicy) CalcPreemptAllocs(units []apppool.Pool, mb int, mbHiReserved int, mbMonitor monitor.Monitor) ([]MBAlloc, error) {
 	return calcPreemptAllocs(units, mb, mbHiReserved, mbMonitor)
 }
 

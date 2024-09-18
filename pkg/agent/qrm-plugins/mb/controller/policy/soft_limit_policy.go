@@ -17,30 +17,30 @@ limitations under the License.
 package policy
 
 import (
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/apppool"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
-	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/numapackage"
 )
 
 // calcSoftAllocs distributes package bandwidth to given group of units in proportion to their current usages
-func calcSoftAllocs(units []numapackage.MBUnit, mb int, mbHiReserved int, mbMonitor monitor.Monitor) ([]MBUnitAlloc, error) {
+func calcSoftAllocs(units []apppool.Pool, mb int, mbHiReserved int, mbMonitor monitor.Monitor) ([]MBAlloc, error) {
 	hiUnits, loUnits := divideUnitsIntoHiLo(units)
 
 	hiMB := getGroupMB(hiUnits, mbMonitor)
 	loMB := getGroupMB(loUnits, mbMonitor)
 
-	results := make([]MBUnitAlloc, 0)
+	results := make([]MBAlloc, 0)
 
 	for _, u := range loUnits {
 		uMB := getUnitMB(u, mbMonitor)
-		results = append(results, MBUnitAlloc{
-			Unit:         u,
-			MBUpperBound: prorateAlloc(uMB, loMB+hiMB, mb-mbHiReserved),
+		results = append(results, MBAlloc{
+			AppPool:      u,
+			MBUpperBound: ProrateAlloc(uMB, loMB+hiMB, mb-mbHiReserved),
 		})
 	}
 
 	for _, u := range hiUnits {
-		results = append(results, MBUnitAlloc{
-			Unit:         u,
+		results = append(results, MBAlloc{
+			AppPool:      u,
 			MBUpperBound: SocketNodeMaxMB * len(u.GetNUMANodes()),
 		})
 	}

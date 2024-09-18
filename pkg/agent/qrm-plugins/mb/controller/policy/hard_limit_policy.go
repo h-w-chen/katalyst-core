@@ -17,19 +17,19 @@ limitations under the License.
 package policy
 
 import (
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/apppool"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
-	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/numapackage"
 )
 
-func getHardAlloc(unit numapackage.MBUnit, ownUSage, allHiUsages, allLowUSages, totalAllocatable int) int {
-	if unit.GetTaskType() == numapackage.TaskTypeSOCKET {
-		return prorateAlloc(ownUSage, allLowUSages+allHiUsages, totalAllocatable) + prorateAlloc(ownUSage, allHiUsages, SocketLoungeMB)
+func getHardAlloc(unit apppool.Pool, ownUSage, allHiUsages, allLowUSages, totalAllocatable int) int {
+	if unit.GetTaskType() == apppool.TaskTypeSOCKET {
+		return ProrateAlloc(ownUSage, allLowUSages+allHiUsages, totalAllocatable) + ProrateAlloc(ownUSage, allHiUsages, SocketLoungeMB)
 	}
-	return prorateAlloc(ownUSage, allLowUSages+allHiUsages, totalAllocatable)
+	return ProrateAlloc(ownUSage, allLowUSages+allHiUsages, totalAllocatable)
 }
 
 // getHardAllocs distributes non-reserved bandwidth to given group of units in proportion to their current usages
-func getHardAllocs(units []numapackage.MBUnit, mb int, mbHiReserved int, mbMonitor monitor.Monitor) ([]MBUnitAlloc, error) {
+func getHardAllocs(units []apppool.Pool, mb int, mbHiReserved int, mbMonitor monitor.Monitor) ([]MBAlloc, error) {
 	hiMB, loMB := getHiLoGroupMBs(units, mbMonitor)
 
 	// mbHiReserved shall be always left for SOCKETs if any
@@ -37,11 +37,11 @@ func getHardAllocs(units []numapackage.MBUnit, mb int, mbHiReserved int, mbMonit
 		mb -= mbHiReserved
 	}
 
-	result := make([]MBUnitAlloc, len(units))
+	result := make([]MBAlloc, len(units))
 	for i, u := range units {
 		mbCurr := getUnitMB(u, mbMonitor)
-		result[i] = MBUnitAlloc{
-			Unit:         u,
+		result[i] = MBAlloc{
+			AppPool:      u,
 			MBUpperBound: getHardAlloc(u, mbCurr, hiMB, loMB, mb),
 		}
 	}
@@ -49,11 +49,11 @@ func getHardAllocs(units []numapackage.MBUnit, mb int, mbHiReserved int, mbMonit
 	return result, nil
 }
 
-func getReserveAllocs(unitToReserves []numapackage.MBUnit) ([]MBUnitAlloc, error) {
-	results := make([]MBUnitAlloc, len(unitToReserves))
+func getReserveAllocs(unitToReserves []apppool.Pool) ([]MBAlloc, error) {
+	results := make([]MBAlloc, len(unitToReserves))
 	for i, u := range unitToReserves {
-		results[i] = MBUnitAlloc{
-			Unit:         u,
+		results[i] = MBAlloc{
+			AppPool:      u,
 			MBUpperBound: SocketNodeReservedMB * len(u.GetNUMANodes()),
 		}
 	}
@@ -61,10 +61,10 @@ func getReserveAllocs(unitToReserves []numapackage.MBUnit) ([]MBUnitAlloc, error
 	return results, nil
 }
 
-func divideGroupIntoReserveOrOthers(units []numapackage.MBUnit) (toReserves, others []numapackage.MBUnit) {
+func divideGroupIntoReserveOrOthers(units []apppool.Pool) (toReserves, others []apppool.Pool) {
 	for _, u := range units {
-		if u.GetLifeCyclePhase() == numapackage.UnitPhaseAdmitted && u.GetTaskType() == numapackage.TaskTypeSOCKET ||
-			u.GetLifeCyclePhase() == numapackage.UnitPhaseReserved {
+		if u.GetLifeCyclePhase() == apppool.UnitPhaseAdmitted && u.GetTaskType() == apppool.TaskTypeSOCKET ||
+			u.GetLifeCyclePhase() == apppool.UnitPhaseReserved {
 			toReserves = append(toReserves, u)
 			continue
 		}
@@ -74,7 +74,7 @@ func divideGroupIntoReserveOrOthers(units []numapackage.MBUnit) (toReserves, oth
 	return
 }
 
-func calcPreemptAllocs(units []numapackage.MBUnit, mb int, mbHiReserved int, mbMonitor monitor.Monitor) ([]MBUnitAlloc, error) {
+func calcPreemptAllocs(units []apppool.Pool, mb int, mbHiReserved int, mbMonitor monitor.Monitor) ([]MBAlloc, error) {
 	unitToReserves, unitOthers := divideGroupIntoReserveOrOthers(units)
 	allocToReserves, err := getReserveAllocs(unitToReserves)
 	if err != nil {

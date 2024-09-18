@@ -18,14 +18,15 @@ package controller
 
 import (
 	"context"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policydeliver"
 	"time"
 
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/allocator"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/apppool"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
-	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/numapackage"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl/mba"
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
 )
@@ -39,8 +40,9 @@ type Controller struct {
 	mbAllocator allocator.Allocator
 
 	mbPolicy policy.MBAllocPolicy
+	deliver  policydeliver.Deliver
 
-	packageManager *numapackage.Manager
+	packageManager *apppool.Manager
 }
 
 func (c Controller) Run(ctx context.Context) {
@@ -49,7 +51,7 @@ func (c Controller) Run(ctx context.Context) {
 
 func (c Controller) run(ctx context.Context) {
 	for _, p := range c.packageManager.GetPackages() {
-		if p.GetMode() == numapackage.MBAllocationModeHardPreempt {
+		if p.GetMode() == apppool.MBAllocationModeHardPreempt {
 			c.preemptPackage(ctx, p)
 			continue
 		}
@@ -59,56 +61,46 @@ func (c Controller) run(ctx context.Context) {
 }
 
 // preemptPackage is called if package is in "hard-limit" preemption phase
-func (c Controller) preemptPackage(ctx context.Context, p numapackage.MBPackage) {
+func (c Controller) preemptPackage(ctx context.Context, p apppool.PoolsPackage) {
 	allocs, err := c.mbPolicy.CalcPreemptAllocs(p.GetUnits(), policy.TotalPackageMB, policy.SocketLoungeMB, c.mbMonitor)
 	if err != nil {
 		general.Warningf("mbm: failed to set hard limits for admitted units due to error %v", err)
 		return
 	}
 
-	if err := c.SetMBAllocs(allocs); err != nil {
+	if err := c.deliver.DeliverMBAllocs(allocs); err != nil {
 		general.Warningf("mbm: failed to set hard limits for package %d due to error %v", p.GetID(), err)
 		return
 	}
 
 	for _, u := range p.GetUnits() {
-		if u.GetLifeCyclePhase() == numapackage.UnitPhaseAdmitted &&
-			u.GetTaskType() == numapackage.TaskTypeSOCKET {
-			u.SetPhase(numapackage.UnitPhaseReserved)
+		if u.GetLifeCyclePhase() == apppool.UnitPhaseAdmitted &&
+			u.GetTaskType() == apppool.TaskTypeSOCKET {
+			u.SetPhase(apppool.UnitPhaseReserved)
 		}
 	}
 }
 
 // adjustPackage is called when package is in regular state other than "hard-limiting"
-func (c Controller) adjustPackage(ctx context.Context, p numapackage.MBPackage) {
+func (c Controller) adjustPackage(ctx context.Context, p apppool.PoolsPackage) {
 	allocs, err := c.mbPolicy.CalcSoftAllocs(p.GetUnits(), policy.TotalPackageMB, policy.SocketLoungeMB, c.mbMonitor)
 	if err != nil {
 		general.Errorf("mbm: failed to calc soft limits for package %d: %v", p.GetID(), err)
 	}
-	if err := c.SetMBAllocs(allocs); err != nil {
+	if err := c.deliver.DeliverMBAllocs(allocs); err != nil {
 		general.Warningf("mbm: failed to set soft limits for package %d due to error %v", p.GetID(), err)
 		return
 	}
 }
 
-func (c Controller) SetMBAllocs(mbs []policy.MBUnitAlloc) error {
-	for _, alloc := range mbs {
-		for _, node := range alloc.Unit.GetNUMANodes() {
-			ccdCurrs := c.mbMonitor.GetMB(node)
-			ccdAllocs := c.mbPolicy.DistributeCCDMBs(alloc.MBUpperBound, ccdCurrs)
-			if err := c.mbAllocator.AllocateMB(node, ccdAllocs); err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
-}
-
 func New(resctrlManager *mba.MBAManager) *Controller {
+	var mbMonitor monitor.Monitor
+	mbAllocator := allocator.New(resctrlManager)
+
 	return &Controller{
-		mbMonitor:   nil,
-		mbAllocator: allocator.New(resctrlManager),
+		mbMonitor:   mbMonitor,
+		mbAllocator: mbAllocator,
 		mbPolicy:    policy.New(),
+		deliver:     policydeliver.New(mbMonitor, mbAllocator),
 	}
 }
