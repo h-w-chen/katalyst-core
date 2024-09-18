@@ -40,6 +40,11 @@ func (m *mockMBUnit) GetTaskType() numapackage.TaskType {
 	return numapackage.TaskType(args.String(0))
 }
 
+func (m *mockMBUnit) GetLifeCyclePhase() numapackage.UnitPhase {
+	args := m.Called()
+	return numapackage.UnitPhase(args.String(0))
+}
+
 type mockMonitor struct {
 	mock.Mock
 	monitor.Monitor

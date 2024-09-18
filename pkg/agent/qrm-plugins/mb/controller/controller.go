@@ -34,7 +34,7 @@ const (
 	TotalPackageMB         = 116_000 // 116 GB
 	SocketNodeMaxMB        = 60_000  // 60GBps max for socket (if one node)
 	SOCKETReverseMBPerNode = 35_000  // 35 GB MB reserved for SOCKET app per numa node
-	SocketLoungeMB         = 60_000  // 6GB MB reserved as lounge size (ear marked for SOCKET pods overflow only)
+	SocketLoungeMB         = 6_000   // 6GB MB reserved as lounge size (ear marked for SOCKET pods overflow only)
 )
 
 type Controller struct {
@@ -61,7 +61,7 @@ func (c Controller) run(ctx context.Context) {
 
 // preemptPackage is called if package is in "hard-limit" preemption phase
 func (c Controller) preemptPackage(ctx context.Context, p numapackage.MBPackage) {
-	allocs, err := calcPreemptAllocs(p, c.mbMonitor)
+	allocs, err := calcPreemptAllocs(p.GetUnits(), c.mbMonitor)
 	if err != nil {
 		general.Warningf("mbm: failed to set hard limits for admitted units due to error %v", err)
 		return

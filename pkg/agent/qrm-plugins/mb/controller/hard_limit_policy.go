@@ -61,8 +61,8 @@ func getReserveAllocs(unitToReserves []numapackage.MBUnit) ([]mbAlloc, error) {
 	return results, nil
 }
 
-func divideGroupIntoReserveOrOthers(p numapackage.MBPackage) (toReserves, others []numapackage.MBUnit) {
-	for _, u := range p.GetUnits() {
+func divideGroupIntoReserveOrOthers(units []numapackage.MBUnit) (toReserves, others []numapackage.MBUnit) {
+	for _, u := range units {
 		if u.GetLifeCyclePhase() == numapackage.UnitPhaseAdmitted && u.GetTaskType() == numapackage.TaskTypeSOCKET ||
 			u.GetLifeCyclePhase() == numapackage.UnitPhaseReserved {
 			toReserves = append(toReserves, u)
@@ -74,8 +74,8 @@ func divideGroupIntoReserveOrOthers(p numapackage.MBPackage) (toReserves, others
 	return
 }
 
-func calcPreemptAllocs(p numapackage.MBPackage, mbMonitor monitor.Monitor) ([]mbAlloc, error) {
-	unitToReserves, unitOthers := divideGroupIntoReserveOrOthers(p)
+func calcPreemptAllocs(units []numapackage.MBUnit, mbMonitor monitor.Monitor) ([]mbAlloc, error) {
+	unitToReserves, unitOthers := divideGroupIntoReserveOrOthers(units)
 	allocToReserves, err := getReserveAllocs(unitToReserves)
 	if err != nil {
 		return nil, err
