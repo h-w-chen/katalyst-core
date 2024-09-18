@@ -24,7 +24,8 @@ const (
 	// NumaFolderPrefix makes the folder like "node_X"
 	NumaFolderPrefix = "node_"
 
-	CPUList = "cpus_list"
+	CPUListFile  = "cpus_list"
+	SchemataFile = "schemata"
 
 	MonGroupRoot = "/sys/fs/resctrl/mon_groups"
 	TasksFile    = "tasks"

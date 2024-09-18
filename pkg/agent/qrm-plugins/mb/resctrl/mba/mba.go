@@ -30,6 +30,8 @@ import (
 
 // todo: support pod across numa nodes
 
+const mbUnitAMD = 1_000 / 8 // AMD specific value of mb unit is 1/8th GBps
+
 // MBA manages one numa node's MB
 type MBA struct {
 	numaNode       int
@@ -43,15 +45,36 @@ func (m MBA) CreateResctrlControlGroup(fs afero.Fs) error {
 		return err
 	}
 
-	cpulistFilePath := path.Join(nodeCtrlGroup, resctrl.CPUList)
+	cpulistFilePath := path.Join(nodeCtrlGroup, resctrl.CPUListFile)
 	cpus := intsTostrs(m.cpus)
 	cpuslist := strings.Join(cpus, ",")
 	general.InfofV(6, "mbm: node %d cpus: %s", m.numaNode, cpuslist)
 	return afero.WriteFile(fs, cpulistFilePath, []byte(cpuslist), resctrl.FilePerm)
 }
 
+func toSchmataInst(mbCCD map[int]int) string {
+	if len(mbCCD) == 0 {
+		return ""
+	}
+
+	//echo "MB:2=32;3=32;" > mba1/schemata
+	var sb strings.Builder
+	sb.WriteString("MB:")
+	for ccd, mb := range mbCCD {
+		v := (mb + mbUnitAMD - 1) / mbUnitAMD
+		sb.WriteString(fmt.Sprintf("%d=%d;", ccd, v))
+	}
+	return sb.String()
+}
+
 func (m MBA) SetSchemataMBs(mbCCD map[int]int) error {
-	panic("impl")
+	return m.setSchemataMBs(afero.NewOsFs(), mbCCD)
+}
+
+func (m MBA) setSchemataMBs(fs afero.Fs, mbCCD map[int]int) error {
+	nodeCtrlGroup := getNodeMBAFolder(m.numaNode)
+	schemataPath := path.Join(nodeCtrlGroup, resctrl.SchemataFile)
+	return afero.WriteFile(fs, schemataPath, []byte(toSchmataInst(mbCCD)), resctrl.FilePerm)
 }
 
 func intsTostrs(ints []int) []string {

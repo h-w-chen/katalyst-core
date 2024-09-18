@@ -73,3 +73,57 @@ func TestMBA_CreateResctrlControlGroup(t *testing.T) {
 		})
 	}
 }
+
+func TestMBA_SetSchemataMBs(t *testing.T) {
+	t.Parallel()
+
+	fs := afero.NewMemMapFs()
+	fs.MkdirAll("/sys/fs/resctrl/node_2", 0755)
+
+	type fields struct {
+		numaNode       int
+		cpus           []int
+		sharingPackage int
+	}
+	type args struct {
+		fs    afero.Fs
+		mbCCD map[int]int
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr assert.ErrorAssertionFunc
+	}{
+		{
+			name: "happy path",
+			fields: fields{
+				numaNode:       2,
+				cpus:           []int{3, 5},
+				sharingPackage: 1,
+			},
+			args: args{
+				fs:    fs,
+				mbCCD: map[int]int{9: 4_000, 10: 5_000},
+			},
+			wantErr: assert.NoError,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			m := MBA{
+				numaNode:       tt.fields.numaNode,
+				cpus:           tt.fields.cpus,
+				sharingPackage: tt.fields.sharingPackage,
+			}
+			tt.wantErr(t, m.setSchemataMBs(tt.args.fs, tt.args.mbCCD), fmt.Sprintf("SetSchemataMBs(%v)", tt.args.mbCCD))
+
+			buff, err := afero.ReadFile(fs, "/sys/fs/resctrl/node_2/schemata")
+			assert.NoError(t, err)
+			t.Logf("content got: %s", string(buff))
+			assert.True(t, "MB:9=32;10=40;" == string(buff) || "MB:10=40;9=32;" == string(buff))
+		})
+	}
+}
