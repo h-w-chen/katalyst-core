@@ -17,6 +17,7 @@ limitations under the License.
 package controller
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/mock"
@@ -96,6 +97,45 @@ func Test_getGroupMBUsages(t *testing.T) {
 			}
 			if gotLoMB != tt.wantLoMB {
 				t.Errorf("getHiLoGroupMBs() gotLoMB = %v, want %v", gotLoMB, tt.wantLoMB)
+			}
+		})
+	}
+}
+
+func Test_ccdDistributeMB(t *testing.T) {
+	t.Parallel()
+	type args struct {
+		total int
+		mbCCD map[int]int
+	}
+	tests := []struct {
+		name string
+		args args
+		want map[int]int
+	}{
+		{
+			name: "happy path of equal ccds",
+			args: args{
+				total: 100,
+				mbCCD: map[int]int{6: 20, 7: 20},
+			},
+			want: map[int]int{6: 50, 7: 50},
+		},
+		{
+			name: "proportional distribution",
+			args: args{
+				total: 90,
+				mbCCD: map[int]int{6: 80, 7: 40},
+			},
+			want: map[int]int{6: 60, 7: 30},
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if got := ccdDistributeMB(tt.args.total, tt.args.mbCCD); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ccdDistributeMB() = %v, want %v", got, tt.want)
 			}
 		})
 	}

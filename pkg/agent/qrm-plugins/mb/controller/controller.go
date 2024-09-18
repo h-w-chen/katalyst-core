@@ -93,7 +93,17 @@ func (c Controller) adjustPackage(ctx context.Context, p numapackage.MBPackage) 
 }
 
 func (c Controller) SetMBAllocs(mbs []mbAlloc) error {
-	panic("impl")
+	for _, alloc := range mbs {
+		for _, node := range alloc.unit.GetNUMANodes() {
+			ccdCurrs := c.mbMonitor.GetMB(node)
+			ccdAllocs := ccdDistributeMB(alloc.mbUpperBound, ccdCurrs)
+			if err := c.mbAllocator.AllocateMB(node, ccdAllocs); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 func New() *Controller {
