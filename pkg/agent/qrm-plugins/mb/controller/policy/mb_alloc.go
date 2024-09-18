@@ -62,3 +62,17 @@ func divideUnitsIntoHiLo(units []numapackage.MBUnit) (hi, lo []numapackage.MBUni
 func prorateAlloc(own, total, allocatable int) int {
 	return int(float64(allocatable) * float64(own) / float64(total))
 }
+
+func distributeCCDMBs(total int, mbCCD map[int]int) map[int]int {
+	currMB := 0
+	for _, v := range mbCCD {
+		currMB += v
+	}
+
+	ccdAllocs := make(map[int]int)
+	for ccd, v := range mbCCD {
+		ccdAllocs[ccd] = prorateAlloc(v, currMB, total)
+	}
+
+	return ccdAllocs
+}

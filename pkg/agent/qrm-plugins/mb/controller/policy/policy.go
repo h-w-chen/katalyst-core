@@ -21,20 +21,6 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/numapackage"
 )
 
-func distributeCCDMBs(total int, mbCCD map[int]int) map[int]int {
-	currMB := 0
-	for _, v := range mbCCD {
-		currMB += v
-	}
-
-	ccdAllocs := make(map[int]int)
-	for ccd, v := range mbCCD {
-		ccdAllocs[ccd] = prorateAlloc(v, currMB, total)
-	}
-
-	return ccdAllocs
-}
-
 type MBAllocPolicy interface {
 	// DistributeCCDMBs distributes total mb to CCDs
 	DistributeCCDMBs(total int, mbCCD map[int]int) map[int]int
