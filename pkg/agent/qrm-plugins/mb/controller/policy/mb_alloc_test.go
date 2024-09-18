@@ -27,7 +27,7 @@ import (
 
 type mockMBUnit struct {
 	mock.Mock
-	apppool.Pool
+	apppool.AppPool
 }
 
 func (m *mockMBUnit) GetNUMANodes() []int {
@@ -67,7 +67,7 @@ func Test_getGroupMBUsages(t *testing.T) {
 	mMonitor.On("GetMB", 5).Return(map[int]int{10: 4, 11: 15})
 
 	type args struct {
-		units     []apppool.Pool
+		units     []apppool.AppPool
 		mbMonitor monitor.Monitor
 	}
 	tests := []struct {
@@ -79,7 +79,7 @@ func Test_getGroupMBUsages(t *testing.T) {
 		{
 			name: "happy path of 2 units",
 			args: args{
-				units:     []apppool.Pool{mMBUnit},
+				units:     []apppool.AppPool{mMBUnit},
 				mbMonitor: mMonitor,
 			},
 			wantHiMB: 34,

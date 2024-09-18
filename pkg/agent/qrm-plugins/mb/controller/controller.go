@@ -62,7 +62,7 @@ func (c Controller) run(ctx context.Context) {
 
 // preemptPackage is called if package is in "hard-limit" preemption phase
 func (c Controller) preemptPackage(ctx context.Context, p apppool.PoolsPackage) {
-	allocs, err := c.mbPolicy.CalcPreemptAllocs(p.GetUnits(), policy.TotalPackageMB, policy.SocketLoungeMB)
+	allocs, err := c.mbPolicy.CalcPreemptAllocs(p.GetAppPools(), policy.TotalPackageMB, policy.SocketLoungeMB)
 	if err != nil {
 		general.Warningf("mbm: failed to set hard limits for admitted units due to error %v", err)
 		return
@@ -73,7 +73,7 @@ func (c Controller) preemptPackage(ctx context.Context, p apppool.PoolsPackage) 
 		return
 	}
 
-	for _, u := range p.GetUnits() {
+	for _, u := range p.GetAppPools() {
 		if u.GetLifeCyclePhase() == apppool.UnitPhaseAdmitted &&
 			u.GetTaskType() == apppool.TaskTypeSOCKET {
 			u.SetPhase(apppool.UnitPhaseReserved)
@@ -83,7 +83,7 @@ func (c Controller) preemptPackage(ctx context.Context, p apppool.PoolsPackage) 
 
 // adjustPackage is called when package is in regular state other than "hard-limiting"
 func (c Controller) adjustPackage(ctx context.Context, p apppool.PoolsPackage) {
-	allocs, err := c.mbPolicy.CalcSoftAllocs(p.GetUnits(), policy.TotalPackageMB, policy.SocketLoungeMB)
+	allocs, err := c.mbPolicy.CalcSoftAllocs(p.GetAppPools(), policy.TotalPackageMB, policy.SocketLoungeMB)
 	if err != nil {
 		general.Errorf("mbm: failed to calc soft limits for package %d: %v", p.GetID(), err)
 	}
@@ -98,9 +98,10 @@ func New(resctrlManager *mba.MBAManager) *Controller {
 	mbAllocator := allocator.New(resctrlManager)
 
 	return &Controller{
-		mbMonitor:   mbMonitor,
-		mbAllocator: mbAllocator,
-		mbPolicy:    policy.New(mbMonitor),
-		deliver:     policydeliver.New(mbMonitor, mbAllocator),
+		mbMonitor:      mbMonitor,
+		mbAllocator:    mbAllocator,
+		mbPolicy:       policy.New(mbMonitor),
+		deliver:        policydeliver.New(mbMonitor, mbAllocator),
+		packageManager: apppool.New(2), // todo: identify number of packages base on machine info
 	}
 }

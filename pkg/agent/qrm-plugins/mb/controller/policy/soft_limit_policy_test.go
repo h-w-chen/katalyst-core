@@ -47,7 +47,7 @@ func Test_calcSoftAllocs(t *testing.T) {
 	mMonitor.On("GetMB", 3).Return(map[int]int{6: 5_000, 7: 5_000})
 
 	type args struct {
-		units        []apppool.Pool
+		units        []apppool.AppPool
 		mb           int
 		mbHiReserved int
 		mbMonitor    monitor.Monitor
@@ -61,7 +61,7 @@ func Test_calcSoftAllocs(t *testing.T) {
 		{
 			name: "happy path of 4 numa nodes (2 hi, 2 lo), 8 CCDs",
 			args: args{
-				units:        []apppool.Pool{mU0, mU1, mU2, mU3},
+				units:        []apppool.AppPool{mU0, mU1, mU2, mU3},
 				mb:           116_000,
 				mbHiReserved: 6_000,
 				mbMonitor:    mMonitor,

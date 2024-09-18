@@ -16,16 +16,39 @@ limitations under the License.
 
 package apppool
 
-type Manager struct{}
+type Manager struct {
+	packages []PoolsPackage
+}
 
 func (m Manager) GetPackage(packageID int) PoolsPackage {
-	panic("impl")
+	for _, p := range m.packages {
+		if p.GetID() == packageID {
+			return p
+		}
+	}
+	return nil
 }
 
 func (m Manager) GetPackages() []PoolsPackage {
+	return m.packages
+}
+
+func (m Manager) AddAppPool(nodes []int) (AppPool, error) {
 	panic("impl")
 }
 
-func New() *Manager {
-	return &Manager{}
+func (m Manager) DeleteAppPool(pool AppPool) error {
+	panic("impl")
+}
+
+// New creates an app pool/package manager
+func New(numPackage int) *Manager {
+	packages := make([]PoolsPackage, numPackage)
+	for i := range packages {
+		packages[i] = newPackage(i)
+	}
+
+	return &Manager{
+		packages: packages,
+	}
 }

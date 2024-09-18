@@ -34,23 +34,3 @@ const (
 	UnitPhaseRunning     = "running"
 	UnitPhaseTerminating = "terminating"
 )
-
-// PoolsPackage aggregates multiple app pools within the impact scope
-type PoolsPackage interface {
-	GetID() int
-	GetMode() MBAllocationMode
-	GetUnits() []Pool
-}
-
-// Pool is logical unit of mb allocation inside a package
-// typical pool is one numa node hosting multiple pods or devoted to single Socket pod,
-// sometimes it could be multiple num nodes (at most 2 in POC phase)
-type Pool interface {
-	GetTaskType() TaskType
-	GetLifeCyclePhase() UnitPhase
-	GetMode() MBAllocationMode
-	GetNUMANodes() []int
-	GetCCDs() []int
-
-	SetPhase(reserved UnitPhase)
-}

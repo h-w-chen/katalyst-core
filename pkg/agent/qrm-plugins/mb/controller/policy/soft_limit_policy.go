@@ -22,7 +22,7 @@ import (
 )
 
 // calcSoftAllocs distributes package bandwidth to given group of units in proportion to their current usages
-func calcSoftAllocs(units []apppool.Pool, mb int, mbHiReserved int, mbMonitor monitor.Monitor) ([]MBAlloc, error) {
+func calcSoftAllocs(units []apppool.AppPool, mb int, mbHiReserved int, mbMonitor monitor.Monitor) ([]MBAlloc, error) {
 	hiUnits, loUnits := divideUnitsIntoHiLo(units)
 
 	hiMB := getGroupMB(hiUnits, mbMonitor)

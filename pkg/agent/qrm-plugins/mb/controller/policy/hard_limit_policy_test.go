@@ -50,7 +50,7 @@ func Test_calcPreemptAllocs(t *testing.T) {
 	mMonitor.On("GetMB", 3).Return(map[int]int{6: 5_000, 7: 5_000})
 
 	type args struct {
-		units     []apppool.Pool
+		units     []apppool.AppPool
 		mbMonitor monitor.Monitor
 	}
 	tests := []struct {
@@ -62,7 +62,7 @@ func Test_calcPreemptAllocs(t *testing.T) {
 		{
 			name: "happy path of 4 numa nodes, 1 in hi admit, 1 hi run, 2 lo run",
 			args: args{
-				units:     []apppool.Pool{mU3, mU2, mU1, mU0},
+				units:     []apppool.AppPool{mU3, mU2, mU1, mU0},
 				mbMonitor: mMonitor,
 			},
 			want: []MBAlloc{

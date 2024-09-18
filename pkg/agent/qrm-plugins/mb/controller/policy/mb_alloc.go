@@ -21,7 +21,7 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
 )
 
-func getUnitMB(u apppool.Pool, mbMonitor monitor.Monitor) int {
+func getUnitMB(u apppool.AppPool, mbMonitor monitor.Monitor) int {
 	var sum int
 	for _, n := range u.GetNUMANodes() {
 		for _, mb := range mbMonitor.GetMB(n) {
@@ -32,7 +32,7 @@ func getUnitMB(u apppool.Pool, mbMonitor monitor.Monitor) int {
 	return sum
 }
 
-func getGroupMB(units []apppool.Pool, mbMonitor monitor.Monitor) int {
+func getGroupMB(units []apppool.AppPool, mbMonitor monitor.Monitor) int {
 	sum := 0
 	for _, u := range units {
 		sum += getUnitMB(u, mbMonitor)
@@ -41,13 +41,13 @@ func getGroupMB(units []apppool.Pool, mbMonitor monitor.Monitor) int {
 	return sum
 }
 
-func getHiLoGroupMBs(units []apppool.Pool, mbMonitor monitor.Monitor) (hiMB, loMB int) {
+func getHiLoGroupMBs(units []apppool.AppPool, mbMonitor monitor.Monitor) (hiMB, loMB int) {
 	hiUnits, loUnis := divideUnitsIntoHiLo(units)
 	hiMB, loMB = getGroupMB(hiUnits, mbMonitor), getGroupMB(loUnis, mbMonitor)
 	return
 }
 
-func divideUnitsIntoHiLo(units []apppool.Pool) (hi, lo []apppool.Pool) {
+func divideUnitsIntoHiLo(units []apppool.AppPool) (hi, lo []apppool.AppPool) {
 	for _, u := range units {
 		if u.GetTaskType() == apppool.TaskTypeSOCKET {
 			hi = append(hi, u)

@@ -21,7 +21,7 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
 )
 
-func getHardAlloc(unit apppool.Pool, ownUSage, allHiUsages, allLowUSages, totalAllocatable int) int {
+func getHardAlloc(unit apppool.AppPool, ownUSage, allHiUsages, allLowUSages, totalAllocatable int) int {
 	if unit.GetTaskType() == apppool.TaskTypeSOCKET {
 		return ProrateAlloc(ownUSage, allLowUSages+allHiUsages, totalAllocatable) + ProrateAlloc(ownUSage, allHiUsages, SocketLoungeMB)
 	}
@@ -29,7 +29,7 @@ func getHardAlloc(unit apppool.Pool, ownUSage, allHiUsages, allLowUSages, totalA
 }
 
 // getHardAllocs distributes non-reserved bandwidth to given group of units in proportion to their current usages
-func getHardAllocs(units []apppool.Pool, mb int, mbHiReserved int, mbMonitor monitor.Monitor) ([]MBAlloc, error) {
+func getHardAllocs(units []apppool.AppPool, mb int, mbHiReserved int, mbMonitor monitor.Monitor) ([]MBAlloc, error) {
 	hiMB, loMB := getHiLoGroupMBs(units, mbMonitor)
 
 	// mbHiReserved shall be always left for SOCKETs if any
@@ -49,7 +49,7 @@ func getHardAllocs(units []apppool.Pool, mb int, mbHiReserved int, mbMonitor mon
 	return result, nil
 }
 
-func getReserveAllocs(unitToReserves []apppool.Pool) ([]MBAlloc, error) {
+func getReserveAllocs(unitToReserves []apppool.AppPool) ([]MBAlloc, error) {
 	results := make([]MBAlloc, len(unitToReserves))
 	for i, u := range unitToReserves {
 		results[i] = MBAlloc{
@@ -61,7 +61,7 @@ func getReserveAllocs(unitToReserves []apppool.Pool) ([]MBAlloc, error) {
 	return results, nil
 }
 
-func divideGroupIntoReserveOrOthers(units []apppool.Pool) (toReserves, others []apppool.Pool) {
+func divideGroupIntoReserveOrOthers(units []apppool.AppPool) (toReserves, others []apppool.AppPool) {
 	for _, u := range units {
 		if u.GetLifeCyclePhase() == apppool.UnitPhaseAdmitted && u.GetTaskType() == apppool.TaskTypeSOCKET ||
 			u.GetLifeCyclePhase() == apppool.UnitPhaseReserved {
@@ -74,7 +74,7 @@ func divideGroupIntoReserveOrOthers(units []apppool.Pool) (toReserves, others []
 	return
 }
 
-func calcPreemptAllocs(units []apppool.Pool, mb int, mbHiReserved int, mbMonitor monitor.Monitor) ([]MBAlloc, error) {
+func calcPreemptAllocs(units []apppool.AppPool, mb int, mbHiReserved int, mbMonitor monitor.Monitor) ([]MBAlloc, error) {
 	unitToReserves, unitOthers := divideGroupIntoReserveOrOthers(units)
 	allocToReserves, err := getReserveAllocs(unitToReserves)
 	if err != nil {

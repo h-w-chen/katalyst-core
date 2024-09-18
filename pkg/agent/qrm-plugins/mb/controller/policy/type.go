@@ -31,6 +31,6 @@ const (
 
 // MBAlloc keeps the total MB allocated to an AppPool; it is the unit of MB adjustment produced by mb policy
 type MBAlloc struct {
-	AppPool      apppool.Pool
+	AppPool      apppool.AppPool
 	MBUpperBound int // MB in MBps
 }
