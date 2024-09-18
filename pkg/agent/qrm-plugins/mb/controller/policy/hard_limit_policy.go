@@ -54,7 +54,7 @@ func getReserveAllocs(unitToReserves []numapackage.MBUnit) ([]MBUnitAlloc, error
 	for i, u := range unitToReserves {
 		results[i] = MBUnitAlloc{
 			Unit:         u,
-			MBUpperBound: SOCKETReverseMBPerNode * len(u.GetNUMANodes()),
+			MBUpperBound: SocketNodeReservedMB * len(u.GetNUMANodes()),
 		}
 	}
 
@@ -83,7 +83,7 @@ func calcPreemptAllocs(units []numapackage.MBUnit, mb int, mbHiReserved int, mbM
 
 	var mbToReserve int
 	for _, u := range unitToReserves {
-		mbToReserve += len(u.GetNUMANodes()) * SOCKETReverseMBPerNode
+		mbToReserve += len(u.GetNUMANodes()) * SocketNodeReservedMB
 	}
 
 	mbToAllocate := mb - mbToReserve

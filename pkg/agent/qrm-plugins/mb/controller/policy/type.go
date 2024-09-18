@@ -19,10 +19,14 @@ package policy
 import "github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/numapackage"
 
 const (
-	TotalPackageMB         = 116_000 // 116 GB
-	SocketNodeMaxMB        = 60_000  // 60GBps max for socket (if one node)
-	SOCKETReverseMBPerNode = 35_000  // 35 GB MB reserved for SOCKET app per numa node
-	SocketLoungeMB         = 6_000   // 6GB MB reserved as lounge size (ear marked for SOCKET pods overflow only)
+	TotalPackageMB = 116_000 // 116 GB
+
+	SocketNodeMaxMB      = 60_000 // 60GBps max for socket (if one node)
+	SocketNodeReservedMB = 35_000 // 35 GB MB reserved for SOCKET app per numa node
+	SocketLoungeMB       = 6_000  // 6GB MB reserved as lounge size (ear marked for SOCKET pods overflow only)
+
+	// todo: revise algo to enforce min MB
+	NodeMinMB = 4_000 // each node at least 4GB to avoid starvation
 )
 
 // MBUnitAlloc keeps the total MB allocated to a Unit
