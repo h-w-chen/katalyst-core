@@ -16,9 +16,13 @@ limitations under the License.
 
 package apppool
 
-import "k8s.io/apimachinery/pkg/util/sets"
+import (
+	"errors"
+	"fmt"
+	"k8s.io/apimachinery/pkg/util/sets"
+)
 
-// PoolsPackage aggregates multiple app pools within the impact scope
+// PoolsPackage aggregates multiple app poolsByNode within the impact scope
 type PoolsPackage interface {
 	GetID() int
 	GetMode() MBAllocationMode
@@ -29,43 +33,110 @@ type PoolsPackage interface {
 }
 
 type poolsPackage struct {
-	id    int
-	mode  MBAllocationMode
-	nodes sets.Int
+	id         int
+	nodes      sets.Int
+	ccdsByNode map[int]sets.Int
+
+	mode        MBAllocationMode
+	poolsByNode map[int]AppPool
+	pools       []AppPool
 }
 
-func (p poolsPackage) AddAppPool(nodes []int) (AppPool, error) {
-	//TODO implement me
-	panic("implement me")
+func (p *poolsPackage) AddAppPool(nodes []int) (AppPool, error) {
+	if !p.nodes.HasAll(nodes...) {
+		return nil, errors.New("nodes not all in package scope")
+	}
+
+	for _, node := range nodes {
+		if _, ok := p.poolsByNode[node]; ok {
+			return nil, fmt.Errorf("node %d is busy by other app pool", node)
+		}
+	}
+
+	pool := p.createAppPool(nodes)
+	return pool, nil
 }
 
-func (p poolsPackage) DeleteAppPool(pool AppPool) error {
-	//TODO implement me
-	panic("implement me")
+func (p *poolsPackage) createAppPool(nodes []int) AppPool {
+	ccds := make(map[int][]int)
+	for _, node := range nodes {
+		if _, ok := ccds[node]; !ok {
+			ccds[node] = make([]int, 0)
+		}
+		for ccd, _ := range p.ccdsByNode[node] {
+			ccds[node] = append(ccds[node], ccd)
+		}
+	}
+
+	pool := &appPool{
+		packageID: p.GetID(),
+		numaNodes: nodes,
+		ccds:      ccds,
+	}
+
+	for _, node := range nodes {
+		p.poolsByNode[node] = pool
+	}
+
+	p.pools = append(p.pools, pool)
+
+	return pool
 }
 
-func (p poolsPackage) GetID() int {
+func (p *poolsPackage) DeleteAppPool(pool AppPool) error {
+	// todo: more stringent check and return errors
+	var targetInPools AppPool
+	nodesInPool := pool.GetNUMANodes()
+	for _, node := range nodesInPool {
+		targetInPools = p.poolsByNode[node]
+		delete(p.poolsByNode, node)
+	}
+
+	newPools := make([]AppPool, 0)
+	for _, p := range p.pools {
+		if p != targetInPools {
+			newPools = append(newPools, p)
+		}
+	}
+	p.pools = newPools
+	return nil
+}
+
+func (p *poolsPackage) GetID() int {
 	return p.id
 }
 
-func (p poolsPackage) GetMode() MBAllocationMode {
+func (p *poolsPackage) GetMode() MBAllocationMode {
 	return p.mode
 }
 
-func (p poolsPackage) GetAppPools() []AppPool {
-	//TODO implement me
-	panic("implement me")
+func (p *poolsPackage) GetAppPools() []AppPool {
+	return p.pools
 }
 
-func newPackage(id int) PoolsPackage {
-	// todo: identify numa nodes based on die topology
-	// for POC purpose, assuming numa nodes are id*4 - id*4 + 3
-	nodes := make(sets.Int)
-	for i := 0; i < 4; i++ {
-		nodes.Insert(id*4 + i)
+func newPackage(id int, nodes []int, ccdsByNode map[int]sets.Int) PoolsPackage {
+	setNodes := make(sets.Int)
+	for _, n := range nodes {
+		setNodes.Insert(n)
 	}
+
+	ccdLookup := make(map[int]sets.Int)
+	for node, ccds := range ccdsByNode {
+		if !setNodes.Has(node) {
+			continue
+		}
+		for ccd, _ := range ccds {
+			if ccdLookup[node] == nil {
+				ccdLookup[node] = make(sets.Int)
+			}
+			ccdLookup[node].Insert(ccd)
+		}
+	}
+
 	return &poolsPackage{
-		id:    id,
-		nodes: nodes,
+		id:          id,
+		nodes:       setNodes,
+		ccdsByNode:  ccdLookup,
+		poolsByNode: make(map[int]AppPool),
 	}
 }

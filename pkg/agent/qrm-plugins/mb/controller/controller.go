@@ -18,7 +18,6 @@ package controller
 
 import (
 	"context"
-	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policydeliver"
 	"time"
 
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -26,9 +25,11 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/allocator"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/apppool"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policydeliver"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl/mba"
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
+	"github.com/kubewharf/katalyst-core/pkg/util/machine"
 )
 
 const (
@@ -93,15 +94,17 @@ func (c Controller) adjustPackage(ctx context.Context, p apppool.PoolsPackage) {
 	}
 }
 
-func New(resctrlManager *mba.MBAManager) *Controller {
+func New(resctrlManager *mba.MBAManager, dieTopology *machine.DieTopology) *Controller {
 	var mbMonitor monitor.Monitor
 	mbAllocator := allocator.New(resctrlManager)
+
+	appManager := apppool.New(dieTopology)
 
 	return &Controller{
 		mbMonitor:      mbMonitor,
 		mbAllocator:    mbAllocator,
 		mbPolicy:       policy.New(mbMonitor),
 		deliver:        policydeliver.New(mbMonitor, mbAllocator),
-		packageManager: apppool.New(2), // todo: identify number of packages base on machine info
+		packageManager: appManager,
 	}
 }

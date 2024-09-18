@@ -16,13 +16,17 @@ limitations under the License.
 
 package apppool
 
-import "github.com/pkg/errors"
+import (
+	"github.com/pkg/errors"
+
+	"github.com/kubewharf/katalyst-core/pkg/util/machine"
+)
 
 type Manager struct {
 	packages []PoolsPackage
 }
 
-func (m Manager) GetPackage(packageID int) PoolsPackage {
+func (m Manager) getPackage(packageID int) PoolsPackage {
 	for _, p := range m.packages {
 		if p.GetID() == packageID {
 			return p
@@ -47,15 +51,15 @@ func (m Manager) AddAppPool(nodes []int) (AppPool, error) {
 
 func (m Manager) DeleteAppPool(pool AppPool) error {
 	packageID := pool.GetPackageID()
-	p := m.GetPackage(packageID)
+	p := m.getPackage(packageID)
 	return p.DeleteAppPool(pool)
 }
 
 // New creates an app pool/package manager
-func New(numPackage int) *Manager {
-	packages := make([]PoolsPackage, numPackage)
+func New(dieTopology *machine.DieTopology) *Manager {
+	packages := make([]PoolsPackage, dieTopology.Packages)
 	for i := range packages {
-		packages[i] = newPackage(i)
+		packages[i] = newPackage(i, dieTopology.NUMAsInPackage[i], dieTopology.DiesInNuma)
 	}
 
 	return &Manager{

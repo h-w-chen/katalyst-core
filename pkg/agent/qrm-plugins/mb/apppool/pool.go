@@ -27,7 +27,7 @@ type AppPool interface {
 	GetLifeCyclePhase() UnitPhase
 	GetMode() MBAllocationMode
 	GetNUMANodes() []int
-	GetCCDs() []int
+	GetCCDs() map[int][]int
 
 	SetPhase(reserved UnitPhase)
 }
@@ -36,7 +36,7 @@ type AppPool interface {
 type appPool struct {
 	packageID int
 	numaNodes []int
-	ccds      []int
+	ccds      map[int][]int
 
 	appType TaskType
 	mode    MBAllocationMode
@@ -63,7 +63,7 @@ func (a appPool) GetNUMANodes() []int {
 	return a.numaNodes
 }
 
-func (a appPool) GetCCDs() []int {
+func (a appPool) GetCCDs() map[int][]int {
 	return a.ccds
 }
 

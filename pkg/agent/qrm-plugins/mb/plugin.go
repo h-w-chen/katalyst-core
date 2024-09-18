@@ -59,7 +59,7 @@ func (p plugin) Start() error {
 		return errors.Wrap(err, "failed to create resctrl mba layout")
 	}
 
-	mbController := controller.New(mbaManager)
+	mbController := controller.New(mbaManager, p.dieTopology)
 	ctx, cancel := context.WithCancel(context.Background())
 	p.cancel = cancel
 
