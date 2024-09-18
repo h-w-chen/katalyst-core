@@ -77,7 +77,7 @@ func (c Controller) preemptPackage(ctx context.Context, p apppool.PoolsPackage) 
 	for _, u := range p.GetAppPools() {
 		if u.GetLifeCyclePhase() == apppool.UnitPhaseAdmitted &&
 			u.GetTaskType() == apppool.TaskTypeSOCKET {
-			u.SetPhase(apppool.UnitPhaseReserved)
+			u.SetLifeCyclePhase(apppool.UnitPhaseReserved)
 		}
 	}
 }

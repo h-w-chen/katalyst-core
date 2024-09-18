@@ -14,35 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package resctrl
+package mbm
 
-import (
-	"github.com/spf13/afero"
-	"reflect"
-	"testing"
-)
+import "github.com/spf13/afero"
 
-func Test_getMB(t *testing.T) {
-	t.Parallel()
-	type args struct {
-		fs       afero.Fs
-		monGroup string
-		dies     []int
-	}
-	tests := []struct {
-		name string
-		args args
-		want []int
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			if got := getMB(tt.args.fs, tt.args.monGroup, tt.args.dies); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getMB() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+func getMB(fs afero.Fs, monGroup string, dies []int) []int {
+	panic("impl")
 }

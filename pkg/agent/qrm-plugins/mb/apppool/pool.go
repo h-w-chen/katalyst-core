@@ -29,7 +29,7 @@ type AppPool interface {
 	GetNUMANodes() []int
 	GetCCDs() map[int][]int
 
-	SetPhase(reserved UnitPhase)
+	SetLifeCyclePhase(phase UnitPhase)
 }
 
 // todo: revisit for concurrency potential?
@@ -67,7 +67,7 @@ func (a appPool) GetCCDs() map[int][]int {
 	return a.ccds
 }
 
-func (a appPool) SetPhase(phase UnitPhase) {
+func (a appPool) SetLifeCyclePhase(phase UnitPhase) {
 	a.phase = phase
 }
 

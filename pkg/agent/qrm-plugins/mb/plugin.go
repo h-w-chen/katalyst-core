@@ -78,6 +78,7 @@ func (p plugin) Start() error {
 }
 
 func (p plugin) Stop() error {
+
 	panic("impl me")
 }
 
