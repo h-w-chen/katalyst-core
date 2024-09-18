@@ -129,6 +129,22 @@ func Test_ccdDistributeMB(t *testing.T) {
 			},
 			want: map[int]int{6: 60, 7: 30},
 		},
+		{
+			name: "treat as equal when both are too small",
+			args: args{
+				total: 60_000,
+				mbCCD: map[int]int{6: 5_000, 7: 15_000},
+			},
+			want: map[int]int{6: 30_000, 7: 30_000},
+		},
+		{
+			name: "equally split for preempt node",
+			args: args{
+				total: 35_000,
+				mbCCD: map[int]int{6: 0, 7: 0},
+			},
+			want: map[int]int{6: 17_500, 7: 17_500},
+		},
 	}
 	for _, tt := range tests {
 		tt := tt

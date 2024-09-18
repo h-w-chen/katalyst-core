@@ -69,6 +69,15 @@ func distributeCCDMBs(total int, mbCCD map[int]int) map[int]int {
 		currMB += v
 	}
 
+	// if all are in very small a fraction, treat them equally
+	if currMB <= int(float64(total)*0.4) {
+		ccdAllocs := make(map[int]int)
+		for ccd, _ := range mbCCD {
+			ccdAllocs[ccd] = total / len(mbCCD)
+		}
+		return ccdAllocs
+	}
+
 	ccdAllocs := make(map[int]int)
 	for ccd, v := range mbCCD {
 		ccdAllocs[ccd] = prorateAlloc(v, currMB, total)
