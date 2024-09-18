@@ -16,7 +16,7 @@ limitations under the License.
 
 package mba
 
-// mbaGroup keeps the MBAs (num noes) that share one MB package
+// mbaGroup keeps the MBAs (numa nodes) that share one MB package
 type mbaGroup map[int]*MBA
 
 // MBAPackage puts the MBA control-groups that share NPS* memory bandwidth resources in one slot

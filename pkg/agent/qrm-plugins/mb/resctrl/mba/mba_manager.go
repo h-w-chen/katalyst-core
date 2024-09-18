@@ -75,6 +75,10 @@ func (m MBAManager) cleanupResctrlLayout(fs afero.Fs) error {
 	return nil
 }
 
+func (m MBAManager) Cleanup() {
+	_ = m.cleanupResctrlLayout(afero.NewOsFs())
+}
+
 func getMBA(packageID, nodeID int, dies sets.Int, cpusByDie map[int][]int) (*MBA, error) {
 	var nodeCPUS []int
 	for die, _ := range dies {

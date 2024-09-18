@@ -25,6 +25,7 @@ import (
 	"github.com/kubewharf/katalyst-core/cmd/katalyst-agent/app/agent"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl/mba"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl/mbm"
 	"github.com/kubewharf/katalyst-core/pkg/config"
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
 	"github.com/kubewharf/katalyst-core/pkg/util/machine"
@@ -32,7 +33,10 @@ import (
 
 type plugin struct {
 	dieTopology *machine.DieTopology
-	cancel      context.CancelFunc
+	mbaManager  *mba.MBAManager
+	mbmManager  *mbm.TaskManager
+
+	cancel context.CancelFunc
 }
 
 func (p plugin) Name() string {
@@ -50,16 +54,17 @@ func (p plugin) Start() error {
 		}
 	}
 
-	mbaManager, err := mba.New(nodesByPackage, p.dieTopology.DiesInNuma, p.dieTopology.CPUsInDie)
+	var err error
+	p.mbaManager, err = mba.New(nodesByPackage, p.dieTopology.DiesInNuma, p.dieTopology.CPUsInDie)
 	if err != nil {
 		return errors.Wrap(err, "failed to create mba manager")
 	}
 
-	if err := mbaManager.CreateResctrlLayout(afero.NewOsFs()); err != nil {
+	if err := p.mbaManager.CreateResctrlLayout(afero.NewOsFs()); err != nil {
 		return errors.Wrap(err, "failed to create resctrl mba layout")
 	}
 
-	mbController := controller.New(mbaManager, p.dieTopology)
+	mbController := controller.New(p.mbaManager, p.dieTopology)
 	ctx, cancel := context.WithCancel(context.Background())
 	p.cancel = cancel
 
@@ -78,7 +83,9 @@ func (p plugin) Start() error {
 }
 
 func (p plugin) Stop() error {
-
+	if p.mbmManager != nil {
+		p.mbaManager.Cleanup()
+	}
 	panic("impl me")
 }
 
