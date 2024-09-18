@@ -22,6 +22,7 @@ package apppool
 // app pool is named for it hosts a pool of applications
 // attention: not yet support the special case that socket pod occupying numa nodes cross packages
 type AppPool interface {
+	GetPackageID() int
 	GetTaskType() TaskType
 	GetLifeCyclePhase() UnitPhase
 	GetMode() MBAllocationMode
@@ -40,6 +41,10 @@ type appPool struct {
 	appType TaskType
 	mode    MBAllocationMode
 	phase   UnitPhase
+}
+
+func (a appPool) GetPackageID() int {
+	return a.packageID
 }
 
 func (a appPool) GetTaskType() TaskType {

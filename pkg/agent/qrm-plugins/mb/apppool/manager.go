@@ -16,6 +16,8 @@ limitations under the License.
 
 package apppool
 
+import "github.com/pkg/errors"
+
 type Manager struct {
 	packages []PoolsPackage
 }
@@ -34,11 +36,19 @@ func (m Manager) GetPackages() []PoolsPackage {
 }
 
 func (m Manager) AddAppPool(nodes []int) (AppPool, error) {
-	panic("impl")
+	for _, p := range m.packages {
+		if ap, err := p.AddAppPool(nodes); err == nil {
+			return ap, nil
+		}
+	}
+
+	return nil, errors.New("unable to add app pool")
 }
 
 func (m Manager) DeleteAppPool(pool AppPool) error {
-	panic("impl")
+	packageID := pool.GetPackageID()
+	p := m.GetPackage(packageID)
+	return p.DeleteAppPool(pool)
 }
 
 // New creates an app pool/package manager
