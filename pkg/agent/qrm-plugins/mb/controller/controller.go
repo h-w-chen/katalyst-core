@@ -26,6 +26,7 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/numapackage"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl/mba"
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
 )
 
@@ -104,10 +105,10 @@ func (c Controller) SetMBAllocs(mbs []policy.MBUnitAlloc) error {
 	return nil
 }
 
-func New() *Controller {
+func New(resctrlManager *mba.MBAManager) *Controller {
 	return &Controller{
 		mbMonitor:   nil,
-		mbAllocator: nil,
+		mbAllocator: allocator.New(resctrlManager),
 		mbPolicy:    policy.New(),
 	}
 }

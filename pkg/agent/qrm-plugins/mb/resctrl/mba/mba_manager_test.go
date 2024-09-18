@@ -173,3 +173,51 @@ func TestNew(t *testing.T) {
 		})
 	}
 }
+
+func TestMBAManager_GetMBA(t *testing.T) {
+	t.Parallel()
+	type fields struct {
+		packages      int
+		mbasByPackage MBAPackage
+	}
+	type args struct {
+		node int
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *MBA
+		wantErr assert.ErrorAssertionFunc
+	}{
+		{
+			name: "happy path node found",
+			fields: fields{
+				packages: 1,
+				mbasByPackage: map[int]mbaGroup{
+					1: map[int]*MBA{2: {numaNode: 2}},
+				},
+			},
+			args: args{
+				node: 2,
+			},
+			want:    &MBA{numaNode: 2},
+			wantErr: assert.NoError,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			m := MBAManager{
+				packages:      tt.fields.packages,
+				mbasByPackage: tt.fields.mbasByPackage,
+			}
+			got, err := m.GetMBA(tt.args.node)
+			if !tt.wantErr(t, err, fmt.Sprintf("GetMBA(%v)", tt.args.node)) {
+				return
+			}
+			assert.Equalf(t, tt.want, got, "GetMBA(%v)", tt.args.node)
+		})
+	}
+}

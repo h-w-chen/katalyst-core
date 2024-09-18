@@ -16,17 +16,27 @@ limitations under the License.
 
 package allocator
 
+import "github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl/mba"
+
 type Allocator interface {
 	AllocateMB(node int, MBs map[int]int) error
 }
 
-type allocator struct{}
-
-func (a allocator) AllocateMB(node int, MBs map[int]int) error {
-	//TODO implement me
-	panic("implement me")
+type allocator struct {
+	resctrlManager *mba.MBAManager
 }
 
-func NewAllocator() Allocator {
-	return &allocator{}
+func (a allocator) AllocateMB(node int, MBs map[int]int) error {
+	mbaNode, err := a.resctrlManager.GetMBA(node)
+	if err != nil {
+		return err
+	}
+
+	return mbaNode.SetSchemataMBs(MBs)
+}
+
+func New(resctrlManager *mba.MBAManager) Allocator {
+	return &allocator{
+		resctrlManager: resctrlManager,
+	}
 }

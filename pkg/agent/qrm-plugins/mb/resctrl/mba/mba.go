@@ -30,6 +30,7 @@ import (
 
 // todo: support pod across numa nodes
 
+// MBA manages one numa node's MB
 type MBA struct {
 	numaNode       int
 	cpus           []int
@@ -47,6 +48,10 @@ func (m MBA) CreateResctrlControlGroup(fs afero.Fs) error {
 	cpuslist := strings.Join(cpus, ",")
 	general.InfofV(6, "mbm: node %d cpus: %s", m.numaNode, cpuslist)
 	return afero.WriteFile(fs, cpulistFilePath, []byte(cpuslist), resctrl.FilePerm)
+}
+
+func (m MBA) SetSchemataMBs(mbCCD map[int]int) error {
+	panic("impl")
 }
 
 func intsTostrs(ints []int) []string {

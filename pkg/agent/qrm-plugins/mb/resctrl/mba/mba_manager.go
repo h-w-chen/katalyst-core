@@ -45,6 +45,18 @@ func (m MBAManager) CreateResctrlLayout(fs afero.Fs) error {
 	return nil
 }
 
+func (m MBAManager) GetMBA(node int) (*MBA, error) {
+	for _, mbas := range m.mbasByPackage {
+		for _, mba := range mbas {
+			if mba.numaNode == node {
+				return mba, nil
+			}
+		}
+	}
+
+	return nil, errors.Errorf("MBA of node %d not found", node)
+}
+
 func (m MBAManager) cleanupResctrlLayout(fs afero.Fs) error {
 	for _, mbas := range m.mbasByPackage {
 		for numaNode, _ := range mbas {
