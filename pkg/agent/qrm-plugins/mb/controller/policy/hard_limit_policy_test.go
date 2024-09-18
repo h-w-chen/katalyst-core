@@ -14,13 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controller
+package policy
 
 import (
-	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
-	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/numapackage"
 	"reflect"
 	"testing"
+
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/numapackage"
 )
 
 func Test_calcPreemptAllocs(t *testing.T) {
@@ -55,7 +56,7 @@ func Test_calcPreemptAllocs(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    []mbAlloc
+		want    []MBUnitAlloc
 		wantErr bool
 	}{
 		{
@@ -64,11 +65,11 @@ func Test_calcPreemptAllocs(t *testing.T) {
 				units:     []numapackage.MBUnit{mU3, mU2, mU1, mU0},
 				mbMonitor: mMonitor,
 			},
-			want: []mbAlloc{
-				{unit: mU3, mbUpperBound: 10416},
-				{unit: mU2, mbUpperBound: 58083},
-				{unit: mU0, mbUpperBound: 12500},
-				{unit: mU1, mbUpperBound: 35000},
+			want: []MBUnitAlloc{
+				{Unit: mU3, MBUpperBound: 10416},
+				{Unit: mU2, MBUpperBound: 58083},
+				{Unit: mU0, MBUpperBound: 12500},
+				{Unit: mU1, MBUpperBound: 35000},
 			},
 			wantErr: false,
 		},
@@ -77,13 +78,13 @@ func Test_calcPreemptAllocs(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := calcPreemptAllocs(tt.args.units, tt.args.mbMonitor)
+			got, err := CalcPreemptAllocs(tt.args.units, tt.args.mbMonitor)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("calcPreemptAllocs() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("CalcPreemptAllocs() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("calcPreemptAllocs() got = %v, want %v", got, tt.want)
+				t.Errorf("CalcPreemptAllocs() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controller
+package policy
 
 import (
 	"reflect"
@@ -134,8 +134,8 @@ func Test_ccdDistributeMB(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			if got := ccdDistributeMB(tt.args.total, tt.args.mbCCD); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ccdDistributeMB() = %v, want %v", got, tt.want)
+			if got := CcdDistributeMB(tt.args.total, tt.args.mbCCD); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("CcdDistributeMB() = %v, want %v", got, tt.want)
 			}
 		})
 	}

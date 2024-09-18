@@ -23,6 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/allocator"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/numapackage"
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
@@ -30,11 +31,6 @@ import (
 
 const (
 	intervalMBController = time.Second * 1
-
-	TotalPackageMB         = 116_000 // 116 GB
-	SocketNodeMaxMB        = 60_000  // 60GBps max for socket (if one node)
-	SOCKETReverseMBPerNode = 35_000  // 35 GB MB reserved for SOCKET app per numa node
-	SocketLoungeMB         = 6_000   // 6GB MB reserved as lounge size (ear marked for SOCKET pods overflow only)
 )
 
 type Controller struct {
@@ -61,7 +57,7 @@ func (c Controller) run(ctx context.Context) {
 
 // preemptPackage is called if package is in "hard-limit" preemption phase
 func (c Controller) preemptPackage(ctx context.Context, p numapackage.MBPackage) {
-	allocs, err := calcPreemptAllocs(p.GetUnits(), c.mbMonitor)
+	allocs, err := policy.CalcPreemptAllocs(p.GetUnits(), c.mbMonitor)
 	if err != nil {
 		general.Warningf("mbm: failed to set hard limits for admitted units due to error %v", err)
 		return
@@ -82,7 +78,7 @@ func (c Controller) preemptPackage(ctx context.Context, p numapackage.MBPackage)
 
 // adjustPackage is called when package is in regular state other than "hard-limiting"
 func (c Controller) adjustPackage(ctx context.Context, p numapackage.MBPackage) {
-	allocs, err := calcSoftAllocs(p.GetUnits(), TotalPackageMB, SocketLoungeMB, c.mbMonitor)
+	allocs, err := policy.CalcSoftAllocs(p.GetUnits(), policy.TotalPackageMB, policy.SocketLoungeMB, c.mbMonitor)
 	if err != nil {
 		general.Errorf("mbm: failed to calc soft limits for package %d: %v", p.GetID(), err)
 	}
@@ -92,11 +88,11 @@ func (c Controller) adjustPackage(ctx context.Context, p numapackage.MBPackage) 
 	}
 }
 
-func (c Controller) SetMBAllocs(mbs []mbAlloc) error {
+func (c Controller) SetMBAllocs(mbs []policy.MBUnitAlloc) error {
 	for _, alloc := range mbs {
-		for _, node := range alloc.unit.GetNUMANodes() {
+		for _, node := range alloc.Unit.GetNUMANodes() {
 			ccdCurrs := c.mbMonitor.GetMB(node)
-			ccdAllocs := ccdDistributeMB(alloc.mbUpperBound, ccdCurrs)
+			ccdAllocs := policy.CcdDistributeMB(alloc.MBUpperBound, ccdCurrs)
 			if err := c.mbAllocator.AllocateMB(node, ccdAllocs); err != nil {
 				return err
 			}

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controller
+package policy
 
 import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
@@ -29,7 +29,7 @@ func getHardAlloc(unit numapackage.MBUnit, ownUSage, allHiUsages, allLowUSages, 
 }
 
 // getHardAllocs distributes non-reserved bandwidth to given group of units in proportion to their current usages
-func getHardAllocs(units []numapackage.MBUnit, mb int, mbHiReserved int, mbMonitor monitor.Monitor) ([]mbAlloc, error) {
+func getHardAllocs(units []numapackage.MBUnit, mb int, mbHiReserved int, mbMonitor monitor.Monitor) ([]MBUnitAlloc, error) {
 	hiMB, loMB := getHiLoGroupMBs(units, mbMonitor)
 
 	// mbHiReserved shall be always left for SOCKETs if any
@@ -37,24 +37,24 @@ func getHardAllocs(units []numapackage.MBUnit, mb int, mbHiReserved int, mbMonit
 		mb -= mbHiReserved
 	}
 
-	result := make([]mbAlloc, len(units))
+	result := make([]MBUnitAlloc, len(units))
 	for i, u := range units {
 		mbCurr := getUnitMB(u, mbMonitor)
-		result[i] = mbAlloc{
-			unit:         u,
-			mbUpperBound: getHardAlloc(u, mbCurr, hiMB, loMB, mb),
+		result[i] = MBUnitAlloc{
+			Unit:         u,
+			MBUpperBound: getHardAlloc(u, mbCurr, hiMB, loMB, mb),
 		}
 	}
 
 	return result, nil
 }
 
-func getReserveAllocs(unitToReserves []numapackage.MBUnit) ([]mbAlloc, error) {
-	results := make([]mbAlloc, len(unitToReserves))
+func getReserveAllocs(unitToReserves []numapackage.MBUnit) ([]MBUnitAlloc, error) {
+	results := make([]MBUnitAlloc, len(unitToReserves))
 	for i, u := range unitToReserves {
-		results[i] = mbAlloc{
-			unit:         u,
-			mbUpperBound: SOCKETReverseMBPerNode * len(u.GetNUMANodes()),
+		results[i] = MBUnitAlloc{
+			Unit:         u,
+			MBUpperBound: SOCKETReverseMBPerNode * len(u.GetNUMANodes()),
 		}
 	}
 
@@ -74,7 +74,7 @@ func divideGroupIntoReserveOrOthers(units []numapackage.MBUnit) (toReserves, oth
 	return
 }
 
-func calcPreemptAllocs(units []numapackage.MBUnit, mbMonitor monitor.Monitor) ([]mbAlloc, error) {
+func CalcPreemptAllocs(units []numapackage.MBUnit, mbMonitor monitor.Monitor) ([]MBUnitAlloc, error) {
 	unitToReserves, unitOthers := divideGroupIntoReserveOrOthers(units)
 	allocToReserves, err := getReserveAllocs(unitToReserves)
 	if err != nil {

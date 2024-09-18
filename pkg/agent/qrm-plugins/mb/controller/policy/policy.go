@@ -14,18 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controller
+package policy
 
 import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/numapackage"
 )
-
-// mbAlloc keeps the total MB allocated to a unit
-type mbAlloc struct {
-	unit         numapackage.MBUnit
-	mbUpperBound int // MB in MBps
-}
 
 func getUnitMB(u numapackage.MBUnit, mbMonitor monitor.Monitor) int {
 	var sum int
@@ -69,7 +63,7 @@ func prorateAlloc(own, total, allocatable int) int {
 	return int(float64(allocatable) * float64(own) / float64(total))
 }
 
-func ccdDistributeMB(total int, mbCCD map[int]int) map[int]int {
+func CcdDistributeMB(total int, mbCCD map[int]int) map[int]int {
 	currMB := 0
 	for _, v := range mbCCD {
 		currMB += v
