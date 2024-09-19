@@ -47,10 +47,13 @@ type Controller struct {
 }
 
 func (c Controller) Run(ctx context.Context) {
+	general.Infof("mbm: main control loop Run started")
 	wait.UntilWithContext(ctx, c.run, intervalMBController)
+	general.Infof("mbm: main control loop Run exited")
 }
 
 func (c Controller) run(ctx context.Context) {
+	general.InfofV(6, "mbm: control iteration run")
 	for _, p := range c.packageManager.GetPackages() {
 		if p.GetMode() == apppool.MBAllocationModeHardPreempt {
 			c.preemptPackage(ctx, p)
