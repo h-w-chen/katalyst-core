@@ -18,7 +18,9 @@ package task
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"path"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/afero"
@@ -31,6 +33,7 @@ import (
 // todo: support pod across numa nodes
 
 type Task struct {
+	// todo: consider to support task across multiple numa nodes
 	numaNode  int
 	pod       *v1.Pod
 	idProcess int
@@ -75,4 +78,31 @@ func newTask(fs afero.Fs, pod *v1.Pod, node, pid int) (*Task, error) {
 	}
 
 	return task, nil
+}
+
+func GetTaskInfo(base string) (node, pid int, err error) {
+	if !strings.HasPrefix(base, "node_") {
+		err = fmt.Errorf("malformated folder name: %s", base)
+		return
+	}
+
+	segs := strings.SplitN(base, "_pid_", 2)
+	if len(segs) != 2 {
+		err = fmt.Errorf("malformated folder name: %s", base)
+		return
+	}
+
+	node, err = strconv.Atoi(strings.TrimPrefix(segs[0], "node_"))
+	if err != nil {
+		err = errors.Wrap(err, "malformatted task mon folder")
+		return
+	}
+
+	pid, err = strconv.Atoi(segs[1])
+	if err != nil {
+		err = errors.Wrap(err, "malformatted task mon folder")
+		return
+	}
+
+	return
 }

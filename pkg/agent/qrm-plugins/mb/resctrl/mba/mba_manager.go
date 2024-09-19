@@ -17,6 +17,7 @@ limitations under the License.
 package mba
 
 import (
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -60,7 +61,7 @@ func (m MBAManager) GetMBA(node int) (*MBA, error) {
 func (m MBAManager) cleanupResctrlLayout(fs afero.Fs) error {
 	for _, mbas := range m.mbasByPackage {
 		for numaNode, _ := range mbas {
-			nodeCtrlGroup := getNodeMBAFolder(numaNode)
+			nodeCtrlGroup := resctrl.GetNodeMBAFolder(numaNode)
 			if _, err := fs.Stat(nodeCtrlGroup); err != nil {
 				// assuming folder not exist
 				// todo: more stringent error checking

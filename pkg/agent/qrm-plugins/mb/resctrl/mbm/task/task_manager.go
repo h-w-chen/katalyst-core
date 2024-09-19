@@ -17,17 +17,41 @@ limitations under the License.
 package task
 
 import (
-	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl/mbm"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
-type TaskManager struct {
-	podResource mbm.PodResource
+type TaskManager interface {
+	GetTasks(node int) []int
+	NewTask(pod *v1.Pod) (*Task, error)
+	RemoveTask(task *Task)
 }
 
-func (t TaskManager) NewTask(pod *v1.Pod) (*Task, error) {
+type taskManager struct {
+	podResource PodResource
+
+	nodeTaskIDs map[int]sets.Int
+}
+
+func (t taskManager) GetTasks(node int) []int {
+	tasks, ok := t.nodeTaskIDs[node]
+	if !ok {
+		return nil
+	}
+
+	pids := make([]int, len(tasks))
+	i := 0
+	for pid, _ := range tasks {
+		pids[i] = pid
+		i++
+	}
+
+	return pids
+}
+
+func (t taskManager) NewTask(pod *v1.Pod) (*Task, error) {
 	node, err := t.podResource.GetNumaNode(pod)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get numa node of pod")
@@ -38,5 +62,22 @@ func (t TaskManager) NewTask(pod *v1.Pod) (*Task, error) {
 		return nil, errors.Wrap(err, "failed to get pid of pod")
 	}
 
-	return newTask(afero.NewOsFs(), pod, node, pid)
+	var task *Task
+	task, err = newTask(afero.NewOsFs(), pod, node, pid)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create task instance")
+	}
+
+	t.nodeTaskIDs[node].Insert(pid)
+	return task, nil
+}
+
+func (t taskManager) RemoveTask(task *Task) {
+	t.nodeTaskIDs[task.numaNode].Delete(task.idProcess)
+}
+
+func New() (TaskManager, error) {
+	return &taskManager{
+		nodeTaskIDs: make(map[int]sets.Int),
+	}, nil
 }

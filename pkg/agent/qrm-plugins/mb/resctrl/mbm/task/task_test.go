@@ -193,3 +193,44 @@ func TestTask_OnTerminate(t1 *testing.T) {
 		})
 	}
 }
+
+func TestGetTaskInfo(t *testing.T) {
+	t.Parallel()
+	type args struct {
+		base string
+	}
+	tests := []struct {
+		name     string
+		args     args
+		wantNode int
+		wantPid  int
+		wantErr  bool
+	}{
+		{
+			name: "happy path",
+			args: args{
+				base: "node_2_pid_2515624",
+			},
+			wantNode: 2,
+			wantPid:  2515624,
+			wantErr:  false,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			gotNode, gotPid, err := GetTaskInfo(tt.args.base)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetTaskInfo() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if gotNode != tt.wantNode {
+				t.Errorf("GetTaskInfo() gotNode = %v, want %v", gotNode, tt.wantNode)
+			}
+			if gotPid != tt.wantPid {
+				t.Errorf("GetTaskInfo() gotPid = %v, want %v", gotPid, tt.wantPid)
+			}
+		})
+	}
+}

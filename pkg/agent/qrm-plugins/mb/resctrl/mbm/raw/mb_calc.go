@@ -28,6 +28,18 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl"
 )
 
+const InvalidMB = -1
+
+type MBCalculator interface {
+	CalcMB(monGroup string, dies []int) map[int]int
+}
+
+func NewMBCalculator() (MBCalculator, error) {
+	return &mbCalculator{
+		rawDataKeeper: make(rawDataKeeper),
+	}, nil
+}
+
 type rawData struct {
 	value    int64
 	readTime time.Time
@@ -39,7 +51,7 @@ type mbCalculator struct {
 	rawDataKeeper rawDataKeeper
 }
 
-func (c mbCalculator) calcMB(monGroup string, dies []int) map[int]int {
+func (c mbCalculator) CalcMB(monGroup string, dies []int) map[int]int {
 	return getMB(afero.NewOsFs(), monGroup, dies, time.Now(), c.rawDataKeeper)
 }
 
@@ -49,13 +61,17 @@ func getMB(fs afero.Fs, monGroup string, dies []int, ts time.Time, dataKeeper ra
 		basePath := fmt.Sprintf("mon_L3_%02d", die)
 		monPath := path.Join(monGroup, "mon_data", basePath, resctrl.MBRawFile)
 		v := readRawData(fs, monPath)
+
+		mb := InvalidMB
 		if lastRecord, ok := dataKeeper[monPath]; ok {
 			avgMB, err := calcAverageMBinMBps(v, ts, lastRecord.value, lastRecord.readTime)
 			if err == nil {
-				result[die] = avgMB
+				mb = avgMB
 			}
 		}
+		result[die] = mb
 
+		// replace the last read raw record
 		dataKeeper[monPath] = rawData{
 			value:    v,
 			readTime: ts,
@@ -68,27 +84,27 @@ func getMB(fs afero.Fs, monGroup string, dies []int, ts time.Time, dataKeeper ra
 func readRawData(fs afero.Fs, path string) int64 {
 	buffer, err := afero.ReadFile(fs, path)
 	if err != nil {
-		return -1
+		return InvalidMB
 	}
 
 	if string(buffer) == "Unavailable" {
-		return -1
+		return InvalidMB
 	}
 
 	v, err := strconv.ParseInt(string(buffer), 10, 64)
 	if err != nil {
-		return -1
+		return InvalidMB
 	}
 
 	return v
 }
 
 func calcAverageMBinMBps(currV int64, nowTime time.Time, lastV int64, lastTime time.Time) (int, error) {
-	if currV == -1 || lastV == -1 || currV < lastV {
-		return -1, errors.New("invalid MB should ignore")
+	if currV == InvalidMB || lastV == InvalidMB || currV < lastV {
+		return InvalidMB, errors.New("invalid MB should ignore")
 	}
 
-	elasped := nowTime.Sub(lastTime)
-	mbInMB := (currV - lastV) / elasped.Microseconds()
+	elapsed := nowTime.Sub(lastTime)
+	mbInMB := (currV - lastV) / elapsed.Microseconds()
 	return int(mbInMB), nil
 }

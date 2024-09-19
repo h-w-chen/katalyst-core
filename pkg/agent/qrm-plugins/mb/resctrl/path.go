@@ -14,15 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package mbm
+package resctrl
 
 import (
-	v1 "k8s.io/api/core/v1"
+	"fmt"
+	"path"
 )
 
-type PodResource interface {
-	GetPid(pod *v1.Pod) (int, error)
-	GetNumaNode(pod *v1.Pod) (int, error)
+func GetNodeMBAFolder(node int) string {
+	nodeBasePath := fmt.Sprintf("%s%d", NumaFolderPrefix, node)
+	return path.Join(FsRoot, nodeBasePath)
 }
-
-// todo: impl katalyst based pod resource interface

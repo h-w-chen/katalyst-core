@@ -40,7 +40,7 @@ type MBA struct {
 }
 
 func (m MBA) CreateResctrlControlGroup(fs afero.Fs) error {
-	nodeCtrlGroup := getNodeMBAFolder(m.numaNode)
+	nodeCtrlGroup := resctrl.GetNodeMBAFolder(m.numaNode)
 	if err := fs.Mkdir(nodeCtrlGroup, resctrl.FolderPerm); err != nil {
 		return err
 	}
@@ -72,7 +72,7 @@ func (m MBA) SetSchemataMBs(mbCCD map[int]int) error {
 }
 
 func (m MBA) setSchemataMBs(fs afero.Fs, mbCCD map[int]int) error {
-	nodeCtrlGroup := getNodeMBAFolder(m.numaNode)
+	nodeCtrlGroup := resctrl.GetNodeMBAFolder(m.numaNode)
 	schemataPath := path.Join(nodeCtrlGroup, resctrl.SchemataFile)
 	return afero.WriteFile(fs, schemataPath, []byte(toSchmataInst(mbCCD)), resctrl.FilePerm)
 }
@@ -85,9 +85,4 @@ func intsTostrs(ints []int) []string {
 	}
 
 	return strs
-}
-
-func getNodeMBAFolder(node int) string {
-	nodeBasePath := fmt.Sprintf("%s%d", resctrl.NumaFolderPrefix, node)
-	return path.Join(resctrl.FsRoot, nodeBasePath)
 }
