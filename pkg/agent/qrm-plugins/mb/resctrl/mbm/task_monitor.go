@@ -16,27 +16,17 @@ limitations under the License.
 
 package mbm
 
-import (
-	"fmt"
+type TaskMonitor struct {
+	nodeLookup map[int][]int
+	ccdByNode  map[int][]int
 
-	"github.com/spf13/afero"
-)
+	mbTask map[int]int
+}
 
-func getThreads(fs afero.Fs, pid int) ([]string, error) {
-	taskFolder := fmt.Sprintf(tmplProcTaskFolder, pid)
-	infos, err := afero.ReadDir(fs, taskFolder)
-	if err != nil {
-		return nil, err
-	}
+func (t TaskMonitor) GetMBByProcessID(pid int) int {
+	panic("impl")
+}
 
-	tids := make([]string, len(infos))
-	for i, info := range infos {
-		if !info.IsDir() {
-			continue
-		}
-
-		tids[i] = info.Name()
-	}
-
-	return tids, nil
+func (t TaskMonitor) AggregateNodeMB(node int) map[int]int {
+	panic("impl")
 }

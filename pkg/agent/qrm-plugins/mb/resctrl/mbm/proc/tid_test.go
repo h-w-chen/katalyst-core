@@ -14,34 +14,53 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package mbm
+package proc
 
 import (
-	"github.com/spf13/afero"
 	"reflect"
 	"testing"
+
+	"github.com/spf13/afero"
 )
 
-func Test_getMB(t *testing.T) {
+func Test_getThreads(t *testing.T) {
 	t.Parallel()
+
+	fs := afero.NewMemMapFs()
+	_ = fs.MkdirAll("/proc/123/task/123", 0555)
+	_ = fs.MkdirAll("/proc/123/task/456", 0555)
+
 	type args struct {
-		fs       afero.Fs
-		monGroup string
-		dies     []int
+		fs  afero.Fs
+		pid int
 	}
 	tests := []struct {
-		name string
-		args args
-		want []int
+		name    string
+		args    args
+		want    []string
+		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "happy path of 2 threads",
+			args: args{
+				fs:  fs,
+				pid: 123,
+			},
+			want:    []string{"123", "456"},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			if got := getMB(tt.args.fs, tt.args.monGroup, tt.args.dies); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getMB() = %v, want %v", got, tt.want)
+			got, err := GetThreads(tt.args.fs, tt.args.pid)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetThreads() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetThreads() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

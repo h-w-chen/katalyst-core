@@ -14,16 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package mbm
+package task
 
 import (
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl/mbm"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 	v1 "k8s.io/api/core/v1"
 )
 
 type TaskManager struct {
-	podResource PodResource
+	podResource mbm.PodResource
 }
 
 func (t TaskManager) NewTask(pod *v1.Pod) (*Task, error) {

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package mbm
+package task
 
 import (
 	"reflect"
@@ -137,8 +137,8 @@ func TestTask_OnReady(t *testing.T) {
 				idProcess: tt.fields.idProcess,
 				idThreads: tt.fields.idThreads,
 			}
-			if err := t.OnReady(tt.args.fs); (err != nil) != tt.wantErr {
-				t1.Errorf("OnReady() error = %v, wantErr %v", err, tt.wantErr)
+			if err := t.CreateResctrlMoniker(tt.args.fs); (err != nil) != tt.wantErr {
+				t1.Errorf("CreateResctrlMoniker() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
@@ -187,8 +187,8 @@ func TestTask_OnTerminate(t1 *testing.T) {
 				idProcess: tt.fields.idProcess,
 				idThreads: tt.fields.idThreads,
 			}
-			if err := t.OnTerminate(tt.args.fs); (err != nil) != tt.wantErr {
-				t1.Errorf("OnTerminate() error = %v, wantErr %v", err, tt.wantErr)
+			if err := t.CleanupResctrlMoniker(tt.args.fs); (err != nil) != tt.wantErr {
+				t1.Errorf("CleanupResctrlMoniker() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

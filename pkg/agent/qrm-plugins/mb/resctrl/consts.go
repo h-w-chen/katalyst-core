@@ -29,4 +29,5 @@ const (
 
 	MonGroupRoot = "/sys/fs/resctrl/mon_groups"
 	TasksFile    = "tasks"
+	MBRawFile    = "mbm_total_bytes"
 )

@@ -14,10 +14,31 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package mbm
+package proc
 
-import "github.com/spf13/afero"
+import (
+	"fmt"
 
-func getMB(fs afero.Fs, monGroup string, dies []int) []int {
-	panic("impl")
+	"github.com/spf13/afero"
+)
+
+const tmplProcTaskFolder = "/proc/%d/task"
+
+func GetThreads(fs afero.Fs, pid int) ([]string, error) {
+	taskFolder := fmt.Sprintf(tmplProcTaskFolder, pid)
+	infos, err := afero.ReadDir(fs, taskFolder)
+	if err != nil {
+		return nil, err
+	}
+
+	tids := make([]string, len(infos))
+	for i, info := range infos {
+		if !info.IsDir() {
+			continue
+		}
+
+		tids[i] = info.Name()
+	}
+
+	return tids, nil
 }

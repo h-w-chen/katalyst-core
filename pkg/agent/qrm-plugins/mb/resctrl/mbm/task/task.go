@@ -14,18 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package mbm
+package task
 
 import (
 	"fmt"
-	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl"
-	"github.com/spf13/afero"
-	v1 "k8s.io/api/core/v1"
 	"path"
 	"strings"
-)
 
-const tmplProcTaskFolder = "/proc/%d/task"
+	"github.com/spf13/afero"
+	v1 "k8s.io/api/core/v1"
+
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl/mbm/proc"
+)
 
 // todo: support pod across numa nodes
 
@@ -45,7 +46,7 @@ func getMonCtrlGroupFolder(node, pid int) string {
 	return path.Join(resctrl.MonGroupRoot, monGroup)
 }
 
-func (t Task) OnReady(fs afero.Fs) error {
+func (t Task) CreateResctrlMoniker(fs afero.Fs) error {
 	monGroupFullPath := getMonCtrlGroupFolder(t.numaNode, t.idProcess)
 	if err := fs.Mkdir(monGroupFullPath, resctrl.FolderPerm); err != nil {
 		return err
@@ -56,7 +57,7 @@ func (t Task) OnReady(fs afero.Fs) error {
 	return afero.WriteFile(fs, taskFilePath, []byte(threads), resctrl.FilePerm)
 }
 
-func (t Task) OnTerminate(fs afero.Fs) error {
+func (t Task) CleanupResctrlMoniker(fs afero.Fs) error {
 	monGroupFullPath := getMonCtrlGroupFolder(t.numaNode, t.idProcess)
 	return cleanupFolder(fs, monGroupFullPath)
 }
@@ -69,7 +70,7 @@ func newTask(fs afero.Fs, pod *v1.Pod, node, pid int) (*Task, error) {
 	}
 
 	var err error
-	if task.idThreads, err = getThreads(fs, pid); err != nil {
+	if task.idThreads, err = proc.GetThreads(fs, pid); err != nil {
 		return nil, err
 	}
 
