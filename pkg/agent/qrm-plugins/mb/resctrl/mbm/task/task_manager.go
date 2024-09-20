@@ -52,6 +52,10 @@ func (t taskManager) GetTasks(node int) []int {
 }
 
 func (t taskManager) NewTask(pod *v1.Pod) (*Task, error) {
+	return t.newTask(afero.NewOsFs(), pod)
+}
+
+func (t taskManager) newTask(fgs afero.Fs, pod *v1.Pod) (*Task, error) {
 	node, err := t.podResource.GetNumaNode(pod)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get numa node of pod")
@@ -76,8 +80,9 @@ func (t taskManager) RemoveTask(task *Task) {
 	t.nodeTaskIDs[task.numaNode].Delete(task.idProcess)
 }
 
-func New() (TaskManager, error) {
+func New(podResource PodResource) (TaskManager, error) {
 	return &taskManager{
+		podResource: podResource,
 		nodeTaskIDs: make(map[int]sets.Int),
 	}, nil
 }
