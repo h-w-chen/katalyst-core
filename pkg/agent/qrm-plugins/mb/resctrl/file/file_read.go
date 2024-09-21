@@ -14,25 +14,31 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package resctrl
+package file
 
-const (
-	FsRoot          = "/sys/fs/resctrl"
-	SubGroupMonRoot = "mon_groups"
-	MonData         = "mon_data"
+import (
+	"strconv"
 
-	GroupDedicated  = "dedicated"
-	GroupSharedCore = "shared"
-	GroupReclaimed  = "reclaimed"
-	GroupSystem     = "system"
+	"github.com/spf13/afero"
 
-	FolderPerm = 0755
-	FilePerm   = 0644
-
-	TasksFile    = "tasks"
-	MBRawFile    = "mbm_total_bytes"
-	SchemataFile = "schemata"
-
-	TmplTaskFolder   = "pod%s"
-	TmplCCDMonFolder = "mon_L3_%02d"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl/consts"
 )
+
+// ReadValueFromFile returns -1 as invalid MB is file content is not digits
+func ReadValueFromFile(fs afero.Fs, path string) int64 {
+	buffer, err := afero.ReadFile(fs, path)
+	if err != nil {
+		return consts.InvalidMB
+	}
+
+	if string(buffer) == "Unavailable" {
+		return consts.InvalidMB
+	}
+
+	v, err := strconv.ParseInt(string(buffer), 10, 64)
+	if err != nil {
+		return consts.InvalidMB
+	}
+
+	return v
+}

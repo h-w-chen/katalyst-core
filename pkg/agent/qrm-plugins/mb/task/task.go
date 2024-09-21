@@ -24,7 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/kubewharf/katalyst-api/pkg/consts"
-	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl"
+	resctrlconsts "github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl/consts"
 )
 
 type QoSLevel = consts.QoSLevel
@@ -37,10 +37,10 @@ const (
 )
 
 var qosFolderLookup = map[QoSLevel]string{
-	QoSLevelDedicatedCores: resctrl.GroupDedicated,
-	QoSLevelSharedCores:    resctrl.GroupSharedCore,
-	QoSLevelReclaimedCores: resctrl.GroupReclaimed,
-	QoSLevelSystemCores:    resctrl.GroupSystem,
+	QoSLevelDedicatedCores: resctrlconsts.GroupDedicated,
+	QoSLevelSharedCores:    resctrlconsts.GroupSharedCore,
+	QoSLevelReclaimedCores: resctrlconsts.GroupReclaimed,
+	QoSLevelSystemCores:    resctrlconsts.GroupSystem,
 }
 
 type Task struct {
@@ -64,7 +64,7 @@ func (t Task) GetResctrlCtrlGroup() (string, error) {
 		return "", errors.New("invalid qos level of task")
 	}
 
-	return path.Join(resctrl.FsRoot, qosFolder), nil
+	return path.Join(resctrlconsts.FsRoot, qosFolder), nil
 }
 
 func (t Task) GetResctrlMonGroup() (string, error) {
@@ -73,8 +73,8 @@ func (t Task) GetResctrlMonGroup() (string, error) {
 		return "", err
 	}
 
-	taskFolder := fmt.Sprintf(resctrl.TmplTaskFolder, t.PodUID)
-	return path.Join(taskCtrlGroup, resctrl.SubGroupMonRoot, taskFolder), nil
+	taskFolder := fmt.Sprintf(resctrlconsts.TmplTaskFolder, t.PodUID)
+	return path.Join(taskCtrlGroup, resctrlconsts.SubGroupMonRoot, taskFolder), nil
 }
 
 func getAllDies(nodeCCDs map[int]sets.Int) []int {

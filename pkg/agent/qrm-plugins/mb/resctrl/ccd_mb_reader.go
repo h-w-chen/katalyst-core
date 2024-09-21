@@ -16,7 +16,11 @@ limitations under the License.
 
 package resctrl
 
-import "errors"
+import (
+	"errors"
+
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl/consts"
+)
 
 type CCDMBReader interface {
 	ReadMB(MonGroup string, ccd int) (int, error)
@@ -34,7 +38,7 @@ type ccdMBReader struct {
 
 func (c ccdMBReader) ReadMB(MonGroup string, ccd int) (int, error) {
 	val := c.ccdMBCalc.CalcMB(MonGroup, ccd)
-	if val == InvalidMB {
+	if val == consts.InvalidMB {
 		return val, errors.New("invalid mb value")
 	}
 

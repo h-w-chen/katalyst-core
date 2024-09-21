@@ -19,69 +19,54 @@ package resctrl
 import (
 	"fmt"
 	"path"
-	"sync"
 	"time"
 
 	"github.com/spf13/afero"
-)
 
-const InvalidMB = -1
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl/consts"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl/file"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl/state"
+)
 
 type CCDMBCalculator interface {
 	CalcMB(monGroup string, ccd int) int
-	RemoveMonGroup(monGroup string)
-}
-
-// rawData keeps the last seen state for one specific ccd mon raw value
-type rawData struct {
-	value    int64
-	readTime time.Time
 }
 
 type mbCalculator struct {
-	rwLock sync.RWMutex
 	// keeping the last seen states of all processed ccd mon raw data
-	prevRawData map[string]rawData
-}
-
-func (c *mbCalculator) RemoveMonGroup(monGroup string) {
-	panic("impl")
+	rawDataKeeper state.MBRawDataKeeper
 }
 
 func (c *mbCalculator) CalcMB(monGroup string, ccd int) int {
-	c.rwLock.Lock()
-	defer c.rwLock.Unlock()
-	return calcMB(afero.NewOsFs(), monGroup, ccd, time.Now(), c.prevRawData)
+	return calcMB(afero.NewOsFs(), monGroup, ccd, time.Now(), c.rawDataKeeper)
 }
 
-func NewCCDMBCalculator() (CCDMBCalculator, error) {
+func NewCCDMBCalculator(rawDataKeeper state.MBRawDataKeeper) (CCDMBCalculator, error) {
 	return &mbCalculator{
-		prevRawData: make(map[string]rawData),
+		rawDataKeeper: rawDataKeeper,
 	}, nil
 }
 
-func calcMB(fs afero.Fs, monGroup string, ccd int, tsCurr time.Time, lastSeenData map[string]rawData) int {
-	ccdMon := fmt.Sprintf(TmplCCDMonFolder, ccd)
-	monPath := path.Join(monGroup, MonData, ccdMon, MBRawFile)
-	valueCurr := readRawData(fs, monPath)
+func calcMB(fs afero.Fs, monGroup string, ccd int, tsCurr time.Time, dataKeeper state.MBRawDataKeeper) int {
+	ccdMon := fmt.Sprintf(consts.TmplCCDMonFolder, ccd)
+	monPath := path.Join(monGroup, consts.MonData, ccdMon, consts.MBRawFile)
 
-	mb := InvalidMB
-	if lastSeenRawData, ok := lastSeenData[monPath]; ok {
-		mb = calcAverageInMBps(valueCurr, tsCurr, lastSeenRawData.value, lastSeenRawData.readTime)
+	valueCurr := file.ReadValueFromFile(fs, monPath)
+
+	mb := consts.InvalidMB
+	if prev, err := dataKeeper.Get(monPath); err == nil {
+		mb = calcAverageInMBps(valueCurr, tsCurr, prev.Value, prev.ReadTime)
 	}
 
 	// always refresh the last seen raw record needed for future calc
-	lastSeenData[monPath] = rawData{
-		value:    valueCurr,
-		readTime: tsCurr,
-	}
+	dataKeeper.Set(monPath, valueCurr, tsCurr)
 
 	return mb
 }
 
 func calcAverageInMBps(currV int64, nowTime time.Time, lastV int64, lastTime time.Time) int {
-	if currV == InvalidMB || lastV == InvalidMB || currV < lastV {
-		return InvalidMB
+	if currV == consts.InvalidMB || lastV == consts.InvalidMB || currV < lastV {
+		return consts.InvalidMB
 	}
 
 	elapsed := nowTime.Sub(lastTime)

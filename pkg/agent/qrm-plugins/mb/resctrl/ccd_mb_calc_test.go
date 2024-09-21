@@ -17,10 +17,13 @@ limitations under the License.
 package resctrl
 
 import (
-	"github.com/spf13/afero"
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/spf13/afero"
+
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl/state"
 )
 
 func Test_getMB(t *testing.T) {
@@ -29,12 +32,18 @@ func Test_getMB(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	_ = afero.WriteFile(fs, "/foo/mon_data/mon_L3_04/mbm_total_bytes", []byte("2000000000"), 0644)
 
+	dateKeeper, _ := state.NewMBRawDataKeeper()
+	dateKeeper.Set("/foo/mon_data/mon_L3_04/mbm_total_bytes",
+		1_000_000_000,
+		time.Date(2024, 9, 18, 19, 57, 45, 0, time.UTC),
+	)
+
 	type args struct {
 		fs         afero.Fs
 		monGroup   string
 		ccd        int
 		ts         time.Time
-		dataKeeper map[string]rawData
+		dataKeeper state.MBRawDataKeeper
 	}
 	tests := []struct {
 		name string
@@ -44,13 +53,11 @@ func Test_getMB(t *testing.T) {
 		{
 			name: "happy path",
 			args: args{
-				fs:       fs,
-				monGroup: "/foo",
-				ccd:      4,
-				ts:       time.Date(2024, 9, 18, 19, 57, 46, 0, time.UTC),
-				dataKeeper: map[string]rawData{
-					"/foo/mon_data/mon_L3_04/mbm_total_bytes": {value: 1_000_000_000, readTime: time.Date(2024, 9, 18, 19, 57, 45, 0, time.UTC)},
-				},
+				fs:         fs,
+				monGroup:   "/foo",
+				ccd:        4,
+				ts:         time.Date(2024, 9, 18, 19, 57, 46, 0, time.UTC),
+				dataKeeper: dateKeeper,
 			},
 			want: 1000,
 		},

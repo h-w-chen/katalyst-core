@@ -17,10 +17,13 @@ limitations under the License.
 package mb
 
 import (
+	"github.com/pkg/errors"
+
 	"github.com/kubewharf/katalyst-core/cmd/katalyst-agent/app/agent"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl/state"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
 	"github.com/kubewharf/katalyst-core/pkg/config"
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
@@ -43,11 +46,20 @@ func (c *plugin) Start() error {
 
 	var err error
 
-	taskManager, err := task.New(c.dieTopology.DiesInNuma)
+	dataKeeper, err := state.NewMBRawDataKeeper()
+	if err != nil {
+		return errors.Wrap(err, "mbm: failed to create raw data state keeper")
+	}
 
-	var ccdReader resctrl.CCDMBReader
-	monGroupReader, err := resctrl.NewMonGroupReader(ccdReader)
-	taskMBReader, err := task.NewTaskMBReader(monGroupReader)
+	taskManager, err := task.New(c.dieTopology.DiesInNuma, dataKeeper)
+	if err != nil {
+		return errors.Wrap(err, "mbm: failed to create task manager")
+	}
+
+	taskMBReader, err := createTaskMBReader(dataKeeper)
+	if err != nil {
+		return errors.Wrap(err, "mbm: failed to create task mb reader")
+	}
 
 	podMBMonitor, err := monitor.New(taskManager, taskMBReader)
 	if err != nil {
@@ -70,6 +82,25 @@ func (c *plugin) Start() error {
 	}()
 
 	return nil
+}
+
+func createTaskMBReader(dataKeeper state.MBRawDataKeeper) (task.TaskMBReader, error) {
+	ccdMBCalc, err := resctrl.NewCCDMBCalculator(dataKeeper)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create ccd mb calculator")
+	}
+
+	ccdMBReader, err := resctrl.NewCCDMBReader(ccdMBCalc)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create resctrl ccd mb reader")
+	}
+
+	monGroupReader, err := resctrl.NewMonGroupReader(ccdMBReader)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create resctrl mon group mb reader")
+	}
+
+	return task.NewTaskMBReader(monGroupReader)
 }
 
 func (c *plugin) Stop() error {
