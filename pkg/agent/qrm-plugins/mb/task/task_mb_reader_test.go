@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/mock"
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl"
 )
@@ -48,7 +49,7 @@ func Test_taskMBReader_ReadMB(t1 *testing.T) {
 					QoSLevel: "reclaimed_cores",
 					PodUID:   "123-321-1122",
 					NumaNode: []int{2},
-					nodeCCDs: map[int][]int{2: {4, 5}},
+					nodeCCDs: map[int]sets.Int{2: {4: sets.Empty{}, 5: sets.Empty{}}},
 				},
 			},
 			want:    map[int]int{4: 111, 5: 222},

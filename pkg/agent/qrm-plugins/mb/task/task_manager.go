@@ -25,7 +25,7 @@ import (
 
 type Manager interface {
 	GetTasks() []*Task
-	AddTask(task *Task)
+	addTask(task *Task)
 	FindTask(id string) (*Task, error)
 }
 
@@ -54,7 +54,18 @@ func (m *manager) FindTask(id string) (*Task, error) {
 	return task, nil
 }
 
-func (m *manager) AddTask(task *Task) {
+func (m *manager) NewTask(podID string, qos QoSLevel) *Task {
+	task := &Task{
+		QoSLevel: qos,
+		PodUID:   podID,
+		nodeCCDs: m.nodeCCDs,
+	}
+
+	m.addTask(task)
+	return task
+}
+
+func (m *manager) addTask(task *Task) {
 	m.rwLock.Lock()
 	defer m.rwLock.Unlock()
 	m.taskQoS[task.GetID()] = task.QoSLevel
