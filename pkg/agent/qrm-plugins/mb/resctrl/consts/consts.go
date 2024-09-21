@@ -14,29 +14,27 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package resctrl
+package consts
 
-import (
-	"strconv"
+const (
+	FsRoot          = "/sys/fs/resctrl"
+	SubGroupMonRoot = "mon_groups"
+	MonData         = "mon_data"
 
-	"github.com/spf13/afero"
+	GroupDedicated  = "dedicated"
+	GroupSharedCore = "shared"
+	GroupReclaimed  = "reclaimed"
+	GroupSystem     = "system"
+
+	FolderPerm = 0755
+	FilePerm   = 0644
+
+	TasksFile    = "tasks"
+	MBRawFile    = "mbm_total_bytes"
+	SchemataFile = "schemata"
+
+	TmplTaskFolder   = "pod%s"
+	TmplCCDMonFolder = "mon_L3_%02d"
+
+	InvalidMB = -1
 )
-
-// readRawData returns -1 as invalid MB is file content is not digits
-func readRawData(fs afero.Fs, path string) int64 {
-	buffer, err := afero.ReadFile(fs, path)
-	if err != nil {
-		return InvalidMB
-	}
-
-	if string(buffer) == "Unavailable" {
-		return InvalidMB
-	}
-
-	v, err := strconv.ParseInt(string(buffer), 10, 64)
-	if err != nil {
-		return InvalidMB
-	}
-
-	return v
-}

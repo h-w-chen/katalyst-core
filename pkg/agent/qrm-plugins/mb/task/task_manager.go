@@ -21,26 +21,41 @@ import (
 	"sync"
 
 	"k8s.io/apimachinery/pkg/util/sets"
+
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl/state"
 )
 
 type Manager interface {
 	GetTasks() []*Task
-	addTask(task *Task)
+	NewTask(podID string, qos QoSLevel) *Task
 	FindTask(id string) (*Task, error)
+	DeleteTask(task *Task)
 }
 
-func New(nodeCCDs map[int]sets.Int) (Manager, error) {
+func New(nodeCCDs map[int]sets.Int, cleaner state.MBRawDataCleaner) (Manager, error) {
 	return &manager{
-		nodeCCDs: nodeCCDs,
+		rawStateCleaner: cleaner,
+		nodeCCDs:        nodeCCDs,
 	}, nil
 }
 
 type manager struct {
-	nodeCCDs map[int]sets.Int
+	rawStateCleaner state.MBRawDataCleaner
+	nodeCCDs        map[int]sets.Int
 
 	rwLock  sync.RWMutex
 	tasks   map[string]*Task
 	taskQoS map[string]QoSLevel
+}
+
+func (m *manager) DeleteTask(task *Task) {
+	monGroup, _ := task.GetResctrlMonGroup()
+	m.rawStateCleaner.Cleanup(monGroup)
+
+	m.rwLock.Lock()
+	m.rwLock.Unlock()
+	delete(m.taskQoS, task.GetID())
+	delete(m.tasks, task.GetID())
 }
 
 func (m *manager) FindTask(id string) (*Task, error) {

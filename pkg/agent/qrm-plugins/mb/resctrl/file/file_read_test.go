@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package resctrl
+package file
 
 import (
 	"reflect"
@@ -68,8 +68,8 @@ func Test_readRawData(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			if got := readRawData(tt.args.fs, tt.args.path); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("readRawData() = %v, want %v", got, tt.want)
+			if got := ReadValueFromFile(tt.args.fs, tt.args.path); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ReadValueFromFile() = %v, want %v", got, tt.want)
 			}
 		})
 	}
