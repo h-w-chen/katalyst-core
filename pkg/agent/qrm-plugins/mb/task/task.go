@@ -53,6 +53,7 @@ type Task struct {
 	spids []int
 
 	NumaNode []int
+	nodeCCDs map[int][]int
 }
 
 func (t Task) GetID() string {
@@ -69,19 +70,24 @@ func (t Task) GetResctrlCtrlGroup() (string, error) {
 }
 
 func (t Task) GetResctrlMonGroup() (string, error) {
-	qosFolder, ok := qosFolderLookup[t.QoSLevel]
-	if !ok {
-		return "", errors.New("invalid qos level of task")
+	taskCtrlGroup, err := t.GetResctrlCtrlGroup()
+	if err != nil {
+		return "", err
 	}
 
 	taskFolder := fmt.Sprintf(resctrl.TmplTaskFolder, t.PodUID)
-	return path.Join(resctrl.FsRoot, qosFolder, resctrl.SubGroupMonRoot, taskFolder), nil
+	return path.Join(taskCtrlGroup, resctrl.SubGroupMonRoot, taskFolder), nil
 }
 
 func (t Task) GetCCDs() []int {
+	// by default all CCDs
 	if len(t.NumaNode) == 0 {
 		return allDies
 	}
 
-	panic("impl")
+	ccds := make([]int, 0)
+	for _, node := range t.NumaNode {
+		ccds = append(ccds, t.nodeCCDs[node]...)
+	}
+	return ccds
 }

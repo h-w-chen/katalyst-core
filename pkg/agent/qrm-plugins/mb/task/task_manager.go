@@ -16,6 +16,61 @@ limitations under the License.
 
 package task
 
+import (
+	"errors"
+	"sync"
+
+	"k8s.io/apimachinery/pkg/util/sets"
+)
+
 type Manager interface {
 	GetTasks() []*Task
+	AddTask(task *Task)
+	FindTask(id string) (*Task, error)
+}
+
+func New(nodeCCDs map[int]sets.Int) (Manager, error) {
+	return &manager{
+		nodeCCDs: nodeCCDs,
+	}, nil
+}
+
+type manager struct {
+	nodeCCDs map[int]sets.Int
+
+	rwLock  sync.RWMutex
+	tasks   map[string]*Task
+	taskQoS map[string]QoSLevel
+}
+
+func (m *manager) FindTask(id string) (*Task, error) {
+	m.rwLock.RLock()
+	m.rwLock.RUnlock()
+	task, ok := m.tasks[id]
+	if !ok {
+		return nil, errors.New("no task by the id")
+	}
+
+	return task, nil
+}
+
+func (m *manager) AddTask(task *Task) {
+	m.rwLock.Lock()
+	defer m.rwLock.Unlock()
+	m.taskQoS[task.GetID()] = task.QoSLevel
+	m.tasks[task.GetID()] = task
+}
+
+func (m *manager) GetTasks() []*Task {
+	m.rwLock.RLock()
+	defer m.rwLock.RUnlock()
+
+	result := make([]*Task, len(m.tasks))
+	i := 0
+	for _, task := range m.tasks {
+		result[i] = task
+		i++
+	}
+
+	return result
 }
