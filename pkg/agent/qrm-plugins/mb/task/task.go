@@ -21,6 +21,7 @@ import (
 	"path"
 
 	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/kubewharf/katalyst-api/pkg/consts"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl"
@@ -42,9 +43,6 @@ var qosFolderLookup = map[QoSLevel]string{
 	QoSLevelSystemCores:    resctrl.GroupSystem,
 }
 
-// todo: use dieTopology info instead
-var allDies = []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}
-
 type Task struct {
 	QoSLevel QoSLevel
 	PodUID   string
@@ -53,7 +51,7 @@ type Task struct {
 	spids []int
 
 	NumaNode []int
-	nodeCCDs map[int][]int
+	nodeCCDs map[int]sets.Int
 }
 
 func (t Task) GetID() string {
@@ -79,15 +77,28 @@ func (t Task) GetResctrlMonGroup() (string, error) {
 	return path.Join(taskCtrlGroup, resctrl.SubGroupMonRoot, taskFolder), nil
 }
 
+func getAllDies(nodeCCDs map[int]sets.Int) []int {
+	allDies := make([]int, 0)
+	for _, ccds := range nodeCCDs {
+		for ccd, _ := range ccds {
+			allDies = append(allDies, ccd)
+		}
+	}
+
+	return allDies
+}
+
 func (t Task) GetCCDs() []int {
 	// by default all CCDs
 	if len(t.NumaNode) == 0 {
-		return allDies
+		return getAllDies(t.nodeCCDs)
 	}
 
 	ccds := make([]int, 0)
 	for _, node := range t.NumaNode {
-		ccds = append(ccds, t.nodeCCDs[node]...)
+		for ccd, _ := range t.nodeCCDs[node] {
+			ccds = append(ccds, ccd)
+		}
 	}
 	return ccds
 }

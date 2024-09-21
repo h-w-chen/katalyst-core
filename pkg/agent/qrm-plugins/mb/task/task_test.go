@@ -19,6 +19,8 @@ package task
 import (
 	"reflect"
 	"testing"
+
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 func TestTask_GetResctrlCtrlGroup(t1 *testing.T) {
@@ -106,7 +108,7 @@ func TestTask_GetCCDs(t1 *testing.T) {
 	t1.Parallel()
 	type fields struct {
 		NumaNode []int
-		nodeCCDs map[int][]int
+		nodeCCDs map[int]sets.Int
 	}
 	tests := []struct {
 		name   string
@@ -117,7 +119,7 @@ func TestTask_GetCCDs(t1 *testing.T) {
 			name: "happy path",
 			fields: fields{
 				NumaNode: []int{2},
-				nodeCCDs: map[int][]int{0: {0, 1}, 2: {4, 5}},
+				nodeCCDs: map[int]sets.Int{0: {0: sets.Empty{}, 1: sets.Empty{}}, 2: {4: sets.Empty{}, 5: sets.Empty{}}},
 			},
 			want: []int{4, 5},
 		},
