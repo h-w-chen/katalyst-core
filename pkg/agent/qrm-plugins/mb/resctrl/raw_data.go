@@ -16,27 +16,27 @@ limitations under the License.
 
 package resctrl
 
-import "errors"
+import (
+	"strconv"
 
-type CCDMBReader interface {
-	ReadMB(MonGroup string, ccd int) (int, error)
-}
+	"github.com/spf13/afero"
+)
 
-func NewCCDMBReader(ccdMBCalc CCDMBCalculator) (CCDMBReader, error) {
-	return &ccdMBReader{
-		ccdMBCalc: ccdMBCalc,
-	}, nil
-}
-
-type ccdMBReader struct {
-	ccdMBCalc CCDMBCalculator
-}
-
-func (c ccdMBReader) ReadMB(MonGroup string, ccd int) (int, error) {
-	val := c.ccdMBCalc.CalcMB(MonGroup, ccd)
-	if val == InvalidMB {
-		return val, errors.New("invalid mb value")
+// readRawData returns -1 as invalid MB is file content is not digits
+func readRawData(fs afero.Fs, path string) int64 {
+	buffer, err := afero.ReadFile(fs, path)
+	if err != nil {
+		return InvalidMB
 	}
 
-	return val, nil
+	if string(buffer) == "Unavailable" {
+		return InvalidMB
+	}
+
+	v, err := strconv.ParseInt(string(buffer), 10, 64)
+	if err != nil {
+		return InvalidMB
+	}
+
+	return v
 }

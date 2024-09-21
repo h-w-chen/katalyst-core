@@ -19,7 +19,7 @@ package resctrl
 const (
 	FsRoot          = "/sys/fs/resctrl"
 	SubGroupMonRoot = "mon_groups"
-	SubGroupMonData = "mon_data"
+	MonData         = "mon_data"
 
 	GroupDedicated  = "dedicated"
 	GroupSharedCore = "shared"
@@ -33,5 +33,6 @@ const (
 	MBRawFile    = "mbm_total_bytes"
 	SchemataFile = "schemata"
 
-	TmplTaskFolder = "pod%s"
+	TmplTaskFolder   = "pod%s"
+	TmplCCDMonFolder = "mon_L3_%02d"
 )
