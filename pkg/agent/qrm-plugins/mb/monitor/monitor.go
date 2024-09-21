@@ -24,8 +24,11 @@ type MBMonitor interface {
 	GetQoSMBs() (map[task.QoSLevel]map[int]int, error)
 }
 
-func New() (MBMonitor, error) {
-	return &mbMonitor{}, nil
+func New(taskManager task.Manager, mbReader task.TaskMBReader) (MBMonitor, error) {
+	return &mbMonitor{
+		taskManager: taskManager,
+		mbReader:    mbReader,
+	}, nil
 }
 
 type mbMonitor struct {

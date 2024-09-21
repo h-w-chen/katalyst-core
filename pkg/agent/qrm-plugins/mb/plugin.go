@@ -20,6 +20,8 @@ import (
 	"github.com/kubewharf/katalyst-core/cmd/katalyst-agent/app/agent"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
 	"github.com/kubewharf/katalyst-core/pkg/config"
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
 	"github.com/kubewharf/katalyst-core/pkg/util/machine"
@@ -40,7 +42,14 @@ func (c *plugin) Start() error {
 	general.InfofV(6, "mbm: numa-CCD-cpu topology: \n%s", c.dieTopology)
 
 	var err error
-	podMBMonitor, err := monitor.New()
+
+	taskManager, err := task.New(c.dieTopology.DiesInNuma)
+
+	var ccdReader resctrl.CCDMBReader
+	monGroupReader, err := resctrl.NewMonGroupReader(ccdReader)
+	taskMBReader, err := task.NewTaskMBReader(monGroupReader)
+
+	podMBMonitor, err := monitor.New(taskManager, taskMBReader)
 	if err != nil {
 		return err
 	}
