@@ -14,14 +14,29 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package resctrl
+package task
+
+import "github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl"
 
 type TaskMBReader interface {
-	ReadMB(taskID string) map[int]int
+	ReadMB(task *Task) (map[int]int, error)
 }
 
-type taskMBReader struct{}
+type taskMBReader struct {
+	monGroupReader resctrl.MonGroupReader
+}
 
-func (t taskMBReader) ReadMB(taskID string) map[int]int {
-	panic("impl")
+func (t taskMBReader) ReadMB(task *Task) (map[int]int, error) {
+	taskMonGroup, err := task.GetResctrlMonGroup()
+	if err != nil {
+		return nil, err
+	}
+
+	return t.monGroupReader.ReadMB(taskMonGroup, task.GetCCDs())
+}
+
+func NewTaskMBReader(monGroupReader resctrl.MonGroupReader) (TaskMBReader, error) {
+	return &taskMBReader{
+		monGroupReader: monGroupReader,
+	}, nil
 }

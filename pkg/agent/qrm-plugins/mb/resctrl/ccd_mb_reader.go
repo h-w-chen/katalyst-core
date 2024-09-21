@@ -16,6 +16,6 @@ limitations under the License.
 
 package resctrl
 
-type MBReader interface {
-	ReadMB(monGroup string, dies []int) map[int]int
+type CCDMBReader interface {
+	ReadMB(MonGroup string, ccd int) int
 }

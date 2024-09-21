@@ -16,22 +16,21 @@ limitations under the License.
 
 package resctrl
 
-const (
-	FsRoot          = "/sys/fs/resctrl"
-	SubGroupMonRoot = "mon_groups"
-	SubGroupMonData = "mon_data"
+type MonGroupReader interface {
+	ReadMB(monGroup string, dies []int) (map[int]int, error)
+}
 
-	GroupDedicated  = "dedicated"
-	GroupSharedCore = "shared"
-	GroupReclaimed  = "reclaimed"
-	GroupSystem     = "system"
+type monGroupReader struct {
+	ccdReader CCDMBReader
+}
 
-	FolderPerm = 0755
-	FilePerm   = 0644
+func (m monGroupReader) ReadMB(monGroup string, dies []int) (map[int]int, error) {
+	//TODO implement me
+	panic("implement me")
+}
 
-	TasksFile    = "tasks"
-	MBRawFile    = "mbm_total_bytes"
-	SchemataFile = "schemata"
-
-	TmplTaskFolder = "pod%s"
-)
+func NewMonGroupReader(ccdReader CCDMBReader) (MonGroupReader, error) {
+	return &monGroupReader{
+		ccdReader: ccdReader,
+	}, nil
+}
