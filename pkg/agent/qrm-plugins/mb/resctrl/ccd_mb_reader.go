@@ -17,5 +17,5 @@ limitations under the License.
 package resctrl
 
 type CCDMBReader interface {
-	ReadMB(MonGroup string, ccd int) int
+	ReadMB(MonGroup string, ccd int) (int, error)
 }
