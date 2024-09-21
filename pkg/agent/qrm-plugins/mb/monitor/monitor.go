@@ -17,7 +17,6 @@ limitations under the License.
 package monitor
 
 import (
-	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
 )
 
@@ -31,7 +30,7 @@ func New() (MBMonitor, error) {
 
 type mbMonitor struct {
 	taskManager task.Manager
-	mbReader    resctrl.TaskMBReader
+	mbReader    task.TaskMBReader
 }
 
 func (t mbMonitor) GetQoSMBs() (map[task.QoSLevel]map[int]int, error) {
@@ -39,7 +38,11 @@ func (t mbMonitor) GetQoSMBs() (map[task.QoSLevel]map[int]int, error) {
 
 	// todo: read in parallel to speed up
 	for _, pod := range t.taskManager.GetTasks() {
-		ccdMB := t.mbReader.ReadMB(pod.GetID())
+		ccdMB, err := t.mbReader.ReadMB(pod)
+		if err != nil {
+			return nil, err
+		}
+
 		if _, ok := result[pod.QoSLevel]; !ok {
 			result[pod.QoSLevel] = make(map[int]int)
 		}

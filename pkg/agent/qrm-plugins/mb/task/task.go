@@ -16,17 +16,72 @@ limitations under the License.
 
 package task
 
-import "github.com/kubewharf/katalyst-api/pkg/consts"
+import (
+	"fmt"
+	"path"
+
+	"github.com/pkg/errors"
+
+	"github.com/kubewharf/katalyst-api/pkg/consts"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl"
+)
 
 type QoSLevel = consts.QoSLevel
 
+const (
+	QoSLevelReclaimedCores QoSLevel = consts.QoSLevelReclaimedCores
+	QoSLevelSharedCores    QoSLevel = consts.QoSLevelSharedCores
+	QoSLevelDedicatedCores QoSLevel = consts.QoSLevelDedicatedCores
+	QoSLevelSystemCores    QoSLevel = consts.QoSLevelSystemCores
+)
+
+var qosFolderLookup = map[QoSLevel]string{
+	QoSLevelDedicatedCores: resctrl.GroupDedicated,
+	QoSLevelSharedCores:    resctrl.GroupSharedCore,
+	QoSLevelReclaimedCores: resctrl.GroupReclaimed,
+	QoSLevelSystemCores:    resctrl.GroupSystem,
+}
+
+// todo: use dieTopology info instead
+var allDies = []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}
+
 type Task struct {
-	PodUID   string
-	pid      int
-	spids    []int
 	QoSLevel QoSLevel
+	PodUID   string
+
+	pid   int
+	spids []int
+
+	NumaNode []int
 }
 
 func (t Task) GetID() string {
 	return t.PodUID
+}
+
+func (t Task) GetResctrlCtrlGroup() (string, error) {
+	qosFolder, ok := qosFolderLookup[t.QoSLevel]
+	if !ok {
+		return "", errors.New("invalid qos level of task")
+	}
+
+	return path.Join(resctrl.FsRoot, qosFolder), nil
+}
+
+func (t Task) GetResctrlMonGroup() (string, error) {
+	qosFolder, ok := qosFolderLookup[t.QoSLevel]
+	if !ok {
+		return "", errors.New("invalid qos level of task")
+	}
+
+	taskFolder := fmt.Sprintf(resctrl.TmplTaskFolder, t.PodUID)
+	return path.Join(resctrl.FsRoot, qosFolder, resctrl.SubGroupMonRoot, taskFolder), nil
+}
+
+func (t Task) GetCCDs() []int {
+	if len(t.NumaNode) == 0 {
+		return allDies
+	}
+
+	panic("impl")
 }
