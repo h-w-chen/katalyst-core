@@ -25,8 +25,15 @@ type monGroupReader struct {
 }
 
 func (m monGroupReader) ReadMB(monGroup string, dies []int) (map[int]int, error) {
-	//TODO implement me
-	panic("implement me")
+	result := make(map[int]int)
+	for _, ccd := range dies {
+		mb, err := m.ccdReader.ReadMB(monGroup, ccd)
+		if err != nil {
+			return nil, err
+		}
+		result[ccd] = mb
+	}
+	return result, nil
 }
 
 func NewMonGroupReader(ccdReader CCDMBReader) (MonGroupReader, error) {
