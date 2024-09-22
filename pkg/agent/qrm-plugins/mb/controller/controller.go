@@ -22,6 +22,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/wait"
 
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
 )
@@ -34,6 +35,9 @@ type Controller struct {
 	cancel context.CancelFunc
 
 	podMBMonitor monitor.MBMonitor
+
+	domainManager policy.MBDomainManager
+	policy        policy.PackageMBPolicy
 }
 
 func (c *Controller) Run() {
@@ -53,6 +57,11 @@ func (c *Controller) run(ctx context.Context) {
 	}
 
 	general.InfofV(6, "mbm: mb usage summary: %v", qosCCDMB)
+
+	for i, domain := range c.domainManager.Domains {
+		mbAlloc := c.policy.GetPlan(domain.CCDs, qosCCDMB)
+		general.InfofV(6, "mbm: domain %d mb alloc plan: %v", i, mbAlloc)
+	}
 
 	panic("impl the rest logic")
 }
