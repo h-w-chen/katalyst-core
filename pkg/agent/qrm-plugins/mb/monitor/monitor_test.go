@@ -27,6 +27,7 @@ import (
 
 type mockTaskManager struct {
 	mock.Mock
+	task.Manager
 }
 
 func (m *mockTaskManager) GetTasks() []*task.Task {
