@@ -28,7 +28,7 @@ type CtrlGroupMBSetter interface {
 }
 
 type ctrlGroupMBSetter struct {
-	ccdMBSetter SchemataUpdater
+	schemataUpdater SchemataUpdater
 }
 
 func toSchmataInst(ccdMB map[int]int) string {
@@ -43,9 +43,11 @@ func toSchmataInst(ccdMB map[int]int) string {
 }
 
 func (c ctrlGroupMBSetter) SetMB(ctrlGroup string, ccdMB map[int]int) error {
-	return c.ccdMBSetter.UpdateSchemata(ctrlGroup, toSchmataInst(ccdMB))
+	return c.schemataUpdater.UpdateSchemata(ctrlGroup, toSchmataInst(ccdMB))
 }
 
-func NewCtrlGroupSetter() (CtrlGroupMBSetter, error) {
-	return &ctrlGroupMBSetter{}, nil
+func NewCtrlGroupSetter(ccdMBSetter SchemataUpdater) (CtrlGroupMBSetter, error) {
+	return &ctrlGroupMBSetter{
+		schemataUpdater: ccdMBSetter,
+	}, nil
 }

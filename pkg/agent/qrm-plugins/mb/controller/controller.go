@@ -22,6 +22,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/wait"
 
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/allocator"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
@@ -34,7 +35,8 @@ const (
 type Controller struct {
 	cancel context.CancelFunc
 
-	podMBMonitor monitor.MBMonitor
+	podMBMonitor    monitor.MBMonitor
+	mbPlanAllocator allocator.PlanAllocator
 
 	domainManager policy.MBDomainManager
 	policy        policy.PackageMBPolicy
@@ -71,8 +73,9 @@ func (c *Controller) Stop() error {
 	return nil
 }
 
-func New(podMBMonitor monitor.MBMonitor) (*Controller, error) {
+func New(podMBMonitor monitor.MBMonitor, mbPlanAllocator allocator.PlanAllocator) (*Controller, error) {
 	return &Controller{
-		podMBMonitor: podMBMonitor,
+		podMBMonitor:    podMBMonitor,
+		mbPlanAllocator: mbPlanAllocator,
 	}, nil
 }
