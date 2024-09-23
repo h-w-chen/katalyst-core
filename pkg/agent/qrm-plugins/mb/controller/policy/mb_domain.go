@@ -18,6 +18,9 @@ package policy
 
 import (
 	"sort"
+	"sync"
+
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/kubewharf/katalyst-core/pkg/util/machine"
 )
@@ -34,10 +37,26 @@ type MBDomain struct {
 	ccdNode   map[int]int
 	nodeCCDs  map[int][]int
 	CCDs      []int
+
+	rwLock sync.RWMutex
+	// numa nodes that will be assigned to dedicated pods that still are in Admit state
+	preemptyNodes sets.Int
 }
 
-var simpleSorting = func(i, j int) bool {
-	return i < j
+func (m *MBDomain) PreemptNodes(nodes []int) {
+	m.rwLock.Lock()
+	defer m.rwLock.Unlock()
+
+	m.preemptyNodes.Insert(nodes...)
+}
+
+func (m *MBDomain) UnpreemptNodes(nodes []int) {
+	m.rwLock.Lock()
+	defer m.rwLock.Unlock()
+
+	for _, node := range nodes {
+		delete(m.preemptyNodes, node)
+	}
 }
 
 type MBDomainManager struct {
@@ -51,10 +70,11 @@ func NewMBDomainManager(dieTopology machine.DieTopology) *MBDomainManager {
 
 	for packageID := 0; packageID < dieTopology.Packages; packageID++ {
 		mbDomain := &MBDomain{
-			ID:        packageID,
-			NumaNodes: dieTopology.NUMAsInPackage[packageID],
-			ccdNode:   make(map[int]int),
-			nodeCCDs:  make(map[int][]int),
+			ID:            packageID,
+			NumaNodes:     dieTopology.NUMAsInPackage[packageID],
+			ccdNode:       make(map[int]int),
+			nodeCCDs:      make(map[int][]int),
+			preemptyNodes: make(sets.Int),
 		}
 
 		for node, ccds := range dieTopology.DiesInNuma {
@@ -63,10 +83,14 @@ func NewMBDomainManager(dieTopology machine.DieTopology) *MBDomainManager {
 				mbDomain.nodeCCDs[node] = append(mbDomain.nodeCCDs[node], ccd)
 				mbDomain.CCDs = append(mbDomain.CCDs, ccd)
 			}
-			sort.Slice(mbDomain.nodeCCDs[node], simpleSorting)
+			sort.Slice(mbDomain.nodeCCDs[node], func(i, j int) bool {
+				return mbDomain.nodeCCDs[node][i] < mbDomain.nodeCCDs[node][j]
+			})
 		}
 
-		sort.Slice(mbDomain.CCDs, simpleSorting)
+		sort.Slice(mbDomain.CCDs, func(i, j int) bool {
+			return mbDomain.CCDs[i] < mbDomain.CCDs[j]
+		})
 
 		manager.Domains[packageID] = mbDomain
 	}

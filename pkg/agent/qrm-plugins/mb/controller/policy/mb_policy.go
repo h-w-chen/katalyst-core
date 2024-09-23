@@ -21,6 +21,17 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
 )
 
-type PackageMBPolicy interface {
+type DomainMBPolicy interface {
 	GetPlan(ccds []int, currQoSMB map[task.QoSLevel]map[int]int) plan.MBAlloc
+}
+
+type domainMBPolicy struct{}
+
+func (d domainMBPolicy) GetPlan(ccds []int, currQoSMB map[task.QoSLevel]map[int]int) plan.MBAlloc {
+	//TODO implement me
+	panic("implement me")
+}
+
+func NewDomainMBPolicy() (DomainMBPolicy, error) {
+	return &domainMBPolicy{}, nil
 }
