@@ -39,7 +39,7 @@ type Controller struct {
 	mbPlanAllocator allocator.PlanAllocator
 
 	domainManager policy.MBDomainManager
-	policy        policy.PackageMBPolicy
+	policy        policy.DomainMBPolicy
 }
 
 func (c *Controller) Run() {
