@@ -39,6 +39,6 @@ func (c ccdMBSetter) UpdateSchemata(ctrlGroup string, instruction string) error 
 	return updateSchemata(c.fs, ctrlGroup, instruction)
 }
 
-func NewCCDMBSetter() (SchemataUpdater, error) {
+func NewSchemataUpdater() (SchemataUpdater, error) {
 	return &ccdMBSetter{}, nil
 }

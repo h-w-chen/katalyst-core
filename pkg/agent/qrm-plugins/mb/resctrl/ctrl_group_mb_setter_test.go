@@ -67,7 +67,7 @@ func Test_ctrlGroupMBSetter_Set(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			c := ctrlGroupMBSetter{
-				ccdMBSetter: tt.fields.ccdMBSetter,
+				schemataUpdater: tt.fields.ccdMBSetter,
 			}
 			if err := c.SetMB(tt.args.ctrlGroup, tt.args.ccdMB); (err != nil) != tt.wantErr {
 				t.Errorf("Set() error = %v, wantErr %v", err, tt.wantErr)

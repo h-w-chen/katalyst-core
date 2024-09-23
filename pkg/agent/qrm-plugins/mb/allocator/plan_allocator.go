@@ -45,6 +45,8 @@ func (p planAllocator) Allocate(alloc plan.MBAlloc) error {
 	return nil
 }
 
-func NewPlanAllocator() (PlanAllocator, error) {
-	return &planAllocator{}, nil
+func NewPlanAllocator(ctrlGroupMBSetter resctrl.CtrlGroupMBSetter) (PlanAllocator, error) {
+	return &planAllocator{
+		ctrlGroupMBSetter: ctrlGroupMBSetter,
+	}, nil
 }
