@@ -38,7 +38,7 @@ func (p planAllocator) Allocate(alloc plan.MBAlloc) error {
 		if err != nil {
 			return errors.Wrap(err, "unknown qos level")
 		}
-		if err := p.ctrlGroupMBSetter.Set(qosCtrlGroup, ccdMB); err != nil {
+		if err := p.ctrlGroupMBSetter.SetMB(qosCtrlGroup, ccdMB); err != nil {
 			return errors.Wrap(err, "failed to set MB allocation")
 		}
 	}

@@ -16,23 +16,6 @@ limitations under the License.
 
 package resctrl
 
-type CtrlGroupMBSetter interface {
-	SetMB(ctrlGroup string, ccdMB map[int]int) error
-}
-
-type ctrlGroupMBSetter struct {
-	ccdMBSetter CCDMBSetter
-}
-
-func (c ctrlGroupMBSetter) SetMB(ctrlGroup string, ccdMB map[int]int) error {
-	for ccd, mb := range ccdMB {
-		if err := c.ccdMBSetter.SetMB(ctrlGroup, ccd, mb); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func NewCtrlGroupSetter() (CtrlGroupMBSetter, error) {
-	return &ctrlGroupMBSetter{}, nil
+type CCDMBSetter interface {
+	SetMB(ctrlGroup string, ccd int, mb int) error
 }
