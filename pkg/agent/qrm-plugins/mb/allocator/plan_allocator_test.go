@@ -30,7 +30,7 @@ type mockCtrlGroupMBSetter struct {
 	mock.Mock
 }
 
-func (m *mockCtrlGroupMBSetter) Set(ctrlGroup string, ccdMB map[int]int) error {
+func (m *mockCtrlGroupMBSetter) SetMB(ctrlGroup string, ccdMB map[int]int) error {
 	args := m.Called(ctrlGroup, ccdMB)
 	return args.Error(0)
 }
@@ -39,7 +39,7 @@ func Test_planAllocator_Allocate(t *testing.T) {
 	t.Parallel()
 
 	ctrlGroupMBSetter := new(mockCtrlGroupMBSetter)
-	ctrlGroupMBSetter.On("Set", "/sys/fs/resctrl/dedicated", map[int]int{2: 25_000, 3: 12_000}).Return(nil)
+	ctrlGroupMBSetter.On("SetMB", "/sys/fs/resctrl/dedicated", map[int]int{2: 25_000, 3: 12_000}).Return(nil)
 
 	type fields struct {
 		ctrlGroupSetter resctrl.CtrlGroupMBSetter
