@@ -63,9 +63,11 @@ func (c *Controller) run(ctx context.Context) {
 	for i, domain := range c.domainManager.Domains {
 		mbAlloc := c.policy.GetPlan(domain.CCDs, qosCCDMB)
 		general.InfofV(6, "mbm: domain %d mb alloc plan: %v", i, mbAlloc)
-	}
 
-	panic("impl the rest logic")
+		if err := c.mbPlanAllocator.Allocate(mbAlloc); err != nil {
+			general.Errorf("mbm: failed to allocate mb plan for domain %d", i)
+		}
+	}
 }
 
 func (c *Controller) Stop() error {
