@@ -19,30 +19,21 @@ package resctrl
 import (
 	"testing"
 
-	"github.com/stretchr/testify/mock"
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
 )
 
-type mockCCDMBSetter struct {
-	mock.Mock
-}
-
-func (m *mockCCDMBSetter) UpdateSchemata(ctrlGroup string, update string) error {
-	args := m.Called(ctrlGroup, update)
-	return args.Error(0)
-}
-
-func Test_ctrlGroupMBSetter_Set(t *testing.T) {
+func Test_ccdMBSetter_UpdateSchemata(t *testing.T) {
 	t.Parallel()
-
-	ccdMBSetter := new(mockCCDMBSetter)
-	ccdMBSetter.On("UpdateSchemata", "foo", "MB:2=200;").Return(nil)
+	fs := afero.NewMemMapFs()
+	_ = afero.WriteFile(fs, "/foo/schemata", []byte("MB:2=32;3=16;"), 0644)
 
 	type fields struct {
-		ccdMBSetter SchemataUpdater
+		fs afero.Fs
 	}
 	type args struct {
-		ctrlGroup string
-		ccdMB     map[int]int
+		ctrlGroup   string
+		instruction string
 	}
 	tests := []struct {
 		name    string
@@ -53,11 +44,11 @@ func Test_ctrlGroupMBSetter_Set(t *testing.T) {
 		{
 			name: "happy path",
 			fields: fields{
-				ccdMBSetter: ccdMBSetter,
+				fs: fs,
 			},
 			args: args{
-				ctrlGroup: "foo",
-				ccdMB:     map[int]int{2: 25_000},
+				ctrlGroup:   "foo",
+				instruction: "MB:2=32;3:16;",
 			},
 			wantErr: false,
 		},
@@ -66,12 +57,17 @@ func Test_ctrlGroupMBSetter_Set(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			c := ctrlGroupMBSetter{
-				ccdMBSetter: tt.fields.ccdMBSetter,
+			c := ccdMBSetter{
+				fs: tt.fields.fs,
 			}
-			if err := c.SetMB(tt.args.ctrlGroup, tt.args.ccdMB); (err != nil) != tt.wantErr {
-				t.Errorf("Set() error = %v, wantErr %v", err, tt.wantErr)
+			if err := c.UpdateSchemata(tt.args.ctrlGroup, tt.args.instruction); (err != nil) != tt.wantErr {
+				t.Errorf("UpdateSchemata() error = %v, wantErr %v", err, tt.wantErr)
 			}
+
+			buff, err := afero.ReadFile(fs, "/foo/schemata")
+			assert.NoError(t, err)
+			t.Logf("content got: %s", string(buff))
+			assert.True(t, "MB:2=32;3=16;" == string(buff) || "MB:3=16;2=32;" == string(buff))
 		})
 	}
 }

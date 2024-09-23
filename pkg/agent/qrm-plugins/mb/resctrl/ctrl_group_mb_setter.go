@@ -16,21 +16,34 @@ limitations under the License.
 
 package resctrl
 
+import (
+	"fmt"
+	"strings"
+)
+
+const mbUnitAMD = 1_000 / 8 // AMD specific value of mb unit is 1/8th GBps
+
 type CtrlGroupMBSetter interface {
 	SetMB(ctrlGroup string, ccdMB map[int]int) error
 }
 
 type ctrlGroupMBSetter struct {
-	ccdMBSetter CCDMBSetter
+	ccdMBSetter SchemataUpdater
+}
+
+func toSchmataInst(ccdMB map[int]int) string {
+	//the resultant string looks like  "MB:2=32;3=32;"
+	var sb strings.Builder
+	sb.WriteString("MB:")
+	for ccd, mb := range ccdMB {
+		v := (mb + mbUnitAMD - 1) / mbUnitAMD
+		sb.WriteString(fmt.Sprintf("%d=%d;", ccd, v))
+	}
+	return sb.String()
 }
 
 func (c ctrlGroupMBSetter) SetMB(ctrlGroup string, ccdMB map[int]int) error {
-	for ccd, mb := range ccdMB {
-		if err := c.ccdMBSetter.SetMB(ctrlGroup, ccd, mb); err != nil {
-			return err
-		}
-	}
-	return nil
+	return c.ccdMBSetter.UpdateSchemata(ctrlGroup, toSchmataInst(ccdMB))
 }
 
 func NewCtrlGroupSetter() (CtrlGroupMBSetter, error) {
