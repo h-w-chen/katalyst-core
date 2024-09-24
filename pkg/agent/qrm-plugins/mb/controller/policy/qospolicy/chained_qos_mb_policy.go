@@ -14,9 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package policy
+package qospolicy
 
 import (
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy/config"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy/plan"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/util"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
@@ -50,7 +51,7 @@ func (p priorityChainedMBPolicy) getTopPrioPlan(totalMB int, currQoSMB map[task.
 	topTierQoSMB, leftQoSMB = p.splitQoS(currQoSMB)
 
 	topTierInUse := util.Sum(topTierQoSMB)
-	otherMins := getMins(util.GetQoSKeys(leftQoSMB)...)
+	otherMins := config.GetMins(util.GetQoSKeys(leftQoSMB)...)
 	if topTierInUse >= totalMB-otherMins {
 		// the priority barely meets its needs; it should be always prioritized
 		// just take all MB for the top tier, besides the min MB for the left
@@ -64,7 +65,7 @@ func (p priorityChainedMBPolicy) getTopPrioPlan(totalMB int, currQoSMB map[task.
 	// top tier has sufficient room for itself
 	// its lounge zone (if applicable) should be honored,
 	// unless otherwise exceeding its upper bound, or the left min unable to hold
-	topTierToAllocate := topTierInUse + getLounges(util.GetQoSKeys(topTierQoSMB)...)
+	topTierToAllocate := topTierInUse + config.GetLounges(util.GetQoSKeys(topTierQoSMB)...)
 	if topTireUpperBound < topTierToAllocate {
 		topTierToAllocate = topTireUpperBound
 	}

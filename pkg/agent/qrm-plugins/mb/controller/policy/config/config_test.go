@@ -14,12 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package policy
+package config
 
 import (
-	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
 )
 
 func Test_getMins(t *testing.T) {
@@ -44,7 +46,7 @@ func Test_getMins(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			assert.Equalf(t, tt.want, getMins(tt.args.qos...), "getMins(%v)", tt.args.qos)
+			assert.Equalf(t, tt.want, GetMins(tt.args.qos...), "getMins(%v)", tt.args.qos)
 		})
 	}
 }

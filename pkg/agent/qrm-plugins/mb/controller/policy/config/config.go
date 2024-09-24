@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package policy
+package config
 
 import "github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
 
@@ -35,11 +35,11 @@ var config = map[task.QoSLevel]map[string]int{
 	},
 }
 
-func getMins(qos ...task.QoSLevel) int {
+func GetMins(qos ...task.QoSLevel) int {
 	return getValues("min", qos...)
 }
 
-func getLounges(qos ...task.QoSLevel) int {
+func GetLounges(qos ...task.QoSLevel) int {
 	return getValues("lounge", qos...)
 }
 

@@ -14,17 +14,27 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package policy
+package qospolicy
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 
 	"github.com/kubewharf/katalyst-api/pkg/consts"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy/plan"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
 )
+
+type mockBoundedPolicy struct {
+	mock.Mock
+}
+
+func (m *mockBoundedPolicy) GetPlan(upperBoundMB int, currQoSMB map[task.QoSLevel]map[int]int) *plan.MBAlloc {
+	args := m.Called(upperBoundMB, currQoSMB)
+	return args.Get(0).(*plan.MBAlloc)
+}
 
 func Test_priorityChainedMBPolicy_GetPlan(t *testing.T) {
 	t.Parallel()
