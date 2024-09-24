@@ -24,13 +24,15 @@ import (
 
 type priorityChainedMBPolicy struct {
 	topTiers map[task.QoSLevel]struct{}
-	tier     weightedQoSMBPolicy
+	tier     QoSMBPolicy
 	next     QoSMBPolicy
 }
 
 type mapQoSMB = map[task.QoSLevel]map[int]int
 
 func (p priorityChainedMBPolicy) splitQoS(currQoSMB mapQoSMB) (tierQoS, otherQoS mapQoSMB) {
+	tierQoS = make(mapQoSMB)
+	otherQoS = make(mapQoSMB)
 	for qos, ccdMB := range currQoSMB {
 		if _, ok := p.topTiers[qos]; ok {
 			tierQoS[qos] = ccdMB

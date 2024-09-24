@@ -18,11 +18,28 @@ package policy
 
 import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy/plan"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/util"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
 )
 
 type weightedQoSMBPolicy struct{}
 
 func (w weightedQoSMBPolicy) GetPlan(totalMB int, currQoSMB map[task.QoSLevel]map[int]int) *plan.MBAlloc {
-	panic("impl")
+	totalUsage := util.Sum(currQoSMB)
+
+	mbPlan := &plan.MBAlloc{Plan: make(map[task.QoSLevel]map[int]int)}
+	for qos, ccdMB := range currQoSMB {
+		for ccd, mb := range ccdMB {
+			if _, ok := mbPlan.Plan[qos]; !ok {
+				mbPlan.Plan[qos] = make(map[int]int)
+			}
+			mbPlan.Plan[qos][ccd] = int(float64(totalMB) / float64(totalUsage) * float64(mb))
+		}
+	}
+
+	return mbPlan
+}
+
+func NewWeightedQoSMBPolicy() QoSMBPolicy {
+	return &weightedQoSMBPolicy{}
 }
