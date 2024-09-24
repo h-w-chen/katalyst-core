@@ -61,7 +61,7 @@ func (c *Controller) run(ctx context.Context) {
 	general.InfofV(6, "mbm: mb usage summary: %v", qosCCDMB)
 
 	for i, domain := range c.domainManager.Domains {
-		mbAlloc := c.policy.GetPlan(domain.CCDs, qosCCDMB)
+		mbAlloc := c.policy.GetPlan(domain, qosCCDMB)
 		general.InfofV(6, "mbm: domain %d mb alloc plan: %v", i, mbAlloc)
 
 		if err := c.mbPlanAllocator.Allocate(mbAlloc); err != nil {

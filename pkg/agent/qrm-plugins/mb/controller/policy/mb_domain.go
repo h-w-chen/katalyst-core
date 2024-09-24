@@ -27,6 +27,7 @@ import (
 
 const (
 	domainTotalMB         = 120_000 //120 GBps in one mb sharing domain
+	reservedPerNuma       = 25_000  // 25 GBps reserved per node for dedicated pod
 	maxMBDedicatedPerNuma = 60_000  // if a socket pod assigned to one numa node, its max mb is 60 GB
 	loungeMB              = 6_000   // lounge zone MB earmarked to dedicated qos is 6 GBps
 )
@@ -36,7 +37,7 @@ type MBDomain struct {
 	NumaNodes []int
 	ccdNode   map[int]int
 	nodeCCDs  map[int][]int
-	CCDs      []int
+	ccds      []int
 
 	rwLock sync.RWMutex
 	// numa nodes that will be assigned to dedicated pods that still are in Admit state
@@ -57,6 +58,12 @@ func (m *MBDomain) UnpreemptNodes(nodes []int) {
 	for _, node := range nodes {
 		delete(m.preemptyNodes, node)
 	}
+}
+
+func (m *MBDomain) GetPreemptingNodes() []int {
+	m.rwLock.RLock()
+	defer m.rwLock.RUnlock()
+	return m.preemptyNodes.List()
 }
 
 type MBDomainManager struct {
@@ -81,15 +88,15 @@ func NewMBDomainManager(dieTopology machine.DieTopology) *MBDomainManager {
 			for ccd, _ := range ccds {
 				mbDomain.ccdNode[ccd] = node
 				mbDomain.nodeCCDs[node] = append(mbDomain.nodeCCDs[node], ccd)
-				mbDomain.CCDs = append(mbDomain.CCDs, ccd)
+				mbDomain.ccds = append(mbDomain.ccds, ccd)
 			}
 			sort.Slice(mbDomain.nodeCCDs[node], func(i, j int) bool {
 				return mbDomain.nodeCCDs[node][i] < mbDomain.nodeCCDs[node][j]
 			})
 		}
 
-		sort.Slice(mbDomain.CCDs, func(i, j int) bool {
-			return mbDomain.CCDs[i] < mbDomain.CCDs[j]
+		sort.Slice(mbDomain.ccds, func(i, j int) bool {
+			return mbDomain.ccds[i] < mbDomain.ccds[j]
 		})
 
 		manager.Domains[packageID] = mbDomain

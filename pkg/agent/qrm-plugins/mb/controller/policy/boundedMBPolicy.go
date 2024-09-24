@@ -21,25 +21,6 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
 )
 
-type DomainMBPolicy interface {
-	GetPlan(domain *MBDomain, currQoSMB map[task.QoSLevel]map[int]int) *plan.MBAlloc
-}
-
-type domainMBPolicy struct {
-	preemptMBPolicy DomainMBPolicy
-}
-
-func (d domainMBPolicy) GetPlan(domain *MBDomain, currQoSMB map[task.QoSLevel]map[int]int) *plan.MBAlloc {
-	if len(domain.preemptyNodes) != 0 {
-		return d.preemptMBPolicy.GetPlan(domain, currQoSMB)
-	}
-
-	//TODO implement me
-	panic("implement me")
-}
-
-func NewDomainMBPolicy(preemptMBPolicy DomainMBPolicy) (DomainMBPolicy, error) {
-	return &domainMBPolicy{
-		preemptMBPolicy: preemptMBPolicy,
-	}, nil
+type BoundedMBPolicy interface {
+	GetPlan(upperBoundMB int, currQoSMB map[task.QoSLevel]map[int]int) *plan.MBAlloc
 }

@@ -22,3 +22,26 @@ import "github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
 type MBAlloc struct {
 	Plan map[task.QoSLevel]map[int]int
 }
+
+func Merge(plans ...*MBAlloc) *MBAlloc {
+	result := &MBAlloc{
+		Plan: make(map[task.QoSLevel]map[int]int),
+	}
+
+	for _, plan := range plans {
+		if plan == nil {
+			continue
+		}
+		for qos, ccdMB := range plan.Plan {
+			if _, ok := result.Plan[qos]; !ok {
+				result.Plan[qos] = make(map[int]int)
+			}
+
+			for ccd, mb := range ccdMB {
+				result.Plan[qos][ccd] += mb
+			}
+		}
+	}
+
+	return result
+}
