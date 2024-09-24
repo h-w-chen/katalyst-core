@@ -18,6 +18,7 @@ package policy
 
 import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy/plan"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy/qospolicy"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
 )
 
@@ -32,7 +33,7 @@ func (c constraintQoSMBPolicy) GetPlan(upperBoundMB int, currQoSMB map[task.QoSL
 }
 
 //func New
-var _ QoSMBPolicy = &constraintQoSMBPolicy{}
+var _ qospolicy.QoSMBPolicy = &constraintQoSMBPolicy{}
 
 //func (p preemptPolicy) getNonReservePlan(mbFree int, currQoSMB map[task.QoSLevel]map[int]int) *plan.MBAlloc {
 //	switch {

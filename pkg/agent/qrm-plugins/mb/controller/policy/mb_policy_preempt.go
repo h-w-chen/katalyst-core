@@ -19,13 +19,14 @@ package policy
 import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/mbdomain"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy/plan"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy/qospolicy"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
 )
 
 // preemptPolicy implements the admitting pod MB reservation (preemption)
 type preemptPolicy struct {
-	qosMBPolicy QoSMBPolicy
+	qosMBPolicy qospolicy.QoSMBPolicy
 }
 
 func getReservationPlan(domain *mbdomain.MBDomain, total int, preemptingNodes []int) *plan.MBAlloc {
@@ -63,7 +64,7 @@ func (p preemptPolicy) GetPlan(domain *mbdomain.MBDomain, currQoSMB map[task.QoS
 	return plan.Merge(reservationPlan, allocatablePlan)
 }
 
-func NewPreemptPolicy(chainedPolicy QoSMBPolicy) DomainMBPolicy {
+func NewPreemptPolicy(chainedPolicy qospolicy.QoSMBPolicy) DomainMBPolicy {
 	return &preemptPolicy{
 		qosMBPolicy: chainedPolicy,
 	}

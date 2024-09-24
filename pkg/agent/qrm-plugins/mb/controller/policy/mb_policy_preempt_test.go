@@ -26,14 +26,15 @@ import (
 	"github.com/kubewharf/katalyst-api/pkg/consts"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/mbdomain"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy/plan"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy/qospolicy"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
 )
 
-type mockBoundedPolicy struct {
+type mockQoSMBPolicy struct {
 	mock.Mock
 }
 
-func (m *mockBoundedPolicy) GetPlan(upperBoundMB int, currQoSMB map[task.QoSLevel]map[int]int) *plan.MBAlloc {
+func (m *mockQoSMBPolicy) GetPlan(upperBoundMB int, currQoSMB map[task.QoSLevel]map[int]int) *plan.MBAlloc {
 	args := m.Called(upperBoundMB, currQoSMB)
 	return args.Get(0).(*plan.MBAlloc)
 }
@@ -41,7 +42,7 @@ func (m *mockBoundedPolicy) GetPlan(upperBoundMB int, currQoSMB map[task.QoSLeve
 func Test_preemptPolicy_GetPlan(t *testing.T) {
 	t.Parallel()
 
-	boundedPolicy := new(mockBoundedPolicy)
+	boundedPolicy := new(mockQoSMBPolicy)
 	boundedPolicy.On("GetPlan",
 		95000,
 		map[task.QoSLevel]map[int]int{
@@ -58,7 +59,7 @@ func Test_preemptPolicy_GetPlan(t *testing.T) {
 	}})
 
 	type fields struct {
-		boundedMBPolicy QoSMBPolicy
+		boundedMBPolicy qospolicy.QoSMBPolicy
 	}
 	type args struct {
 		domain    *mbdomain.MBDomain
