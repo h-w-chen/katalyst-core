@@ -23,4 +23,5 @@ import (
 
 type QoSMBPolicy interface {
 	GetPlan(totalMB int, currQoSMB map[task.QoSLevel]map[int]int) *plan.MBAlloc
+	SetTopLink()
 }

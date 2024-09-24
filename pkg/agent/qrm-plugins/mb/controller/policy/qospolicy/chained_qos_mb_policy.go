@@ -24,18 +24,24 @@ import (
 )
 
 type priorityChainedMBPolicy struct {
-	topTiers map[task.QoSLevel]struct{}
-	tier     QoSMBPolicy
-	next     QoSMBPolicy
+	isTopLink bool
+	qosTier   map[task.QoSLevel]struct{}
+	tier      QoSMBPolicy
+	next      QoSMBPolicy
+}
+
+func (p *priorityChainedMBPolicy) SetTopLink() {
+	p.isTopLink = true
+	p.tier.SetTopLink()
 }
 
 type mapQoSMB = map[task.QoSLevel]map[int]int
 
-func (p priorityChainedMBPolicy) splitQoS(currQoSMB mapQoSMB) (tierQoS, otherQoS mapQoSMB) {
+func (p *priorityChainedMBPolicy) splitQoS(currQoSMB mapQoSMB) (tierQoS, otherQoS mapQoSMB) {
 	tierQoS = make(mapQoSMB)
 	otherQoS = make(mapQoSMB)
 	for qos, ccdMB := range currQoSMB {
-		if _, ok := p.topTiers[qos]; ok {
+		if _, ok := p.qosTier[qos]; ok {
 			tierQoS[qos] = ccdMB
 		} else {
 			otherQoS[qos] = ccdMB
@@ -44,7 +50,7 @@ func (p priorityChainedMBPolicy) splitQoS(currQoSMB mapQoSMB) (tierQoS, otherQoS
 	return
 }
 
-func (p priorityChainedMBPolicy) getTopPrioPlan(totalMB int, currQoSMB map[task.QoSLevel]map[int]int) (
+func (p *priorityChainedMBPolicy) getTopPrioPlan(totalMB int, currQoSMB map[task.QoSLevel]map[int]int) (
 	planTopTier *plan.MBAlloc, leftMB int, leftQoSMB map[task.QoSLevel]map[int]int,
 ) {
 	topTierQoSMB := make(map[task.QoSLevel]map[int]int)
@@ -86,9 +92,18 @@ func (p priorityChainedMBPolicy) getTopPrioPlan(totalMB int, currQoSMB map[task.
 	return
 }
 
-func (p priorityChainedMBPolicy) GetPlan(totalMB int, currQoSMB map[task.QoSLevel]map[int]int) *plan.MBAlloc {
+func (p *priorityChainedMBPolicy) GetPlan(totalMB int, currQoSMB map[task.QoSLevel]map[int]int) *plan.MBAlloc {
 	planTopTier, leftMB, leftQoSMB := p.getTopPrioPlan(totalMB, currQoSMB)
-	planLeft := p.next.GetPlan(leftMB, leftQoSMB)
+
+	var planLeft *plan.MBAlloc
+	if p.next != nil && len(leftQoSMB) > 0 {
+		// ensure top level of qos process as next if not this one
+		if p.isTopLink && util.Sum(planTopTier.Plan) == 0 {
+			p.next.SetTopLink()
+		}
+		planLeft = p.next.GetPlan(leftMB, leftQoSMB)
+	}
+
 	return plan.Merge(planTopTier, planLeft)
 }
 

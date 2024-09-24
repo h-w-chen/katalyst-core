@@ -24,8 +24,8 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
 )
 
-// preemptPolicy implements the admitting pod MB reservation (preemption)
-type preemptPolicy struct {
+// preemptDomainMBPolicy implements the admitting pod MB reservation (preemption)
+type preemptDomainMBPolicy struct {
 	qosMBPolicy qospolicy.QoSMBPolicy
 }
 
@@ -52,7 +52,7 @@ func getReservationPlan(domain *mbdomain.MBDomain, total int, preemptingNodes []
 	}
 }
 
-func (p preemptPolicy) GetPlan(domain *mbdomain.MBDomain, currQoSMB map[task.QoSLevel]map[int]int) *plan.MBAlloc {
+func (p preemptDomainMBPolicy) GetPlan(domain *mbdomain.MBDomain, currQoSMB map[task.QoSLevel]map[int]int) *plan.MBAlloc {
 	preemptingNodes := domain.GetPreemptingNodes()
 	mbToServe := mbdomain.ReservedPerNuma * len(preemptingNodes)
 	reservationPlan := getReservationPlan(domain, mbToServe, preemptingNodes)
@@ -65,7 +65,7 @@ func (p preemptPolicy) GetPlan(domain *mbdomain.MBDomain, currQoSMB map[task.QoS
 }
 
 func NewPreemptPolicy(chainedPolicy qospolicy.QoSMBPolicy) DomainMBPolicy {
-	return &preemptPolicy{
+	return &preemptDomainMBPolicy{
 		qosMBPolicy: chainedPolicy,
 	}
 }

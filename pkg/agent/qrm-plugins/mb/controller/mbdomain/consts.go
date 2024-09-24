@@ -17,8 +17,9 @@ limitations under the License.
 package mbdomain
 
 const (
-	DomainTotalMB         = 120_000 //120 GBps in one mb sharing domain
-	ReservedPerNuma       = 25_000  // 25 GBps reserved per node for dedicated pod
-	MaxMBDedicatedPerNuma = 60_000  // if a socket pod assigned to one numa node, its max mb is 60 GB
-	LoungeMB              = 6_000   // lounge zone MB earmarked to dedicated qos is 6 GBps
+	DomainTotalMB         = 120_000          //120 GBps in one mb sharing domain
+	ReservedPerNuma       = 25_000           // 25 GBps reserved per node for dedicated pod
+	MaxMBDedicatedPerNuma = 60_000           // if a socket pod assigned to one numa node, its max mb is 60 GB
+	LoungeMB              = 6_000            // lounge zone MB earmarked to dedicated qos is 6 GBps
+	MaxMBPerCCD           = 2048 / 8 * 1_000 // AMD max MB value in schemata file
 )
