@@ -66,3 +66,13 @@ func GetMaxDedicatedToIncrease(ccdMB map[int]int) int {
 	upperLimit := len(ccdMB) * mbdomain.MaxMBDedicatedPerNuma / 2
 	return upperLimit - SumCCDMB(ccdMB)
 }
+
+func GetQoSKeys(qosMB map[task.QoSLevel]map[int]int) []task.QoSLevel {
+	keys := make([]task.QoSLevel, len(qosMB))
+	i := 0
+	for qos, _ := range qosMB {
+		keys[i] = qos
+		i++
+	}
+	return keys
+}
