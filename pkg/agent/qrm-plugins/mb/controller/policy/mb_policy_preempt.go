@@ -17,6 +17,7 @@ limitations under the License.
 package policy
 
 import (
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/mbdomain"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy/plan"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/util"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
@@ -27,14 +28,14 @@ type preemptPolicy struct {
 	boundedMBPolicy BoundedMBPolicy
 }
 
-func getReservationPlan(domain *MBDomain, total int, preemptingNodes []int) *plan.MBAlloc {
+func getReservationPlan(domain *mbdomain.MBDomain, total int, preemptingNodes []int) *plan.MBAlloc {
 	if len(preemptingNodes) == 0 {
 		return nil
 	}
 
 	ccds := make([]int, 0)
 	for _, node := range preemptingNodes {
-		ccds = append(ccds, domain.nodeCCDs[node]...)
+		ccds = append(ccds, domain.NodeCCDs[node]...)
 	}
 
 	ccdAverage := total / len(ccds)
@@ -50,16 +51,16 @@ func getReservationPlan(domain *MBDomain, total int, preemptingNodes []int) *pla
 	}
 }
 
-func (p preemptPolicy) GetPlan(domain *MBDomain, currQoSMB map[task.QoSLevel]map[int]int) *plan.MBAlloc {
+func (p preemptPolicy) GetPlan(domain *mbdomain.MBDomain, currQoSMB map[task.QoSLevel]map[int]int) *plan.MBAlloc {
 	preemptingNodes := domain.GetPreemptingNodes()
-	mbToServe := reservedPerNuma * len(preemptingNodes)
+	mbToServe := mbdomain.ReservedPerNuma * len(preemptingNodes)
 	reservationPlan := getReservationPlan(domain, mbToServe, preemptingNodes)
 	general.InfofV(6, "mbm: domain %d hard reservation mb plan: %v", domain.ID, reservationPlan)
 
-	mbFree := domainTotalMB - mbToServe - util.Sum(currQoSMB)
+	mbFree := mbdomain.DomainTotalMB - mbToServe - util.Sum(currQoSMB)
 	mbDedicated := util.SumCCDMB(currQoSMB[task.QoSLevelDedicatedCores])
 	if mbDedicated > 0 { // if no dedicated pod, all free bandwidth shall be allocated for all (non-dedicated)
-		mbFree -= loungeMB
+		mbFree -= mbdomain.LoungeMB
 	}
 
 	nonReservePlan := p.getNonReservePlan(mbFree, currQoSMB)
@@ -79,11 +80,6 @@ func (p preemptPolicy) getNonReservePlan(mbFree int, currQoSMB map[task.QoSLevel
 	}
 }
 
-func maxDedicatedToIncrease(ccdMB map[int]int) int {
-	upperLimit := len(ccdMB) * maxMBDedicatedPerNuma / 2
-	return upperLimit - util.SumCCDMB(ccdMB)
-}
-
 func (p preemptPolicy) getNonReservePlanToIncrease(mbFree int, currQoSMB map[task.QoSLevel]map[int]int) *plan.MBAlloc {
 	// we treat dedicated qos differently from others - dedicated pods have a so-called "lounge" privileged zone
 	// which is already excluded from the regular free;
@@ -94,12 +90,12 @@ func (p preemptPolicy) getNonReservePlanToIncrease(mbFree int, currQoSMB map[tas
 	distributions := util.CoefficientWeightedSplit(mbFree, []int{mbDedicated, mbOthers}, []int{1, 1})
 
 	// ensure dedicated qos won't exceed its max
-	mbIncreasableDedicated := maxDedicatedToIncrease(currQoSMB[task.QoSLevelDedicatedCores])
-	if mbIncreasableDedicated > distributions[0]+loungeMB {
-		mbIncreasableDedicated = distributions[0] + loungeMB
+	mbIncreasableDedicated := util.GetMaxDedicatedToIncrease(currQoSMB[task.QoSLevelDedicatedCores])
+	if mbIncreasableDedicated > distributions[0]+mbdomain.LoungeMB {
+		mbIncreasableDedicated = distributions[0] + mbdomain.LoungeMB
 	}
 
-	mbFreeOthers := mbFree + loungeMB - mbIncreasableDedicated
+	mbFreeOthers := mbFree + mbdomain.LoungeMB - mbIncreasableDedicated
 
 	var planDedicated *plan.MBAlloc
 	if mbIncreasableDedicated > 0 {
@@ -118,10 +114,7 @@ func (p preemptPolicy) getNonReservePlanToIncrease(mbFree int, currQoSMB map[tas
 	}
 	planOthers := p.boundedMBPolicy.GetPlan(mbFreeOthers, otherMB)
 
-	_ = planDedicated
-	_ = planOthers
-	//return plan.Merge(planDedicated, planOthers)
-	panic("impl properly")
+	return plan.Merge(planDedicated, planOthers)
 }
 
 func (p preemptPolicy) getNonReservePlanToDecrease(mbFree int, currQoSMB map[task.QoSLevel]map[int]int) *plan.MBAlloc {
@@ -133,7 +126,7 @@ func (p preemptPolicy) getNonReservePlanToDecrease(mbFree int, currQoSMB map[tas
 	var dedicatedPlan *plan.MBAlloc
 	mbDedicated := util.SumCCDMB(currQoSMB[task.QoSLevelDedicatedCores])
 	if mbDedicated > 0 {
-		dedicatedPlan = p.boundedMBPolicy.GetPlan(loungeMB, map[task.QoSLevel]map[int]int{
+		dedicatedPlan = p.boundedMBPolicy.GetPlan(mbdomain.LoungeMB, map[task.QoSLevel]map[int]int{
 			task.QoSLevelDedicatedCores: currQoSMB[task.QoSLevelDedicatedCores],
 		})
 	}
@@ -149,5 +142,6 @@ func (p preemptPolicy) getNonReservePlanToDecrease(mbFree int, currQoSMB map[tas
 		task.QoSLevelSystemCores: currQoSMB[task.QoSLevelSystemCores],
 	})
 
-	return plan.Merge(dedicatedPlan, sharedPlan, reclaimedPlan, systemPlan)
+	_ = plan.Merge(dedicatedPlan, sharedPlan, reclaimedPlan, systemPlan)
+	panic("impl")
 }

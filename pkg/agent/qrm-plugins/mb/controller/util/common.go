@@ -16,7 +16,10 @@ limitations under the License.
 
 package util
 
-import "github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
+import (
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/mbdomain"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
+)
 
 func SumCCDMB(ccdMB map[int]int) int {
 	sum := 0
@@ -56,4 +59,10 @@ func CoefficientWeightedSplit(total int, weights []int, coefficents []int) []int
 	}
 
 	return weightedSplit(total, comboWeights)
+}
+
+// GetMaxDedicatedToIncrease determines the MB room for dedicated qos
+func GetMaxDedicatedToIncrease(ccdMB map[int]int) int {
+	upperLimit := len(ccdMB) * mbdomain.MaxMBDedicatedPerNuma / 2
+	return upperLimit - SumCCDMB(ccdMB)
 }
