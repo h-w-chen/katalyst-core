@@ -64,7 +64,7 @@ func TestNewMBDomainManager(t *testing.T) {
 							2: {4, 5},
 							3: {6, 7},
 						},
-						CCDs:          []int{0, 1, 2, 3, 4, 5, 6, 7},
+						ccds:          []int{0, 1, 2, 3, 4, 5, 6, 7},
 						preemptyNodes: make(sets.Int),
 					},
 				},
