@@ -23,6 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/allocator"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/mbdomain"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
@@ -38,7 +39,7 @@ type Controller struct {
 	podMBMonitor    monitor.MBMonitor
 	mbPlanAllocator allocator.PlanAllocator
 
-	domainManager policy.MBDomainManager
+	domainManager mbdomain.MBDomainManager
 	policy        policy.DomainMBPolicy
 }
 

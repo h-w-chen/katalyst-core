@@ -17,20 +17,21 @@ limitations under the License.
 package policy
 
 import (
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/mbdomain"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy/plan"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
 )
 
 type DomainMBPolicy interface {
-	GetPlan(domain *MBDomain, currQoSMB map[task.QoSLevel]map[int]int) *plan.MBAlloc
+	GetPlan(domain *mbdomain.MBDomain, currQoSMB map[task.QoSLevel]map[int]int) *plan.MBAlloc
 }
 
 type domainMBPolicy struct {
 	preemptMBPolicy DomainMBPolicy
 }
 
-func (d domainMBPolicy) GetPlan(domain *MBDomain, currQoSMB map[task.QoSLevel]map[int]int) *plan.MBAlloc {
-	if len(domain.preemptyNodes) != 0 {
+func (d domainMBPolicy) GetPlan(domain *mbdomain.MBDomain, currQoSMB map[task.QoSLevel]map[int]int) *plan.MBAlloc {
+	if len(domain.GetPreemptingNodes()) != 0 {
 		return d.preemptMBPolicy.GetPlan(domain, currQoSMB)
 	}
 

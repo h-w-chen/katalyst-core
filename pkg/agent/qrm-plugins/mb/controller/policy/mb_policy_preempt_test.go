@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/kubewharf/katalyst-api/pkg/consts"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/mbdomain"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy/plan"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
 )
@@ -78,7 +79,7 @@ func Test_preemptPolicy_GetPlan(t *testing.T) {
 		boundedMBPolicy BoundedMBPolicy
 	}
 	type args struct {
-		domain    *MBDomain
+		domain    *mbdomain.MBDomain
 		currQoSMB map[task.QoSLevel]map[int]int
 	}
 	tests := []struct {
@@ -93,9 +94,9 @@ func Test_preemptPolicy_GetPlan(t *testing.T) {
 				boundedMBPolicy: boundedPolicy,
 			},
 			args: args{
-				domain: &MBDomain{
-					nodeCCDs:      map[int][]int{4: {8, 9}, 5: {10, 11}, 6: {12, 13}},
-					preemptyNodes: sets.Int{5: sets.Empty{}},
+				domain: &mbdomain.MBDomain{
+					NodeCCDs:      map[int][]int{4: {8, 9}, 5: {10, 11}, 6: {12, 13}},
+					PreemptyNodes: sets.Int{5: sets.Empty{}},
 				},
 				currQoSMB: map[task.QoSLevel]map[int]int{
 					"dedicated_cores": {12: 10_000, 13: 10_000},
@@ -117,9 +118,9 @@ func Test_preemptPolicy_GetPlan(t *testing.T) {
 				boundedMBPolicy: boundedPolicy2,
 			},
 			args: args{
-				domain: &MBDomain{
-					nodeCCDs:      map[int][]int{1: {2, 3}, 2: {4, 5}, 3: {6, 7}},
-					preemptyNodes: sets.Int{2: sets.Empty{}},
+				domain: &mbdomain.MBDomain{
+					NodeCCDs:      map[int][]int{1: {2, 3}, 2: {4, 5}, 3: {6, 7}},
+					PreemptyNodes: sets.Int{2: sets.Empty{}},
 				},
 				currQoSMB: map[task.QoSLevel]map[int]int{
 					"dedicated_cores": map[int]int{6: 30_000, 7: 29_000},
