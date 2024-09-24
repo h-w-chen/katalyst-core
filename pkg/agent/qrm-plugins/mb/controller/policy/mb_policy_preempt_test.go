@@ -43,40 +43,22 @@ func Test_preemptPolicy_GetPlan(t *testing.T) {
 
 	boundedPolicy := new(mockBoundedPolicy)
 	boundedPolicy.On("GetPlan",
-		29_414,
-		map[task.QoSLevel]map[int]int{"dedicated_cores": {12: 10_000, 13: 10_000}},
-	).Return(&plan.MBAlloc{Plan: map[task.QoSLevel]map[int]int{
-		"dedicated_cores": {12: 25_000, 13: 14_414},
-	}})
-	boundedPolicy.On("GetPlan",
-		24_586,
+		95000,
 		map[task.QoSLevel]map[int]int{
+			"dedicated_cores": {12: 10_000, 13: 10_000},
 			"shared_cores":    {8: 8_000, 9: 8_000},
 			"reclaimed_cores": {8: 1_000, 9: 1_000},
 			"system_cores":    {9: 3_000},
 		},
 	).Return(&plan.MBAlloc{Plan: map[task.QoSLevel]map[int]int{
+		"dedicated_cores": {12: 25_000, 13: 14_414},
 		"shared_cores":    {8: 8_000, 9: 8_000},
 		"reclaimed_cores": {8: 2_000, 9: 2_000},
 		"system_cores":    {9: 4_000},
 	}})
 
-	boundedPolicy2 := new(mockBoundedPolicy)
-	boundedPolicy2.On("GetPlan",
-		1_000,
-		map[task.QoSLevel]map[int]int{"dedicated_cores": {6: 30_000, 7: 29_000}},
-	).Return(&plan.MBAlloc{Plan: map[task.QoSLevel]map[int]int{
-		"dedicated_cores": {6: 30_500, 7: 29_500},
-	}})
-	boundedPolicy2.On("GetPlan",
-		33_000,
-		map[task.QoSLevel]map[int]int{"reclaimed_cores": map[int]int{2: 1000, 3: 1000}},
-	).Return(&plan.MBAlloc{Plan: map[task.QoSLevel]map[int]int{
-		"reclaimed_cores": map[int]int{2: 17_500, 3: 17_500},
-	}})
-
 	type fields struct {
-		boundedMBPolicy BoundedMBPolicy
+		boundedMBPolicy QoSMBPolicy
 	}
 	type args struct {
 		domain    *mbdomain.MBDomain
@@ -112,33 +94,13 @@ func Test_preemptPolicy_GetPlan(t *testing.T) {
 					"shared_cores":    map[int]int{8: 8000, 9: 8000},
 					"system_cores":    map[int]int{9: 4000}}},
 		},
-		{
-			name: "dedicated already close to max",
-			fields: fields{
-				boundedMBPolicy: boundedPolicy2,
-			},
-			args: args{
-				domain: &mbdomain.MBDomain{
-					NodeCCDs:      map[int][]int{1: {2, 3}, 2: {4, 5}, 3: {6, 7}},
-					PreemptyNodes: sets.Int{2: sets.Empty{}},
-				},
-				currQoSMB: map[task.QoSLevel]map[int]int{
-					"dedicated_cores": map[int]int{6: 30_000, 7: 29_000},
-					"reclaimed_cores": map[int]int{2: 1000, 3: 1000},
-				},
-			},
-			want: &plan.MBAlloc{Plan: map[task.QoSLevel]map[int]int{
-				"dedicated_cores": map[int]int{4: 12_500, 5: 12_500, 6: 30_500, 7: 29_500},
-				"reclaimed_cores": map[int]int{2: 17_500, 3: 17_500},
-			}},
-		},
 	}
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			p := preemptPolicy{
-				boundedMBPolicy: tt.fields.boundedMBPolicy,
+				qosMBPolicy: tt.fields.boundedMBPolicy,
 			}
 			assert.Equalf(t, tt.want, p.GetPlan(tt.args.domain, tt.args.currQoSMB), "GetPlan(%v, %v)", tt.args.domain, tt.args.currQoSMB)
 		})

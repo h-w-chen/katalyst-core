@@ -17,10 +17,34 @@ limitations under the License.
 package policy
 
 import (
-	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy/plan"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
+	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
-type BoundedMBPolicy interface {
-	GetPlan(upperBoundMB int, currQoSMB map[task.QoSLevel]map[int]int) *plan.MBAlloc
+func Test_getMins(t *testing.T) {
+	t.Parallel()
+	type args struct {
+		qos []task.QoSLevel
+	}
+	tests := []struct {
+		name string
+		args args
+		want int
+	}{
+		{
+			name: "happy path",
+			args: args{
+				qos: []task.QoSLevel{task.QoSLevelSharedCores, task.QoSLevelSystemCores, task.QoSLevelReclaimedCores},
+			},
+			want: 5000,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equalf(t, tt.want, getMins(tt.args.qos...), "getMins(%v)", tt.args.qos)
+		})
+	}
 }
