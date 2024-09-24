@@ -17,14 +17,29 @@ limitations under the License.
 package qospolicy
 
 import (
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/mbdomain"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy/plan"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/util"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
 )
 
-type weightedQoSMBPolicy struct{}
+type weightedQoSMBPolicy struct {
+	isTopLink bool
+}
 
-func (w weightedQoSMBPolicy) GetPlan(totalMB int, currQoSMB map[task.QoSLevel]map[int]int) *plan.MBAlloc {
+func (w *weightedQoSMBPolicy) SetTopLink() {
+	w.isTopLink = true
+}
+
+func (w *weightedQoSMBPolicy) GetPlan(totalMB int, currQoSMB map[task.QoSLevel]map[int]int) *plan.MBAlloc {
+	if w.isTopLink {
+		return w.getTopLevelPlan(totalMB, currQoSMB)
+	}
+
+	return w.getProportionalPlan(totalMB, currQoSMB)
+}
+
+func (w *weightedQoSMBPolicy) getProportionalPlan(totalMB int, currQoSMB map[task.QoSLevel]map[int]int) *plan.MBAlloc {
 	totalUsage := util.Sum(currQoSMB)
 
 	mbPlan := &plan.MBAlloc{Plan: make(map[task.QoSLevel]map[int]int)}
@@ -34,6 +49,23 @@ func (w weightedQoSMBPolicy) GetPlan(totalMB int, currQoSMB map[task.QoSLevel]ma
 				mbPlan.Plan[qos] = make(map[int]int)
 			}
 			mbPlan.Plan[qos][ccd] = int(float64(totalMB) / float64(totalUsage) * float64(mb))
+		}
+	}
+
+	return mbPlan
+}
+
+func (w *weightedQoSMBPolicy) getTopLevelPlan(totalMB int, currQoSMB map[task.QoSLevel]map[int]int) *plan.MBAlloc {
+	// don't set throttling at all for top level QoS CCDs
+	mbPlan := &plan.MBAlloc{Plan: make(map[task.QoSLevel]map[int]int)}
+	for qos, ccdMB := range currQoSMB {
+		for ccd, mb := range ccdMB {
+			if mb > 0 {
+				if _, ok := mbPlan.Plan[qos]; !ok {
+					mbPlan.Plan[qos] = make(map[int]int)
+				}
+				mbPlan.Plan[qos][ccd] = mbdomain.MaxMBPerCCD
+			}
 		}
 	}
 

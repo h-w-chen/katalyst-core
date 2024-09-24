@@ -32,6 +32,7 @@ import (
 
 type mockQoSMBPolicy struct {
 	mock.Mock
+	qospolicy.QoSMBPolicy
 }
 
 func (m *mockQoSMBPolicy) GetPlan(upperBoundMB int, currQoSMB map[task.QoSLevel]map[int]int) *plan.MBAlloc {
@@ -100,7 +101,7 @@ func Test_preemptPolicy_GetPlan(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			p := preemptPolicy{
+			p := preemptDomainMBPolicy{
 				qosMBPolicy: tt.fields.boundedMBPolicy,
 			}
 			assert.Equalf(t, tt.want, p.GetPlan(tt.args.domain, tt.args.currQoSMB), "GetPlan(%v, %v)", tt.args.domain, tt.args.currQoSMB)

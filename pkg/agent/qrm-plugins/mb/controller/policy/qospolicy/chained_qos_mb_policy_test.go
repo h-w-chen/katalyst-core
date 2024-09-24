@@ -29,6 +29,7 @@ import (
 
 type mockBoundedPolicy struct {
 	mock.Mock
+	QoSMBPolicy
 }
 
 func (m *mockBoundedPolicy) GetPlan(upperBoundMB int, currQoSMB map[task.QoSLevel]map[int]int) *plan.MBAlloc {
@@ -103,9 +104,9 @@ func Test_priorityChainedMBPolicy_GetPlan(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			p := priorityChainedMBPolicy{
-				topTiers: tt.fields.topTiers,
-				tier:     tt.fields.tier,
-				next:     tt.fields.next,
+				qosTier: tt.fields.topTiers,
+				tier:    tt.fields.tier,
+				next:    tt.fields.next,
 			}
 			assert.Equalf(t, tt.want, p.GetPlan(tt.args.totalMB, tt.args.currQoSMB), "GetPlan(%v, %v)", tt.args.totalMB, tt.args.currQoSMB)
 		})
