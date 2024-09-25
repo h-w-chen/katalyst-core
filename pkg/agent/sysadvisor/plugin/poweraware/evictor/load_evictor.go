@@ -62,7 +62,7 @@ func (l loadEvictor) Evict(ctx context.Context, targetPercent int) {
 		return
 	}
 
-	general.InfofV(6, "pap: evict: %d pods, %d BE; going to evict BE up to %d%% pods = %d",
+	general.InfofV(6, "pap: evict: %d pods, %d BE; going to evict BE up to %d%%%% pods = %d",
 		len(pods), len(bePods), targetPercent, countToEvict)
 
 	// discard pending requests not handled yet; we will provide a new sleet of evict requests anyway
