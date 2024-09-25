@@ -103,4 +103,10 @@ func (p *priorityChainedMBPolicy) GetPlan(totalMB int, qosGroups map[task.QoSLev
 	return plan.Merge(planCurrentTier, planLeft)
 }
 
-var _ QoSMBPolicy = &priorityChainedMBPolicy{}
+func NewChainedQoSMBPolicy(currQoSLevels map[task.QoSLevel]struct{}, current, next QoSMBPolicy) QoSMBPolicy {
+	return &priorityChainedMBPolicy{
+		currQoSLevels: currQoSLevels,
+		current:       current,
+		next:          next,
+	}
+}

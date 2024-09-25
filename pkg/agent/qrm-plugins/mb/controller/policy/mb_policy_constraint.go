@@ -33,8 +33,13 @@ func (c constraintDomainMBPolicy) GetPlan(domain *mbdomain.MBDomain, currQoSMB m
 	return c.qosMBPolicy.GetPlan(mbdomain.DomainTotalMB, currQoSMB, true)
 }
 
-func NewConstraintDomainMBPolicy(qosMBPolicy qospolicy.QoSMBPolicy) DomainMBPolicy {
+func newConstraintDomainMBPolicy(qosMBPolicy qospolicy.QoSMBPolicy) DomainMBPolicy {
 	return &constraintDomainMBPolicy{
 		qosMBPolicy: qosMBPolicy,
 	}
+}
+
+func NewDefaultConstraintDomainMBPolicy() DomainMBPolicy {
+	qosMBPolicy := qospolicy.BuildDefaultChainedQoSMBPolicy()
+	return newConstraintDomainMBPolicy(qosMBPolicy)
 }

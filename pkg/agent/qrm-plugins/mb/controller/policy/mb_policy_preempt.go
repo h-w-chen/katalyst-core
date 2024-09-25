@@ -65,8 +65,13 @@ func (p preemptDomainMBPolicy) GetPlan(domain *mbdomain.MBDomain, currQoSMB map[
 	return plan.Merge(reservationPlan, allocatablePlan)
 }
 
-func NewPreemptPolicy(chainedPolicy qospolicy.QoSMBPolicy) DomainMBPolicy {
+func newPreemptDomainMBPolicy(chainedPolicy qospolicy.QoSMBPolicy) DomainMBPolicy {
 	return &preemptDomainMBPolicy{
 		qosMBPolicy: chainedPolicy,
 	}
+}
+
+func NewDefaultPreemptDomainMBPolicy() DomainMBPolicy {
+	qosMBPolicy := qospolicy.BuildDefaultChainedQoSMBPolicy()
+	return newPreemptDomainMBPolicy(qosMBPolicy)
 }

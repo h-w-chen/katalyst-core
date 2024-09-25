@@ -40,8 +40,13 @@ func (d domainMBPolicy) GetPlan(domain *mbdomain.MBDomain, currQoSMB map[task.Qo
 	return d.softLimitMBPolicy.GetPlan(domain, currQoSMB)
 }
 
-func NewDomainMBPolicy(preemptMBPolicy DomainMBPolicy) (DomainMBPolicy, error) {
+func newDomainMBPolicy(preemptMBPolicy, softLimitMBPolicy DomainMBPolicy) (DomainMBPolicy, error) {
 	return &domainMBPolicy{
-		preemptMBPolicy: preemptMBPolicy,
+		preemptMBPolicy:   preemptMBPolicy,
+		softLimitMBPolicy: softLimitMBPolicy,
 	}, nil
+}
+
+func NewDefaultDomainMBPolicy() (DomainMBPolicy, error) {
+	return newDomainMBPolicy(NewDefaultPreemptDomainMBPolicy(), NewDefaultConstraintDomainMBPolicy())
 }

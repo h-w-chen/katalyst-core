@@ -26,3 +26,25 @@ import (
 type QoSMBPolicy interface {
 	GetPlan(totalMB int, mbQoSGroups map[task.QoSLevel]*monitor.MBQoSGroup, isTopMost bool) *plan.MBAlloc
 }
+
+func BuildDefaultChainedQoSMBPolicy() QoSMBPolicy {
+	// bottom up construction - reclaimed --> { system | shared } --> dedicated
+	policyReclaimedLink := NewChainedQoSMBPolicy(
+		map[task.QoSLevel]struct{}{task.QoSLevelReclaimedCores: {}},
+		NewWeightedQoSMBPolicy(),
+		nil)
+	policySystemSharedLink := NewChainedQoSMBPolicy(
+		map[task.QoSLevel]struct{}{
+			task.QoSLevelSharedCores: {},
+			task.QoSLevelSystemCores: {},
+		},
+		NewWeightedQoSMBPolicy(),
+		policyReclaimedLink)
+	policyDecidatedLink := NewChainedQoSMBPolicy(
+		map[task.QoSLevel]struct{}{
+			task.QoSLevelDedicatedCores: {},
+		},
+		NewWeightedQoSMBPolicy(),
+		policySystemSharedLink)
+	return policyDecidatedLink
+}

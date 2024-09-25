@@ -39,7 +39,7 @@ type Controller struct {
 	podMBMonitor    monitor.MBMonitor
 	mbPlanAllocator allocator.PlanAllocator
 
-	domainManager mbdomain.MBDomainManager
+	domainManager *mbdomain.MBDomainManager
 	policy        policy.DomainMBPolicy
 }
 
@@ -72,13 +72,19 @@ func (c *Controller) run(ctx context.Context) {
 }
 
 func (c *Controller) Stop() error {
+	if c.cancel == nil {
+		return nil
+	}
+
 	c.cancel()
 	return nil
 }
 
-func New(podMBMonitor monitor.MBMonitor, mbPlanAllocator allocator.PlanAllocator) (*Controller, error) {
+func New(podMBMonitor monitor.MBMonitor, mbPlanAllocator allocator.PlanAllocator, domainManager *mbdomain.MBDomainManager, policy policy.DomainMBPolicy) (*Controller, error) {
 	return &Controller{
 		podMBMonitor:    podMBMonitor,
 		mbPlanAllocator: mbPlanAllocator,
+		domainManager:   domainManager,
+		policy:          policy,
 	}, nil
 }
