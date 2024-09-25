@@ -55,6 +55,10 @@ func (l loadEvictor) Evict(ctx context.Context, targetPercent int) {
 		return
 	}
 	countToEvict := len(pods) * targetPercent / 100
+	if countToEvict == 0 {
+		general.InfofV(6, "pap: evict: skip 0 to evict")
+		return
+	}
 
 	bePods, err := l.podFetcher.GetPodList(ctx, l.isBE)
 	if err != nil {
