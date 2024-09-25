@@ -54,7 +54,7 @@ func (c *Controller) Run() {
 }
 
 func (c *Controller) run(ctx context.Context) {
-	qosCCDMB, err := c.podMBMonitor.GetQoSMBs()
+	qosCCDMB, err := c.podMBMonitor.GetMBQoSGroups()
 	if err != nil {
 		general.Errorf("mbm: failed to get MB usages: %v", err)
 	}

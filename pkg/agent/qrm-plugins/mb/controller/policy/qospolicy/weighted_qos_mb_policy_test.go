@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy/plan"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
 )
 
@@ -29,7 +30,7 @@ func Test_weightedQoSMBPolicy_GetPlan(t *testing.T) {
 	t.Parallel()
 	type args struct {
 		totalMB   int
-		currQoSMB map[task.QoSLevel]map[int]int
+		currQoSMB map[task.QoSLevel]*monitor.MBQoSGroup
 	}
 	tests := []struct {
 		name string
@@ -39,11 +40,14 @@ func Test_weightedQoSMBPolicy_GetPlan(t *testing.T) {
 		{
 			name: "happy path",
 			args: args{
-				totalMB:   1_500,
-				currQoSMB: mapQoSMB{"foo": {1: 200, 2: 200}, "bar": {1: 300, 4: 300}},
+				totalMB: 1_500,
+				currQoSMB: map[task.QoSLevel]*monitor.MBQoSGroup{
+					"foo": {CCDMB: map[int]int{1: 200, 2: 200}},
+					"bar": {CCDMB: map[int]int{1: 300, 4: 300}},
+				},
 			},
 			want: &plan.MBAlloc{
-				Plan: mapQoSMB{"foo": {1: 300, 2: 300}, "bar": {1: 450, 4: 450}},
+				Plan: map[task.QoSLevel]map[int]int{"foo": {1: 300, 2: 300}, "bar": {1: 450, 4: 450}},
 			},
 		},
 	}
@@ -64,7 +68,7 @@ func Test_weightedQoSMBPolicy_getProportionalPlan(t *testing.T) {
 	}
 	type args struct {
 		totalMB   int
-		currQoSMB map[task.QoSLevel]map[int]int
+		currQoSMB map[task.QoSLevel]*monitor.MBQoSGroup
 	}
 	tests := []struct {
 		name   string
@@ -79,12 +83,12 @@ func Test_weightedQoSMBPolicy_getProportionalPlan(t *testing.T) {
 			},
 			args: args{
 				totalMB: 1000,
-				currQoSMB: map[task.QoSLevel]map[int]int{
-					"foo": {1: 100, 2: 200},
-					"bar": {1: 100, 2: 50, 3: 50},
+				currQoSMB: map[task.QoSLevel]*monitor.MBQoSGroup{
+					"foo": {CCDMB: map[int]int{1: 100, 2: 200}},
+					"bar": {CCDMB: map[int]int{1: 100, 2: 50, 3: 50}},
 				},
 			},
-			want: &plan.MBAlloc{Plan: mapQoSMB{
+			want: &plan.MBAlloc{Plan: map[task.QoSLevel]map[int]int{
 				"foo": {1: 200, 2: 400},
 				"bar": {1: 200, 2: 100, 3: 100},
 			}},
@@ -109,7 +113,7 @@ func Test_weightedQoSMBPolicy_getTopLevelPlan(t *testing.T) {
 	}
 	type args struct {
 		totalMB   int
-		currQoSMB map[task.QoSLevel]map[int]int
+		currQoSMB map[task.QoSLevel]*monitor.MBQoSGroup
 	}
 	tests := []struct {
 		name   string
@@ -124,9 +128,9 @@ func Test_weightedQoSMBPolicy_getTopLevelPlan(t *testing.T) {
 			},
 			args: args{
 				totalMB:   1000,
-				currQoSMB: mapQoSMB{"foo": {1: 100, 2: 100}},
+				currQoSMB: map[task.QoSLevel]*monitor.MBQoSGroup{"foo": {CCDMB: map[int]int{1: 100, 2: 100}}},
 			},
-			want: &plan.MBAlloc{Plan: mapQoSMB{"foo": {1: 256_000, 2: 256_000}}},
+			want: &plan.MBAlloc{Plan: map[task.QoSLevel]map[int]int{"foo": {1: 256_000, 2: 256_000}}},
 		},
 	}
 	for _, tt := range tests {

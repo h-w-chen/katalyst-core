@@ -14,16 +14,36 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package qospolicy
+package monitor
 
 import (
-	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy/plan"
-	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/util"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
 )
 
-// QoSMBPolicy abstracts planning to distribute given MB to various QoS groups
-type QoSMBPolicy interface {
-	GetPlan(totalMB int, mbQoSGroups map[task.QoSLevel]*monitor.MBQoSGroup) *plan.MBAlloc
-	SetTopLink()
+// MBQoSGroup keeps MB of qos control group at level of CCD
+type MBQoSGroup struct {
+	//nodes []int
+	//ccds  sets.Int
+
+	CCDMB map[int]int
+}
+
+func SumMB(groups map[task.QoSLevel]*MBQoSGroup) int {
+	sum := 0
+
+	for _, group := range groups {
+		sum += util.SumCCDMB(group.CCDMB)
+	}
+	return sum
+}
+
+func GetQoSKeys(qosGroups map[task.QoSLevel]*MBQoSGroup) []task.QoSLevel {
+	keys := make([]task.QoSLevel, len(qosGroups))
+	i := 0
+	for qos, _ := range qosGroups {
+		keys[i] = qos
+		i++
+	}
+	return keys
 }
