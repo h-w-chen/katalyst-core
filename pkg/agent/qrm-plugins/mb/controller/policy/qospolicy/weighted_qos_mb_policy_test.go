@@ -56,3 +56,87 @@ func Test_weightedQoSMBPolicy_GetPlan(t *testing.T) {
 		})
 	}
 }
+
+func Test_weightedQoSMBPolicy_getProportionalPlan(t *testing.T) {
+	t.Parallel()
+	type fields struct {
+		isTopLink bool
+	}
+	type args struct {
+		totalMB   int
+		currQoSMB map[task.QoSLevel]map[int]int
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   *plan.MBAlloc
+	}{
+		{
+			name: "happy path",
+			fields: fields{
+				isTopLink: false,
+			},
+			args: args{
+				totalMB: 1000,
+				currQoSMB: map[task.QoSLevel]map[int]int{
+					"foo": {1: 100, 2: 200},
+					"bar": {1: 100, 2: 50, 3: 50},
+				},
+			},
+			want: &plan.MBAlloc{Plan: mapQoSMB{
+				"foo": {1: 200, 2: 400},
+				"bar": {1: 200, 2: 100, 3: 100},
+			}},
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			w := &weightedQoSMBPolicy{
+				isTopLink: tt.fields.isTopLink,
+			}
+			assert.Equalf(t, tt.want, w.getProportionalPlan(tt.args.totalMB, tt.args.currQoSMB), "getProportionalPlan(%v, %v)", tt.args.totalMB, tt.args.currQoSMB)
+		})
+	}
+}
+
+func Test_weightedQoSMBPolicy_getTopLevelPlan(t *testing.T) {
+	t.Parallel()
+	type fields struct {
+		isTopLink bool
+	}
+	type args struct {
+		totalMB   int
+		currQoSMB map[task.QoSLevel]map[int]int
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   *plan.MBAlloc
+	}{
+		{
+			name: "happy path",
+			fields: fields{
+				isTopLink: true,
+			},
+			args: args{
+				totalMB:   1000,
+				currQoSMB: mapQoSMB{"foo": {1: 100, 2: 100}},
+			},
+			want: &plan.MBAlloc{Plan: mapQoSMB{"foo": {1: 256_000, 2: 256_000}}},
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			w := &weightedQoSMBPolicy{
+				isTopLink: tt.fields.isTopLink,
+			}
+			assert.Equalf(t, tt.want, w.getTopLevelPlan(tt.args.totalMB, tt.args.currQoSMB), "getTopLevelPlan(%v, %v)", tt.args.totalMB, tt.args.currQoSMB)
+		})
+	}
+}
