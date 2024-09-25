@@ -23,16 +23,10 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
 )
 
-type weightedQoSMBPolicy struct {
-	isTopLink bool
-}
+type weightedQoSMBPolicy struct{}
 
-func (w *weightedQoSMBPolicy) SetTopLink() {
-	w.isTopLink = true
-}
-
-func (w *weightedQoSMBPolicy) GetPlan(totalMB int, qosGroupMBs map[task.QoSLevel]*monitor.MBQoSGroup) *plan.MBAlloc {
-	if w.isTopLink {
+func (w *weightedQoSMBPolicy) GetPlan(totalMB int, qosGroupMBs map[task.QoSLevel]*monitor.MBQoSGroup, isTopTier bool) *plan.MBAlloc {
+	if isTopTier {
 		return w.getTopLevelPlan(totalMB, qosGroupMBs)
 	}
 
@@ -56,7 +50,7 @@ func (w *weightedQoSMBPolicy) getProportionalPlan(totalMB int, qosGroupMBs map[t
 }
 
 func (w *weightedQoSMBPolicy) getTopLevelPlan(totalMB int, qosGroups map[task.QoSLevel]*monitor.MBQoSGroup) *plan.MBAlloc {
-	// don't set throttling at all for top level QoS group's CCDs
+	// don't set throttling at all for top level QoS group's CCDs; instead allow more than the totalMB
 	mbPlan := &plan.MBAlloc{Plan: make(map[task.QoSLevel]map[int]int)}
 	for qos, group := range qosGroups {
 		for ccd, mb := range group.CCDMB {

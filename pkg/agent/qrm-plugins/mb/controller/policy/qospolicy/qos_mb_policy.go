@@ -24,6 +24,5 @@ import (
 
 // QoSMBPolicy abstracts planning to distribute given MB to various QoS groups
 type QoSMBPolicy interface {
-	GetPlan(totalMB int, mbQoSGroups map[task.QoSLevel]*monitor.MBQoSGroup) *plan.MBAlloc
-	SetTopLink()
+	GetPlan(totalMB int, mbQoSGroups map[task.QoSLevel]*monitor.MBQoSGroup, isTopMost bool) *plan.MBAlloc
 }

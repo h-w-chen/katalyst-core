@@ -30,11 +30,10 @@ type constraintDomainMBPolicy struct {
 }
 
 func (c constraintDomainMBPolicy) GetPlan(domain *mbdomain.MBDomain, currQoSMB map[task.QoSLevel]*monitor.MBQoSGroup) *plan.MBAlloc {
-	return c.qosMBPolicy.GetPlan(mbdomain.DomainTotalMB, currQoSMB)
+	return c.qosMBPolicy.GetPlan(mbdomain.DomainTotalMB, currQoSMB, true)
 }
 
 func NewConstraintDomainMBPolicy(qosMBPolicy qospolicy.QoSMBPolicy) DomainMBPolicy {
-	qosMBPolicy.SetTopLink()
 	return &constraintDomainMBPolicy{
 		qosMBPolicy: qosMBPolicy,
 	}
