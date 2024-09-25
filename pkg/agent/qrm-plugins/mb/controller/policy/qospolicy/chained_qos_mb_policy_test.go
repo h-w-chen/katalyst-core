@@ -24,6 +24,7 @@ import (
 
 	"github.com/kubewharf/katalyst-api/pkg/consts"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy/plan"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
 )
 
@@ -32,8 +33,8 @@ type mockBoundedPolicy struct {
 	QoSMBPolicy
 }
 
-func (m *mockBoundedPolicy) GetPlan(upperBoundMB int, currQoSMB map[task.QoSLevel]map[int]int) *plan.MBAlloc {
-	args := m.Called(upperBoundMB, currQoSMB)
+func (m *mockBoundedPolicy) GetPlan(upperBoundMB int, groups map[task.QoSLevel]*monitor.MBQoSGroup) *plan.MBAlloc {
+	args := m.Called(upperBoundMB, groups)
 	return args.Get(0).(*plan.MBAlloc)
 }
 
@@ -41,17 +42,17 @@ func Test_priorityChainedMBPolicy_GetPlan(t *testing.T) {
 	t.Parallel()
 
 	weightedPolicy := new(mockBoundedPolicy)
-	weightedPolicy.On("GetPlan", 46341, mapQoSMB{
-		"dedicated_cores": {12: 10_000, 13: 10_000},
+	weightedPolicy.On("GetPlan", 46341, map[task.QoSLevel]*monitor.MBQoSGroup{
+		"dedicated_cores": {CCDMB: map[int]int{12: 10_000, 13: 10_000}},
 	}).Return(&plan.MBAlloc{Plan: map[task.QoSLevel]map[int]int{
 		"dedicated_cores": {12: 25_000, 13: 14_414},
 	}})
 
 	nextPolicy := new(mockBoundedPolicy)
-	nextPolicy.On("GetPlan", 48659, mapQoSMB{
-		"shared_cores":    {8: 8_000, 9: 8_000},
-		"reclaimed_cores": {8: 1_000, 9: 1_000},
-		"system_cores":    {9: 3_000},
+	nextPolicy.On("GetPlan", 48659, map[task.QoSLevel]*monitor.MBQoSGroup{
+		"shared_cores":    {CCDMB: map[int]int{8: 8_000, 9: 8_000}},
+		"reclaimed_cores": {CCDMB: map[int]int{8: 1_000, 9: 1_000}},
+		"system_cores":    {CCDMB: map[int]int{9: 3_000}},
 	}).Return(&plan.MBAlloc{Plan: map[task.QoSLevel]map[int]int{
 		"shared_cores":    {8: 20_000, 9: 20_000},
 		"reclaimed_cores": {8: 1_000, 9: 1_000},
@@ -64,8 +65,8 @@ func Test_priorityChainedMBPolicy_GetPlan(t *testing.T) {
 		next     QoSMBPolicy
 	}
 	type args struct {
-		totalMB   int
-		currQoSMB map[task.QoSLevel]map[int]int
+		totalMB int
+		groups  map[task.QoSLevel]*monitor.MBQoSGroup
 	}
 	tests := []struct {
 		name   string
@@ -82,11 +83,11 @@ func Test_priorityChainedMBPolicy_GetPlan(t *testing.T) {
 			},
 			args: args{
 				totalMB: 95_000,
-				currQoSMB: mapQoSMB{
-					"dedicated_cores": {12: 10_000, 13: 10_000},
-					"shared_cores":    {8: 8_000, 9: 8_000},
-					"reclaimed_cores": {8: 1_000, 9: 1_000},
-					"system_cores":    {9: 3_000},
+				groups: map[task.QoSLevel]*monitor.MBQoSGroup{
+					"dedicated_cores": {CCDMB: map[int]int{12: 10_000, 13: 10_000}},
+					"shared_cores":    {CCDMB: map[int]int{8: 8_000, 9: 8_000}},
+					"reclaimed_cores": {CCDMB: map[int]int{8: 1_000, 9: 1_000}},
+					"system_cores":    {CCDMB: map[int]int{9: 3_000}},
 				},
 			},
 			want: &plan.MBAlloc{
@@ -104,11 +105,11 @@ func Test_priorityChainedMBPolicy_GetPlan(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			p := priorityChainedMBPolicy{
-				qosTier: tt.fields.topTiers,
-				tier:    tt.fields.tier,
-				next:    tt.fields.next,
+				currQoSLevels: tt.fields.topTiers,
+				current:       tt.fields.tier,
+				next:          tt.fields.next,
 			}
-			assert.Equalf(t, tt.want, p.GetPlan(tt.args.totalMB, tt.args.currQoSMB), "GetPlan(%v, %v)", tt.args.totalMB, tt.args.currQoSMB)
+			assert.Equalf(t, tt.want, p.GetPlan(tt.args.totalMB, tt.args.groups), "GetPlan(%v, %v)", tt.args.totalMB, tt.args.groups)
 		})
 	}
 }

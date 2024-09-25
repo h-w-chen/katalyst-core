@@ -20,6 +20,7 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/mbdomain"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy/plan"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy/qospolicy"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
 )
@@ -52,7 +53,7 @@ func getReservationPlan(domain *mbdomain.MBDomain, total int, preemptingNodes []
 	}
 }
 
-func (p preemptDomainMBPolicy) GetPlan(domain *mbdomain.MBDomain, currQoSMB map[task.QoSLevel]map[int]int) *plan.MBAlloc {
+func (p preemptDomainMBPolicy) GetPlan(domain *mbdomain.MBDomain, currQoSMB map[task.QoSLevel]*monitor.MBQoSGroup) *plan.MBAlloc {
 	preemptingNodes := domain.GetPreemptingNodes()
 	mbToServe := mbdomain.ReservedPerNuma * len(preemptingNodes)
 	reservationPlan := getReservationPlan(domain, mbToServe, preemptingNodes)
