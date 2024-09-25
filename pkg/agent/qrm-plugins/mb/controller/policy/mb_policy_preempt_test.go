@@ -36,8 +36,8 @@ type mockQoSMBPolicy struct {
 	qospolicy.QoSMBPolicy
 }
 
-func (m *mockQoSMBPolicy) GetPlan(upperBoundMB int, currQoSMB map[task.QoSLevel]*monitor.MBQoSGroup) *plan.MBAlloc {
-	args := m.Called(upperBoundMB, currQoSMB)
+func (m *mockQoSMBPolicy) GetPlan(upperBoundMB int, currQoSMB map[task.QoSLevel]*monitor.MBQoSGroup, isTopTier bool) *plan.MBAlloc {
+	args := m.Called(upperBoundMB, currQoSMB, isTopTier)
 	return args.Get(0).(*plan.MBAlloc)
 }
 
@@ -53,6 +53,7 @@ func Test_preemptPolicy_GetPlan(t *testing.T) {
 			"reclaimed_cores": {CCDMB: map[int]int{8: 1_000, 9: 1_000}},
 			"system_cores":    {CCDMB: map[int]int{9: 3_000}},
 		},
+		false,
 	).Return(&plan.MBAlloc{Plan: map[task.QoSLevel]map[int]int{
 		"dedicated_cores": {12: 25_000, 13: 14_414},
 		"shared_cores":    {8: 8_000, 9: 8_000},

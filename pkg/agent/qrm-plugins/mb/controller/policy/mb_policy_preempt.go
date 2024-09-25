@@ -60,7 +60,7 @@ func (p preemptDomainMBPolicy) GetPlan(domain *mbdomain.MBDomain, currQoSMB map[
 	general.InfofV(6, "mbm: domain %d hard reservation mb plan: %v", domain.ID, reservationPlan)
 
 	mbAllocatable := mbdomain.DomainTotalMB - mbToServe
-	allocatablePlan := p.qosMBPolicy.GetPlan(mbAllocatable, currQoSMB)
+	allocatablePlan := p.qosMBPolicy.GetPlan(mbAllocatable, currQoSMB, false)
 
 	return plan.Merge(reservationPlan, allocatablePlan)
 }

@@ -28,7 +28,8 @@ type DomainMBPolicy interface {
 }
 
 type domainMBPolicy struct {
-	preemptMBPolicy DomainMBPolicy
+	preemptMBPolicy   DomainMBPolicy
+	softLimitMBPolicy DomainMBPolicy
 }
 
 func (d domainMBPolicy) GetPlan(domain *mbdomain.MBDomain, currQoSMB map[task.QoSLevel]*monitor.MBQoSGroup) *plan.MBAlloc {
@@ -36,8 +37,7 @@ func (d domainMBPolicy) GetPlan(domain *mbdomain.MBDomain, currQoSMB map[task.Qo
 		return d.preemptMBPolicy.GetPlan(domain, currQoSMB)
 	}
 
-	//TODO implement me
-	panic("implement me")
+	return d.softLimitMBPolicy.GetPlan(domain, currQoSMB)
 }
 
 func NewDomainMBPolicy(preemptMBPolicy DomainMBPolicy) (DomainMBPolicy, error) {

@@ -25,15 +25,9 @@ import (
 )
 
 type priorityChainedMBPolicy struct {
-	isEffectiveTopLink bool
-	currQoSLevels      map[task.QoSLevel]struct{}
-	current            QoSMBPolicy
-	next               QoSMBPolicy
-}
-
-func (p *priorityChainedMBPolicy) SetTopLink() {
-	p.isEffectiveTopLink = true
-	p.current.SetTopLink()
+	currQoSLevels map[task.QoSLevel]struct{}
+	current       QoSMBPolicy
+	next          QoSMBPolicy
 }
 
 func (p *priorityChainedMBPolicy) splitQoSGroups(groups map[task.QoSLevel]*monitor.MBQoSGroup) (
@@ -51,7 +45,7 @@ func (p *priorityChainedMBPolicy) splitQoSGroups(groups map[task.QoSLevel]*monit
 	return
 }
 
-func (p *priorityChainedMBPolicy) processCurrentTier(totalMB int, qosGroups map[task.QoSLevel]*monitor.MBQoSGroup) (
+func (p *priorityChainedMBPolicy) processCurrentTier(isTopTier bool, totalMB int, qosGroups map[task.QoSLevel]*monitor.MBQoSGroup) (
 	planTopTier *plan.MBAlloc, leftMB int, nextGroups map[task.QoSLevel]*monitor.MBQoSGroup,
 ) {
 	topTierGroups := make(map[task.QoSLevel]*monitor.MBQoSGroup)
@@ -64,7 +58,7 @@ func (p *priorityChainedMBPolicy) processCurrentTier(totalMB int, qosGroups map[
 		// just take all MB for the top current, besides the min MB for the left
 		// todo: exclude qos that has no active pods at all (indicating by no traffic?)
 		leftMB = otherMins
-		planTopTier = p.current.GetPlan(totalMB-leftMB, topTierGroups)
+		planTopTier = p.current.GetPlan(totalMB-leftMB, topTierGroups, isTopTier)
 		return
 	}
 
@@ -89,20 +83,21 @@ func (p *priorityChainedMBPolicy) processCurrentTier(totalMB int, qosGroups map[
 	}
 	topTierToAllocate += freeTopTierPortion
 	leftMB = totalMB - topTierToAllocate
-	planTopTier = p.current.GetPlan(topTierToAllocate, topTierGroups)
+	planTopTier = p.current.GetPlan(topTierToAllocate, topTierGroups, isTopTier)
 	return
 }
 
-func (p *priorityChainedMBPolicy) GetPlan(totalMB int, qosGroups map[task.QoSLevel]*monitor.MBQoSGroup) *plan.MBAlloc {
-	planCurrentTier, leftMB, leftMBGroups := p.processCurrentTier(totalMB, qosGroups)
+func (p *priorityChainedMBPolicy) GetPlan(totalMB int, qosGroups map[task.QoSLevel]*monitor.MBQoSGroup, isTopMost bool) *plan.MBAlloc {
+	planCurrentTier, leftMB, leftMBGroups := p.processCurrentTier(isTopMost, totalMB, qosGroups)
 
 	var planLeft *plan.MBAlloc
 	if p.next != nil && len(leftMBGroups) > 0 {
 		// ensure top level of qos process as next if not this one
-		if p.isEffectiveTopLink && util.Sum(planCurrentTier.Plan) == 0 {
-			p.next.SetTopLink()
-		}
-		planLeft = p.next.GetPlan(leftMB, leftMBGroups)
+		nextIsTopMose := isTopMost && util.Sum(planCurrentTier.Plan) == 0
+		//if p.isEffectiveTopLink && util.Sum(planCurrentTier.Plan) == 0 {
+		//	p.next.SetTopLink()
+		//}
+		planLeft = p.next.GetPlan(leftMB, leftMBGroups, nextIsTopMose)
 	}
 
 	return plan.Merge(planCurrentTier, planLeft)
