@@ -21,7 +21,6 @@ import (
 )
 
 type MBMonitor interface {
-	//	getQoSMBs() (map[task.QoSLevel]map[int]int, error)
 	GetMBQoSGroups() (map[task.QoSLevel]*MBQoSGroup, error)
 }
 
