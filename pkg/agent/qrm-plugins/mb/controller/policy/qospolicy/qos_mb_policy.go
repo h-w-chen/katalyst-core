@@ -18,6 +18,7 @@ package qospolicy
 
 import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy/plan"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/util"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
 )
@@ -32,19 +33,45 @@ func BuildDefaultChainedQoSMBPolicy() QoSMBPolicy {
 	policyReclaimedLink := NewChainedQoSMBPolicy(
 		map[task.QoSLevel]struct{}{task.QoSLevelReclaimedCores: {}},
 		NewWeightedQoSMBPolicy(),
-		nil)
+		nil,
+	)
 	policySystemSharedLink := NewChainedQoSMBPolicy(
 		map[task.QoSLevel]struct{}{
 			task.QoSLevelSharedCores: {},
 			task.QoSLevelSystemCores: {},
 		},
 		NewWeightedQoSMBPolicy(),
-		policyReclaimedLink)
+		policyReclaimedLink,
+	)
+
+	policySystemReclaimedLink := NewChainedQoSMBPolicy(
+		map[task.QoSLevel]struct{}{
+			task.QoSLevelReclaimedCores: {},
+			task.QoSLevelSystemCores:    {},
+		},
+		NewWeightedQoSMBPolicy(),
+		policyReclaimedLink,
+	)
+
+	valueBranches := NewValveQoSMBPolicy(func(mbQoSGroups map[task.QoSLevel]*monitor.MBQoSGroup, isTopMost bool) bool {
+		if !isTopMost {
+			return true
+		}
+		sharedGroup, ok := mbQoSGroups[task.QoSLevelSharedCores]
+		if !ok {
+			return false
+		}
+		if util.SumCCDMB(sharedGroup.CCDMB) == 0 {
+			return false
+		}
+		return true
+	}, policySystemSharedLink, policySystemReclaimedLink)
+
 	policyDecidatedLink := NewChainedQoSMBPolicy(
 		map[task.QoSLevel]struct{}{
 			task.QoSLevelDedicatedCores: {},
 		},
 		NewWeightedQoSMBPolicy(),
-		policySystemSharedLink)
+		valueBranches)
 	return policyDecidatedLink
 }
