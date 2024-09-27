@@ -22,14 +22,14 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
 )
 
-// valveQoSMBPolicy is a special form of qos mb policy
+// branchedQoSPolicy is a special form of qos mb policy
 // its middle tier ("floating") combines to upper tier - if applicable, or falls back to lower tier
-type valveQoSMBPolicy struct {
+type branchedQoSPolicy struct {
 	either, or QoSMBPolicy
 	filter     func(mbQoSGroups map[task.QoSLevel]*monitor.MBQoSGroup, isTopMost bool) bool
 }
 
-func (v valveQoSMBPolicy) GetPlan(totalMB int, mbQoSGroups map[task.QoSLevel]*monitor.MBQoSGroup, isTopMost bool) *plan.MBAlloc {
+func (v branchedQoSPolicy) GetPlan(totalMB int, mbQoSGroups map[task.QoSLevel]*monitor.MBQoSGroup, isTopMost bool) *plan.MBAlloc {
 	if v.filter(mbQoSGroups, isTopMost) {
 		return v.either.GetPlan(totalMB, mbQoSGroups, isTopMost)
 	}
@@ -40,7 +40,7 @@ func (v valveQoSMBPolicy) GetPlan(totalMB int, mbQoSGroups map[task.QoSLevel]*mo
 func NewValveQoSMBPolicy(condition func(mbQoSGroups map[task.QoSLevel]*monitor.MBQoSGroup, isTopMost bool) bool,
 	either, or QoSMBPolicy,
 ) QoSMBPolicy {
-	return &valveQoSMBPolicy{
+	return &branchedQoSPolicy{
 		either: either,
 		or:     or,
 		filter: condition,
