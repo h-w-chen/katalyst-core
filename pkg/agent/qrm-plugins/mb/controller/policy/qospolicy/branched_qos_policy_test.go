@@ -30,13 +30,13 @@ import (
 func Test_valveQoSMBPolicy_GetPlan(t *testing.T) {
 	t.Parallel()
 
-	upperPolicy := new(mockBoundedPolicy)
+	upperPolicy := new(mockQoSPolicy)
 	upperPolicy.On("GetPlan", mock.Anything, mock.Anything, mock.Anything).
 		Return(&plan.MBAlloc{Plan: map[task.QoSLevel]map[int]int{
 			"upper": {},
 		}})
 
-	lowerPolicy := new(mockBoundedPolicy)
+	lowerPolicy := new(mockQoSPolicy)
 	lowerPolicy.On("GetPlan", mock.Anything, mock.Anything, mock.Anything).
 		Return(&plan.MBAlloc{Plan: map[task.QoSLevel]map[int]int{
 			"lower": {},
@@ -91,7 +91,7 @@ func Test_valveQoSMBPolicy_GetPlan(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			v := valveQoSMBPolicy{
+			v := branchedQoSPolicy{
 				either: tt.fields.either,
 				or:     tt.fields.or,
 				filter: tt.fields.filter,

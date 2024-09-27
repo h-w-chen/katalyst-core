@@ -28,50 +28,40 @@ type QoSMBPolicy interface {
 	GetPlan(totalMB int, mbQoSGroups map[task.QoSLevel]*monitor.MBQoSGroup, isTopMost bool) *plan.MBAlloc
 }
 
-func BuildDefaultChainedQoSMBPolicy() QoSMBPolicy {
-	// bottom up construction - reclaimed --> { system | shared } --> dedicated
-	policyReclaimedLink := NewChainedQoSMBPolicy(
-		map[task.QoSLevel]struct{}{task.QoSLevelReclaimedCores: {}},
-		NewWeightedQoSMBPolicy(),
-		nil,
-	)
-	policySystemSharedLink := NewChainedQoSMBPolicy(
+// BuildFullyChainedQoSPolicy builds up the full chain of {dedicated, shared_50, system} -> {shared_30}
+func BuildFullyChainedQoSPolicy() QoSMBPolicy {
+	return NewChainedQoSMBPolicy(
 		map[task.QoSLevel]struct{}{
-			task.QoSLevelSharedCores: {},
-			task.QoSLevelSystemCores: {},
+			"dedicated": {},
+			"shared_50": {},
+			"system":    {},
 		},
-		NewWeightedQoSMBPolicy(),
-		policyReclaimedLink,
+		NewTerminalQoSPolicy(),
+		NewTerminalQoSPolicy(),
 	)
+}
 
-	policySystemReclaimedLink := NewChainedQoSMBPolicy(
-		map[task.QoSLevel]struct{}{
-			task.QoSLevelReclaimedCores: {},
-			task.QoSLevelSystemCores:    {},
-		},
-		NewWeightedQoSMBPolicy(),
-		policyReclaimedLink,
-	)
+func BuildHiPrioDetectedQoSMBPolicy() QoSMBPolicy {
+	//--[if any dedicated|shared_50 pod exist]:    {dedicated, shared_50, system} -> {shared_30}
+	//        \ or ---------------------------:    {system, shared_30}
 
-	valueBranches := NewValveQoSMBPolicy(func(mbQoSGroups map[task.QoSLevel]*monitor.MBQoSGroup, isTopMost bool) bool {
-		if !isTopMost {
-			return true
-		}
-		sharedGroup, ok := mbQoSGroups[task.QoSLevelSharedCores]
-		if !ok {
-			return false
-		}
-		if util.SumCCDMB(sharedGroup.CCDMB) == 0 {
-			return false
-		}
-		return true
-	}, policySystemSharedLink, policySystemReclaimedLink)
+	// to build up {dedicated, shared_50, system} -> {shared_30}
+	policyEither := BuildFullyChainedQoSPolicy()
 
-	policyDecidatedLink := NewChainedQoSMBPolicy(
-		map[task.QoSLevel]struct{}{
-			task.QoSLevelDedicatedCores: {},
-		},
-		NewWeightedQoSMBPolicy(),
-		valueBranches)
-	return policyDecidatedLink
+	// to build up {system, shared_30}
+	policyOr := NewTerminalQoSPolicy()
+
+	// tod: check by pods instead of mb traffic
+	anyDedicatedShared50PodExist := func(mbQoSGroups map[task.QoSLevel]*monitor.MBQoSGroup, _ bool) bool {
+		mbTraffic := 0
+		if shared_50, ok := mbQoSGroups["shared_50"]; !ok {
+			mbTraffic += util.SumCCDMB(shared_50.CCDMB)
+		}
+		if dedicated, ok := mbQoSGroups["dedicated"]; !ok {
+			mbTraffic += util.SumCCDMB(dedicated.CCDMB)
+		}
+		return mbTraffic > 0
+	}
+	policyBranched := NewValveQoSMBPolicy(anyDedicatedShared50PodExist, policyEither, policyOr)
+	return policyBranched
 }
