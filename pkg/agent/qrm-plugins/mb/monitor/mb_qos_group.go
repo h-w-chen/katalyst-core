@@ -27,6 +27,9 @@ type MBQoSGroup struct {
 	//ccds  sets.Int
 
 	CCDMB map[int]int
+
+	// throttling weight x mb-usgae table
+	WeightedCCDMBs map[int]map[int]int
 }
 
 func SumMB(groups map[task.QoSLevel]*MBQoSGroup) int {
