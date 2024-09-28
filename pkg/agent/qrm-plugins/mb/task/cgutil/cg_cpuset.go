@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cgnode
+package cgutil
 
 import (
 	"strconv"
@@ -23,8 +23,16 @@ import (
 	"github.com/opencontainers/runc/libcontainer/cgroups"
 )
 
+func GetCPUs(cpusetPath string) ([]int, error) {
+	return getValues(cpusetPath, "cpuset.cpus")
+}
+
 func GetNumaNodes(cpusetPath string) ([]int, error) {
-	content, err := cgroups.ReadFile(cpusetPath, "cpuset.mems")
+	return getValues(cpusetPath, "cpuset.mems")
+}
+
+func getValues(cpusetPath string, cgfile string) ([]int, error) {
+	content, err := cgroups.ReadFile(cpusetPath, cgfile)
 	if err != nil {
 		return nil, err
 	}

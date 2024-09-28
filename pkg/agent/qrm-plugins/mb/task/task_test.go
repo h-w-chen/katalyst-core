@@ -20,8 +20,6 @@ import (
 	"reflect"
 	"sort"
 	"testing"
-
-	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 func TestTask_GetResctrlCtrlGroup(t1 *testing.T) {
@@ -108,8 +106,8 @@ func TestTask_GetResctrlMonGroup(t1 *testing.T) {
 func TestTask_GetCCDs(t1 *testing.T) {
 	t1.Parallel()
 	type fields struct {
-		NumaNode []int
-		nodeCCDs map[int]sets.Int
+		CPUs   []int
+		cpuCCD map[int]int
 	}
 	tests := []struct {
 		name   string
@@ -119,10 +117,10 @@ func TestTask_GetCCDs(t1 *testing.T) {
 		{
 			name: "happy path",
 			fields: fields{
-				NumaNode: []int{2},
-				nodeCCDs: map[int]sets.Int{0: {0: sets.Empty{}, 1: sets.Empty{}}, 2: {4: sets.Empty{}, 5: sets.Empty{}}},
+				CPUs:   []int{93, 94, 126, 127},
+				cpuCCD: map[int]int{0: 0, 1: 0, 92: 24, 93: 24, 94: 24, 126: 32, 127: 33},
 			},
-			want: []int{4, 5},
+			want: []int{24, 32, 33},
 		},
 	}
 	for _, tt := range tests {
@@ -130,8 +128,8 @@ func TestTask_GetCCDs(t1 *testing.T) {
 		t1.Run(tt.name, func(t1 *testing.T) {
 			t1.Parallel()
 			t := Task{
-				NumaNode: tt.fields.NumaNode,
-				nodeCCDs: tt.fields.nodeCCDs,
+				CPUs:   tt.fields.CPUs,
+				cpuCCD: tt.fields.cpuCCD,
 			}
 			got := t.GetCCDs()
 			sort.Slice(got, func(i, j int) bool { return i < j })

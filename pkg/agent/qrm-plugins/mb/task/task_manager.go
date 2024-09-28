@@ -32,16 +32,25 @@ type Manager interface {
 	DeleteTask(task *Task)
 }
 
-func New(nodeCCDs map[int]sets.Int, cleaner state.MBRawDataCleaner) (Manager, error) {
+func New(nodeCCDs map[int]sets.Int, cpusInCCD map[int][]int, cleaner state.MBRawDataCleaner) (Manager, error) {
+	cpuCCD := make(map[int]int)
+	for ccd, cpus := range cpusInCCD {
+		for _, cpu := range cpus {
+			cpuCCD[cpu] = ccd
+		}
+	}
+
 	return &manager{
 		rawStateCleaner: cleaner,
 		nodeCCDs:        nodeCCDs,
+		cpuCCD:          cpuCCD,
 	}, nil
 }
 
 type manager struct {
 	rawStateCleaner state.MBRawDataCleaner
 	nodeCCDs        map[int]sets.Int
+	cpuCCD          map[int]int
 
 	rwLock  sync.RWMutex
 	tasks   map[string]*Task
@@ -75,11 +84,18 @@ func (m *manager) NewTask(podID string, qos QoSLevel) (*Task, error) {
 		return nil, err
 	}
 
+	cpus, err := getBoundCPUs(podID, qos)
+	if err != nil {
+		return nil, err
+	}
+
 	task := &Task{
 		QoSLevel: qos,
 		PodUID:   podID,
 		NumaNode: nodes,
 		nodeCCDs: m.nodeCCDs,
+		CPUs:     cpus,
+		cpuCCD:   m.cpuCCD,
 	}
 
 	m.addTask(task)
