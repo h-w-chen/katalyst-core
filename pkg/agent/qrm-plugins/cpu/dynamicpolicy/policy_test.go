@@ -4408,6 +4408,13 @@ func TestAllocateByQoSAwareServerListAndWatchResp(t *testing.T) {
 						//		OriginalTopologyAwareAssignments: map[int]machine.CPUSet{
 						//			2: machine.NewCPUSet(5, 13),
 						//		},
+						//		Labels: map[string]string{
+						//			consts.PodAnnotationQoSLevelKey: consts.PodAnnotationQoSLevelReclaimedCores,
+						//		},
+						//		Annotations: map[string]string{
+						//			consts.PodAnnotationQoSLevelKey: consts.PodAnnotationQoSLevelReclaimedCores,
+						//		},
+						//		QoSGroup:        consts.PodAnnotationQoSLevelReclaimedCores,
 						//		RequestQuantity: 2,
 						//	},
 						//},
@@ -4904,7 +4911,7 @@ func TestShoudSharedCoresRampUp(t *testing.T) {
 	allocationInfo := dynamicPolicy.state.GetAllocationInfo(req.PodUid, testName)
 	as.NotNil(allocationInfo)
 	as.Equal(false, allocationInfo.RampUp)
-	as.Equal(allocationInfo.OwnerPoolName, commonstate.PoolNameShare)
+	as.Equal(allocationInfo.OwnerPoolName, state.PoolNameShare)
 }
 
 func BenchmarkGetTopologyHints(b *testing.B) {
