@@ -51,11 +51,12 @@ func BuildHiPrioDetectedQoSMBPolicy() QoSMBPolicy {
 	// to build up {system, shared_30}
 	policyOr := NewTerminalQoSPolicy()
 
-	// tod: check by pods instead of mb traffic
+	// todo: check by pods instead of mb traffic
+	// isTopMost arg is ignored as always true being the root branching in POC scenario
 	anyDedicatedShared50PodExist := func(mbQoSGroups map[task.QoSLevel]*monitor.MBQoSGroup, _ bool) bool {
 		mbTraffic := 0
-		if shared_50, ok := mbQoSGroups["shared_50"]; ok {
-			mbTraffic += util.SumCCDMB(shared_50.CCDMB)
+		if shared50, ok := mbQoSGroups["shared_50"]; ok {
+			mbTraffic += util.SumCCDMB(shared50.CCDMB)
 		}
 		if dedicated, ok := mbQoSGroups["dedicated"]; ok {
 			mbTraffic += util.SumCCDMB(dedicated.CCDMB)
