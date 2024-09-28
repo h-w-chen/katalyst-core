@@ -19,13 +19,14 @@ package task
 import (
 	"fmt"
 	"path"
+	"sort"
 
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/kubewharf/katalyst-api/pkg/consts"
 	resctrlconsts "github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl/consts"
-	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task/cgnode"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task/cgutil"
 )
 
 type QoSLevel = consts.QoSLevel
@@ -58,8 +59,12 @@ type Task struct {
 	pid   int
 	spids []int
 
+	// todo: remove them if not really needed
 	NumaNode []int
 	nodeCCDs map[int]sets.Int
+
+	CPUs   []int
+	cpuCCD map[int]int
 }
 
 func (t Task) GetID() string {
@@ -90,13 +95,19 @@ func (t Task) GetResctrlMonGroup() (string, error) {
 }
 
 func (t Task) GetCCDs() []int {
-	ccds := make([]int, 0)
-	for _, node := range t.NumaNode {
-		for ccd, _ := range t.nodeCCDs[node] {
-			ccds = append(ccds, ccd)
-		}
+	ccds := make(sets.Int)
+	for _, cpu := range t.CPUs {
+		ccds.Insert(t.cpuCCD[cpu])
 	}
-	return ccds
+
+	result := make(sort.IntSlice, len(ccds))
+	i := 0
+	for ccd, _ := range ccds {
+		result[i] = ccd
+		i++
+	}
+	result.Sort()
+	return result
 }
 
 func getCgroupCPUSetPath(podUID string, qos QoSLevel) string {
@@ -106,5 +117,9 @@ func getCgroupCPUSetPath(podUID string, qos QoSLevel) string {
 }
 
 func getNumaNodes(podUID string, qos QoSLevel) ([]int, error) {
-	return cgnode.GetNumaNodes(getCgroupCPUSetPath(podUID, qos))
+	return cgutil.GetNumaNodes(getCgroupCPUSetPath(podUID, qos))
+}
+
+func getBoundCPUs(podUID string, qos QoSLevel) ([]int, error) {
+	return cgutil.GetCPUs(getCgroupCPUSetPath(podUID, qos))
 }

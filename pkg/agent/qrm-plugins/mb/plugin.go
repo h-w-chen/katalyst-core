@@ -54,7 +54,7 @@ func (c *plugin) Start() error {
 		return errors.Wrap(err, "mbm: failed to create raw data state keeper")
 	}
 
-	taskManager, err := task.New(c.dieTopology.DiesInNuma, dataKeeper)
+	taskManager, err := task.New(c.dieTopology.DiesInNuma, c.dieTopology.CPUsInDie, dataKeeper)
 	if err != nil {
 		return errors.Wrap(err, "mbm: failed to create task manager")
 	}
