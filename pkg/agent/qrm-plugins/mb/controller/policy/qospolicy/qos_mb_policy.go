@@ -54,10 +54,10 @@ func BuildHiPrioDetectedQoSMBPolicy() QoSMBPolicy {
 	// tod: check by pods instead of mb traffic
 	anyDedicatedShared50PodExist := func(mbQoSGroups map[task.QoSLevel]*monitor.MBQoSGroup, _ bool) bool {
 		mbTraffic := 0
-		if shared_50, ok := mbQoSGroups["shared_50"]; !ok {
+		if shared_50, ok := mbQoSGroups["shared_50"]; ok {
 			mbTraffic += util.SumCCDMB(shared_50.CCDMB)
 		}
-		if dedicated, ok := mbQoSGroups["dedicated"]; !ok {
+		if dedicated, ok := mbQoSGroups["dedicated"]; ok {
 			mbTraffic += util.SumCCDMB(dedicated.CCDMB)
 		}
 		return mbTraffic > 0
