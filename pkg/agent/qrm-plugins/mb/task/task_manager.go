@@ -18,11 +18,17 @@ package task
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 	"sync"
 
+	"github.com/spf13/afero"
 	"k8s.io/apimachinery/pkg/util/sets"
 
+	resctrlconsts "github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl/consts"
+	resctrlfile "github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl/file"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl/state"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task/cgutil"
 )
 
 type Manager interface {
@@ -30,6 +36,7 @@ type Manager interface {
 	NewTask(podID string, qos QoSLevel) (*Task, error)
 	FindTask(id string) (*Task, error)
 	DeleteTask(task *Task)
+	RefreshTasks() error
 }
 
 func New(nodeCCDs map[int]sets.Int, cpusInCCD map[int][]int, cleaner state.MBRawDataCleaner) (Manager, error) {
@@ -44,6 +51,7 @@ func New(nodeCCDs map[int]sets.Int, cpusInCCD map[int][]int, cleaner state.MBRaw
 		rawStateCleaner: cleaner,
 		nodeCCDs:        nodeCCDs,
 		cpuCCD:          cpuCCD,
+		fs:              afero.NewOsFs(),
 	}, nil
 }
 
@@ -55,6 +63,127 @@ type manager struct {
 	rwLock  sync.RWMutex
 	tasks   map[string]*Task
 	taskQoS map[string]QoSLevel
+
+	fs afero.Fs
+}
+
+func (m *manager) RefreshTasks() error {
+	monGroupPathRefeshed, err := resctrlfile.GetResctrlMonGroups(m.fs)
+	if err != nil {
+		return err
+	}
+
+	// ensure task manager's tasks in line with mon groups identified
+	tasksToDelete, err := m.identifyTaskToDelete(monGroupPathRefeshed)
+	if err != nil {
+		return err
+	}
+	for _, tasksToDelete := range tasksToDelete {
+		m.DeleteTask(tasksToDelete)
+	}
+
+	newMonGroups, err := m.identifyNewMonGroups(monGroupPathRefeshed)
+	if err != nil {
+		return err
+	}
+	for _, newMonGroup := range newMonGroups {
+		qos, podUID, err := ParseMonGroup(newMonGroup)
+		if err != nil {
+			return err
+		}
+		_, err = m.NewTask(podUID, qos)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func ctrlGroupToQoSLevel(ctrlGroup string) (QoSLevel, error) {
+	switch ctrlGroup {
+	case "dedicated":
+		return QoSLevelDedicatedCores, nil
+	case "system":
+		return QoSLevelSystemCores, nil
+	case "reclaimed":
+		return QoSLevelReclaimedCores, nil
+	}
+
+	if strings.HasPrefix(ctrlGroup, "shared_") {
+		return QoSLevel(ctrlGroup), nil
+	}
+
+	return "", fmt.Errorf("unrecognized qos path %s", ctrlGroup)
+}
+
+func ParseMonGroup(path string) (QoSLevel, string, error) {
+	stem := strings.TrimPrefix(path, resctrlconsts.FsRoot)
+	stem = strings.Trim(stem, "/")
+	segs := strings.Split(stem, "/")
+	if len(segs) != 3 {
+		return "", "", fmt.Errorf("invalid mon group path: %s", path)
+	}
+
+	ctrlGroup, monGroup := segs[0], segs[2]
+	qos, err := ctrlGroupToQoSLevel(ctrlGroup)
+	if err != nil {
+		return "", "", err
+	}
+	return qos, monGroup, nil
+}
+
+func (m *manager) getTaskMonGroups() (map[string]*Task, error) {
+	m.rwLock.RLock()
+	defer m.rwLock.RUnlock()
+
+	result := make(map[string]*Task)
+	for _, task := range m.tasks {
+		monGroup, err := task.GetResctrlMonGroup()
+		if err != nil {
+			return nil, err
+		}
+		result[monGroup] = task
+	}
+	return result, nil
+}
+
+func (m *manager) identifyTaskToDelete(monGroups []string) ([]*Task, error) {
+	refreshed := make(map[string]struct{})
+	for _, monGroup := range monGroups {
+		refreshed[monGroup] = struct{}{}
+	}
+
+	result := make([]*Task, 0)
+
+	for _, task := range m.tasks {
+		taskMonGroup, err := task.GetResctrlMonGroup()
+		if err != nil {
+			return nil, err
+		}
+		if _, ok := refreshed[taskMonGroup]; !ok {
+			result = append(result, task)
+		}
+	}
+
+	return result, nil
+}
+
+func (m *manager) identifyNewMonGroups(monGroups []string) ([]string, error) {
+	result := make([]string, 0)
+
+	existentMonGroups, err := m.getTaskMonGroups()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, monGroup := range monGroups {
+		if _, ok := existentMonGroups[monGroup]; !ok {
+			result = append(result, monGroup)
+		}
+	}
+
+	return result, nil
 }
 
 func (m *manager) DeleteTask(task *Task) {
@@ -78,13 +207,21 @@ func (m *manager) FindTask(id string) (*Task, error) {
 	return task, nil
 }
 
+func (m *manager) getNumaNodes(podUID string, qos QoSLevel) ([]int, error) {
+	return cgutil.GetNumaNodes(m.fs, getCgroupCPUSetPath(podUID, qos))
+}
+
+func (m *manager) getBoundCPUs(podUID string, qos QoSLevel) ([]int, error) {
+	return cgutil.GetCPUs(m.fs, getCgroupCPUSetPath(podUID, qos))
+}
+
 func (m *manager) NewTask(podID string, qos QoSLevel) (*Task, error) {
-	nodes, err := getNumaNodes(podID, qos)
+	nodes, err := m.getNumaNodes(podID, qos)
 	if err != nil {
 		return nil, err
 	}
 
-	cpus, err := getBoundCPUs(podID, qos)
+	cpus, err := m.getBoundCPUs(podID, qos)
 	if err != nil {
 		return nil, err
 	}

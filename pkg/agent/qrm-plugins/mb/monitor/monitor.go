@@ -37,6 +37,10 @@ type mbMonitor struct {
 }
 
 func (t mbMonitor) GetMBQoSGroups() (map[task.QoSLevel]*MBQoSGroup, error) {
+	if err := t.refreshTasks(); err != nil {
+		return nil, err
+	}
+
 	qosCCDMB, err := t.getQoSMBs()
 	if err != nil {
 		return nil, err
@@ -71,4 +75,8 @@ func (t mbMonitor) getQoSMBs() (map[task.QoSLevel]map[int]int, error) {
 	}
 
 	return result, nil
+}
+
+func (m mbMonitor) refreshTasks() error {
+	return m.taskManager.RefreshTasks()
 }

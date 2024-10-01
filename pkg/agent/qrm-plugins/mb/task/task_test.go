@@ -76,7 +76,7 @@ func TestTask_GetResctrlMonGroup(t1 *testing.T) {
 		{
 			name: "happy path",
 			fields: fields{
-				PodUID:   "111-222-333",
+				PodUID:   "pod111-222-333",
 				QoSLevel: "dedicated_cores",
 			},
 			want:    "/sys/fs/resctrl/dedicated/mon_groups/pod111-222-333",
