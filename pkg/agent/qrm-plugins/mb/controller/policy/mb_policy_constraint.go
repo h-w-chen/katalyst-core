@@ -29,7 +29,7 @@ type constraintDomainMBPolicy struct {
 	qosMBPolicy qospolicy.QoSMBPolicy
 }
 
-func (c constraintDomainMBPolicy) GetPlan(domain *mbdomain.MBDomain, currQoSMB map[task.QoSLevel]*monitor.MBQoSGroup) *plan.MBAlloc {
+func (c constraintDomainMBPolicy) GetPlan(domain *mbdomain.MBDomain, currQoSMB map[task.QoSGroup]*monitor.MBQoSGroup) *plan.MBAlloc {
 	return c.qosMBPolicy.GetPlan(mbdomain.DomainTotalMB, currQoSMB, true)
 }
 

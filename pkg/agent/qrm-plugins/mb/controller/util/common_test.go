@@ -57,7 +57,7 @@ func TestWeightedSplit(t *testing.T) {
 func TestSum(t *testing.T) {
 	t.Parallel()
 	type args struct {
-		qosCCDMB map[task.QoSLevel]map[int]int
+		qosCCDMB map[task.QoSGroup]map[int]int
 	}
 	tests := []struct {
 		name string
@@ -67,7 +67,7 @@ func TestSum(t *testing.T) {
 		{
 			name: "happy path",
 			args: args{
-				qosCCDMB: map[task.QoSLevel]map[int]int{
+				qosCCDMB: map[task.QoSGroup]map[int]int{
 					"dedicated": {2: 100, 3: 100},
 					"shared":    {0: 3, 1: 3, 4: 3, 5: 3},
 					"relaimed":  {0: 1, 1: 1},

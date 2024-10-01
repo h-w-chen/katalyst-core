@@ -21,38 +21,13 @@ import (
 	"path"
 	"sort"
 
-	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	"github.com/kubewharf/katalyst-api/pkg/consts"
 	resctrlconsts "github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl/consts"
 )
 
-type QoSLevel = consts.QoSLevel
-
-const (
-	QoSLevelReclaimedCores QoSLevel = consts.QoSLevelReclaimedCores
-	QoSLevelSharedCores    QoSLevel = consts.QoSLevelSharedCores
-	QoSLevelDedicatedCores QoSLevel = consts.QoSLevelDedicatedCores
-	QoSLevelSystemCores    QoSLevel = consts.QoSLevelSystemCores
-)
-
-var qosFolderLookup = map[QoSLevel]string{
-	QoSLevelDedicatedCores: resctrlconsts.GroupDedicated,
-	QoSLevelSharedCores:    resctrlconsts.GroupSharedCore,
-	QoSLevelReclaimedCores: resctrlconsts.GroupReclaimed,
-	QoSLevelSystemCores:    resctrlconsts.GroupSystem,
-}
-
-var qosToCgroupv1GroupFolder = map[QoSLevel]string{
-	QoSLevelDedicatedCores: "burstable",
-	QoSLevelSharedCores:    "burstable",
-	QoSLevelReclaimedCores: "offline-besteffort",
-	QoSLevelSystemCores:    "burstable",
-}
-
 type Task struct {
-	QoSLevel QoSLevel
+	QoSGroup QoSGroup
 
 	// including pod prefix and uid string, like "poda47c5c03-cf94-4a36-b52f-c1cb17dc1675"
 	PodUID string
@@ -72,17 +47,12 @@ func (t Task) GetID() string {
 	return t.PodUID
 }
 
-func GetResctrlCtrlGroupFolder(qos QoSLevel) (string, error) {
-	qosFolder, ok := qosFolderLookup[qos]
-	if !ok {
-		return "", errors.New("invalid qos level of task")
-	}
-
-	return path.Join(resctrlconsts.FsRoot, qosFolder), nil
+func GetResctrlCtrlGroupFolder(qos QoSGroup) (string, error) {
+	return path.Join(resctrlconsts.FsRoot, string(qos)), nil
 }
 
 func (t Task) GetResctrlCtrlGroup() (string, error) {
-	return GetResctrlCtrlGroupFolder(t.QoSLevel)
+	return GetResctrlCtrlGroupFolder(t.QoSGroup)
 }
 
 func (t Task) GetResctrlMonGroup() (string, error) {
@@ -111,8 +81,12 @@ func (t Task) GetCCDs() []int {
 	return result
 }
 
-func getCgroupCPUSetPath(podUID string, qos QoSLevel) string {
+func getCgroupCPUSetPath(podUID string, qosGroup QoSGroup) (string, error) {
 	// todo: support cgroup v2
 	// below assumes cgroup v1
-	return path.Join("/sys/fs/cgroup/cpuset/kubepods/", qosToCgroupv1GroupFolder[qos], podUID)
+	qos, err := NewQoS(qosGroup)
+	if err != nil {
+		return "", err
+	}
+	return path.Join("/sys/fs/cgroup/cpuset/kubepods/", qosLevelToCgroupv1GroupFolder[qos.Level], podUID), nil
 }

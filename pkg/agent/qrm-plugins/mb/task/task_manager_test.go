@@ -92,7 +92,7 @@ func Test_manager_refreshTasks(t *testing.T) {
 		nodeCCDs        map[int]sets.Int
 		cpuCCD          map[int]int
 		tasks           map[string]*Task
-		taskQoS         map[string]QoSLevel
+		taskQoS         map[string]QoSGroup
 		fs              afero.Fs
 	}
 	type args struct {
@@ -110,24 +110,24 @@ func Test_manager_refreshTasks(t *testing.T) {
 				rawStateCleaner: dataCleaner,
 				tasks: map[string]*Task{
 					"pod123-456": {
-						QoSLevel: "system_cores",
+						QoSGroup: "system",
 						PodUID:   "pod123-456",
 					},
 					"pod789-000": {
-						QoSLevel: "system_cores",
+						QoSGroup: "system",
 						PodUID:   "pod789-000",
 					},
 				},
-				taskQoS: make(map[string]QoSLevel),
+				taskQoS: make(map[string]QoSGroup),
 			},
 			args: args{},
 			wants: map[string]*Task{
 				"pod123-456": {
-					QoSLevel: "system_cores",
+					QoSGroup: "system",
 					PodUID:   "pod123-456",
 				},
 				"pod505-999": {
-					QoSLevel: "system_cores",
+					QoSGroup: "system",
 					PodUID:   "pod505-999",
 					NumaNode: []int{8},
 					CPUs:     []int{16, 17, 18, 19, 20, 21, 22, 23, 116, 117, 118, 119, 120, 121, 122, 123},
@@ -166,7 +166,7 @@ func TestParseMonGroup(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    QoSLevel
+		want    QoSGroup
 		want1   string
 		wantErr assert.ErrorAssertionFunc
 	}{
@@ -175,7 +175,7 @@ func TestParseMonGroup(t *testing.T) {
 			args: args{
 				path: "/sys/fs/resctrl/dedicated/mon_groups/pod123-456-7890",
 			},
-			want:    "dedicated_cores",
+			want:    "dedicated",
 			want1:   "pod123-456-7890",
 			wantErr: assert.NoError,
 		},
@@ -200,7 +200,7 @@ func Test_manager_DeleteTask(t *testing.T) {
 	dataCleaner.On("Cleanup", "/sys/fs/resctrl/dedicated/mon_groups/pod123")
 
 	task := &Task{
-		QoSLevel: "dedicated_cores",
+		QoSGroup: "dedicated",
 		PodUID:   "pod123",
 	}
 
@@ -210,7 +210,7 @@ func Test_manager_DeleteTask(t *testing.T) {
 		cpuCCD          map[int]int
 		rwLock          sync.RWMutex
 		tasks           map[string]*Task
-		taskQoS         map[string]QoSLevel
+		taskQoS         map[string]QoSGroup
 		fs              afero.Fs
 	}
 	type args struct {
@@ -228,7 +228,7 @@ func Test_manager_DeleteTask(t *testing.T) {
 				tasks: map[string]*Task{
 					"pod123": task,
 				},
-				taskQoS: map[string]QoSLevel{
+				taskQoS: map[string]QoSGroup{
 					"pod123": "dedicated_cores",
 				},
 			},

@@ -50,13 +50,13 @@ func Test_mbMonitor_GetQoSMBs(t1 *testing.T) {
 	taskManager := new(mockTaskManager)
 	taskManager.On("GetTasks").Return([]*task.Task{{
 		PodUID:   "123-45-6789",
-		QoSLevel: "test",
+		QoSGroup: "test",
 	}})
 
 	taskMBReader := new(mockTaskMBReader)
 	taskMBReader.On("ReadMB", &task.Task{
 		PodUID:   "123-45-6789",
-		QoSLevel: "test",
+		QoSGroup: "test",
 	}).Return(map[int]int{
 		0: 1_000, 1: 2_500,
 	}, nil)
@@ -68,7 +68,7 @@ func Test_mbMonitor_GetQoSMBs(t1 *testing.T) {
 	tests := []struct {
 		name    string
 		fields  fields
-		want    map[task.QoSLevel]map[int]int
+		want    map[task.QoSGroup]map[int]int
 		wantErr bool
 	}{
 		{
@@ -77,7 +77,7 @@ func Test_mbMonitor_GetQoSMBs(t1 *testing.T) {
 				taskManager: taskManager,
 				mbReader:    taskMBReader,
 			},
-			want:    map[task.QoSLevel]map[int]int{"test": {0: 1000, 1: 2500}},
+			want:    map[task.QoSGroup]map[int]int{"test": {0: 1000, 1: 2500}},
 			wantErr: false,
 		},
 	}

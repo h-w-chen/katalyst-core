@@ -29,7 +29,7 @@ func SumCCDMB(ccdMB map[int]int) int {
 	return sum
 }
 
-func Sum(qosCCDMB map[task.QoSLevel]map[int]int) int {
+func Sum(qosCCDMB map[task.QoSGroup]map[int]int) int {
 	sum := 0
 
 	for _, ccdMB := range qosCCDMB {
@@ -67,8 +67,8 @@ func GetMaxDedicatedToIncrease(ccdMB map[int]int) int {
 	return upperLimit - SumCCDMB(ccdMB)
 }
 
-func GetQoSKeys(qosMB map[task.QoSLevel]map[int]int) []task.QoSLevel {
-	keys := make([]task.QoSLevel, len(qosMB))
+func GetQoSKeys(qosMB map[task.QoSGroup]map[int]int) []task.QoSGroup {
+	keys := make([]task.QoSGroup, len(qosMB))
 	i := 0
 	for qos, _ := range qosMB {
 		keys[i] = qos
