@@ -61,7 +61,7 @@ func Test_taskMBReader_ReadMB(t1 *testing.T) {
 			},
 			args: args{
 				task: &Task{
-					QoSLevel: "reclaimed_cores",
+					QoSGroup: "reclaimed",
 					PodUID:   "pod123-321-1122",
 					CPUs:     []int{16, 17},
 					cpuCCD:   map[int]int{16: 4, 17: 5},

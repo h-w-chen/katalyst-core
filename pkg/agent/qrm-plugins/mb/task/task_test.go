@@ -25,7 +25,7 @@ import (
 func TestTask_GetResctrlCtrlGroup(t1 *testing.T) {
 	t1.Parallel()
 	type fields struct {
-		QoSLevel QoSLevel
+		QoSLevel QoSGroup
 	}
 	tests := []struct {
 		name    string
@@ -36,7 +36,7 @@ func TestTask_GetResctrlCtrlGroup(t1 *testing.T) {
 		{
 			name: "happy path",
 			fields: fields{
-				QoSLevel: "shared_cores",
+				QoSLevel: "shared",
 			},
 			want:    "/sys/fs/resctrl/shared",
 			wantErr: false,
@@ -47,7 +47,7 @@ func TestTask_GetResctrlCtrlGroup(t1 *testing.T) {
 		t1.Run(tt.name, func(t1 *testing.T) {
 			t1.Parallel()
 			t := Task{
-				QoSLevel: tt.fields.QoSLevel,
+				QoSGroup: tt.fields.QoSLevel,
 			}
 			got, err := t.GetResctrlCtrlGroup()
 			if (err != nil) != tt.wantErr {
@@ -65,7 +65,7 @@ func TestTask_GetResctrlMonGroup(t1 *testing.T) {
 	t1.Parallel()
 	type fields struct {
 		PodUID   string
-		QoSLevel QoSLevel
+		QoSLevel QoSGroup
 	}
 	tests := []struct {
 		name    string
@@ -77,7 +77,7 @@ func TestTask_GetResctrlMonGroup(t1 *testing.T) {
 			name: "happy path",
 			fields: fields{
 				PodUID:   "pod111-222-333",
-				QoSLevel: "dedicated_cores",
+				QoSLevel: "dedicated",
 			},
 			want:    "/sys/fs/resctrl/dedicated/mon_groups/pod111-222-333",
 			wantErr: false,
@@ -89,7 +89,7 @@ func TestTask_GetResctrlMonGroup(t1 *testing.T) {
 			t1.Parallel()
 			t := Task{
 				PodUID:   tt.fields.PodUID,
-				QoSLevel: tt.fields.QoSLevel,
+				QoSGroup: tt.fields.QoSLevel,
 			}
 			got, err := t.GetResctrlMonGroup()
 			if (err != nil) != tt.wantErr {

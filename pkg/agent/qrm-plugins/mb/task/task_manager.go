@@ -33,7 +33,7 @@ import (
 
 type Manager interface {
 	GetTasks() []*Task
-	NewTask(podID string, qos QoSLevel) (*Task, error)
+	NewTask(podID string, qos QoSGroup) (*Task, error)
 	FindTask(id string) (*Task, error)
 	DeleteTask(task *Task)
 	RefreshTasks() error
@@ -62,7 +62,7 @@ type manager struct {
 
 	rwLock  sync.RWMutex
 	tasks   map[string]*Task
-	taskQoS map[string]QoSLevel
+	taskQoS map[string]QoSGroup
 
 	fs afero.Fs
 }
@@ -100,24 +100,12 @@ func (m *manager) RefreshTasks() error {
 	return nil
 }
 
-func ctrlGroupToQoSLevel(ctrlGroup string) (QoSLevel, error) {
-	switch ctrlGroup {
-	case "dedicated":
-		return QoSLevelDedicatedCores, nil
-	case "system":
-		return QoSLevelSystemCores, nil
-	case "reclaimed":
-		return QoSLevelReclaimedCores, nil
-	}
-
-	if strings.HasPrefix(ctrlGroup, "shared_") {
-		return QoSLevel(ctrlGroup), nil
-	}
-
-	return "", fmt.Errorf("unrecognized qos path %s", ctrlGroup)
+// todo: remove it if not really needed
+func ctrlGroupToQoSLevel(ctrlGroup string) (QoSGroup, error) {
+	return QoSGroup(ctrlGroup), nil
 }
 
-func ParseMonGroup(path string) (QoSLevel, string, error) {
+func ParseMonGroup(path string) (QoSGroup, string, error) {
 	stem := strings.TrimPrefix(path, resctrlconsts.FsRoot)
 	stem = strings.Trim(stem, "/")
 	segs := strings.Split(stem, "/")
@@ -207,15 +195,23 @@ func (m *manager) FindTask(id string) (*Task, error) {
 	return task, nil
 }
 
-func (m *manager) getNumaNodes(podUID string, qos QoSLevel) ([]int, error) {
-	return cgutil.GetNumaNodes(m.fs, getCgroupCPUSetPath(podUID, qos))
+func (m *manager) getNumaNodes(podUID string, qos QoSGroup) ([]int, error) {
+	cgPath, err := getCgroupCPUSetPath(podUID, qos)
+	if err != nil {
+		return nil, err
+	}
+	return cgutil.GetNumaNodes(m.fs, cgPath)
 }
 
-func (m *manager) getBoundCPUs(podUID string, qos QoSLevel) ([]int, error) {
-	return cgutil.GetCPUs(m.fs, getCgroupCPUSetPath(podUID, qos))
+func (m *manager) getBoundCPUs(podUID string, qos QoSGroup) ([]int, error) {
+	cgPath, err := getCgroupCPUSetPath(podUID, qos)
+	if err != nil {
+		return nil, err
+	}
+	return cgutil.GetCPUs(m.fs, cgPath)
 }
 
-func (m *manager) NewTask(podID string, qos QoSLevel) (*Task, error) {
+func (m *manager) NewTask(podID string, qos QoSGroup) (*Task, error) {
 	nodes, err := m.getNumaNodes(podID, qos)
 	if err != nil {
 		return nil, err
@@ -227,7 +223,7 @@ func (m *manager) NewTask(podID string, qos QoSLevel) (*Task, error) {
 	}
 
 	task := &Task{
-		QoSLevel: qos,
+		QoSGroup: qos,
 		PodUID:   podID,
 		NumaNode: nodes,
 		nodeCCDs: m.nodeCCDs,
@@ -242,7 +238,7 @@ func (m *manager) NewTask(podID string, qos QoSLevel) (*Task, error) {
 func (m *manager) addTask(task *Task) {
 	m.rwLock.Lock()
 	defer m.rwLock.Unlock()
-	m.taskQoS[task.GetID()] = task.QoSLevel
+	m.taskQoS[task.GetID()] = task.QoSGroup
 	m.tasks[task.GetID()] = task
 }
 

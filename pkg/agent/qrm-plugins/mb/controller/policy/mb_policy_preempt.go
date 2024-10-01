@@ -44,13 +44,13 @@ func getReservationPlan(domain *mbdomain.MBDomain, preemptingNodes []int) *plan.
 	}
 
 	return &plan.MBAlloc{
-		Plan: map[task.QoSLevel]map[int]int{
-			task.QoSLevelDedicatedCores: ccdMB,
+		Plan: map[task.QoSGroup]map[int]int{
+			task.QoSGroupDedicated: ccdMB,
 		},
 	}
 }
 
-func (p preemptDomainMBPolicy) GetPlan(domain *mbdomain.MBDomain, currQoSMB map[task.QoSLevel]*monitor.MBQoSGroup) *plan.MBAlloc {
+func (p preemptDomainMBPolicy) GetPlan(domain *mbdomain.MBDomain, currQoSMB map[task.QoSGroup]*monitor.MBQoSGroup) *plan.MBAlloc {
 	preemptingNodes := domain.GetPreemptingNodes()
 	mbToServe := mbdomain.ReservedPerNuma * len(preemptingNodes)
 	reservationPlan := getReservationPlan(domain, preemptingNodes)
