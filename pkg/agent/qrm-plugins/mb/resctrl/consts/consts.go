@@ -33,7 +33,7 @@ const (
 	MBRawFile    = "mbm_total_bytes"
 	SchemataFile = "schemata"
 
-	TmplTaskFolder   = "pod%s"
+	TmplTaskFolder   = "%s"
 	TmplCCDMonFolder = "mon_L3_%02d"
 
 	InvalidMB = -1

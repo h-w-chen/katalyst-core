@@ -17,27 +17,29 @@ limitations under the License.
 package cgutil
 
 import (
+	"path"
 	"strconv"
 	"strings"
 
-	"github.com/opencontainers/runc/libcontainer/cgroups"
+	"github.com/spf13/afero"
 )
 
-func GetCPUs(cpusetPath string) ([]int, error) {
-	return getValues(cpusetPath, "cpuset.cpus")
+func GetCPUs(fs afero.Fs, cpusetPath string) ([]int, error) {
+	return getValues(fs, cpusetPath, "cpuset.cpus")
 }
 
-func GetNumaNodes(cpusetPath string) ([]int, error) {
-	return getValues(cpusetPath, "cpuset.mems")
+func GetNumaNodes(fs afero.Fs, cpusetPath string) ([]int, error) {
+	return getValues(fs, cpusetPath, "cpuset.mems")
 }
 
-func getValues(cpusetPath string, cgfile string) ([]int, error) {
-	content, err := cgroups.ReadFile(cpusetPath, cgfile)
+func getValues(fs afero.Fs, cpusetPath string, cgfile string) ([]int, error) {
+	cgPath := path.Join(cpusetPath, cgfile)
+	content, err := afero.ReadFile(fs, cgPath)
 	if err != nil {
 		return nil, err
 	}
 
-	return parse(content)
+	return parse(string(content))
 }
 
 func parse(content string) ([]int, error) {

@@ -26,7 +26,6 @@ import (
 
 	"github.com/kubewharf/katalyst-api/pkg/consts"
 	resctrlconsts "github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl/consts"
-	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task/cgutil"
 )
 
 type QoSLevel = consts.QoSLevel
@@ -54,7 +53,9 @@ var qosToCgroupv1GroupFolder = map[QoSLevel]string{
 
 type Task struct {
 	QoSLevel QoSLevel
-	PodUID   string
+
+	// including pod prefix and uid string, like "poda47c5c03-cf94-4a36-b52f-c1cb17dc1675"
+	PodUID string
 
 	pid   int
 	spids []int
@@ -113,13 +114,5 @@ func (t Task) GetCCDs() []int {
 func getCgroupCPUSetPath(podUID string, qos QoSLevel) string {
 	// todo: support cgroup v2
 	// below assumes cgroup v1
-	return path.Join("/sys/fs/cgroup/cpuset/kubepods/", qosToCgroupv1GroupFolder[qos], "pod"+podUID)
-}
-
-func getNumaNodes(podUID string, qos QoSLevel) ([]int, error) {
-	return cgutil.GetNumaNodes(getCgroupCPUSetPath(podUID, qos))
-}
-
-func getBoundCPUs(podUID string, qos QoSLevel) ([]int, error) {
-	return cgutil.GetCPUs(getCgroupCPUSetPath(podUID, qos))
+	return path.Join("/sys/fs/cgroup/cpuset/kubepods/", qosToCgroupv1GroupFolder[qos], podUID)
 }
