@@ -46,7 +46,7 @@ type mockTaskMBReader struct {
 	mock.Mock
 }
 
-func (m *mockTaskMBReader) ReadMB(task *task.Task) (map[int]int, error) {
+func (m *mockTaskMBReader) GetMB(task *task.Task) (map[int]int, error) {
 	args := m.Called(task)
 	return args.Get(0).(map[int]int), args.Error(1)
 }
@@ -70,7 +70,7 @@ func Test_mbMonitor_GetQoSMBs(t1 *testing.T) {
 	}})
 
 	taskMBReader := new(mockTaskMBReader)
-	taskMBReader.On("ReadMB", &task.Task{
+	taskMBReader.On("GetMB", &task.Task{
 		PodUID:   "123-45-6789",
 		QoSGroup: "test",
 	}).Return(map[int]int{
@@ -123,8 +123,6 @@ func Test_mbMonitor_GetMBQoSGroups(t1 *testing.T) {
 	testTask := &task.Task{
 		QoSGroup: "foo",
 		PodUID:   "123-4567",
-		NumaNode: nil,
-		CPUs:     nil,
 	}
 
 	taskManager := new(mockTaskManager)
@@ -132,7 +130,7 @@ func Test_mbMonitor_GetMBQoSGroups(t1 *testing.T) {
 	taskManager.On("GetTasks").Return([]*task.Task{testTask})
 
 	taskMBReader := new(mockTaskMBReader)
-	taskMBReader.On("ReadMB", testTask).Return(map[int]int{2: 200, 3: 300}, nil)
+	taskMBReader.On("GetMB", testTask).Return(map[int]int{2: 200, 3: 300}, nil)
 
 	wmbReader := new(mockWriteMBReader)
 	wmbReader.On("GetMB", 2).Return(20, nil)

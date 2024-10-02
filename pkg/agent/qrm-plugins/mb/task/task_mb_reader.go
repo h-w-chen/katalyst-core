@@ -19,20 +19,20 @@ package task
 import "github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl"
 
 type TaskMBReader interface {
-	ReadMB(task *Task) (map[int]int, error)
+	GetMB(task *Task) (map[int]int, error)
 }
 
 type taskMBReader struct {
 	monGroupReader resctrl.MonGroupReader
 }
 
-func (t taskMBReader) ReadMB(task *Task) (map[int]int, error) {
+func (t taskMBReader) GetMB(task *Task) (map[int]int, error) {
 	taskMonGroup, err := task.GetResctrlMonGroup()
 	if err != nil {
 		return nil, err
 	}
 
-	return t.monGroupReader.ReadMB(taskMonGroup, task.GetCCDs())
+	return t.monGroupReader.ReadMB(taskMonGroup, task.CCDs)
 }
 
 func NewTaskMBReader(monGroupReader resctrl.MonGroupReader) (TaskMBReader, error) {

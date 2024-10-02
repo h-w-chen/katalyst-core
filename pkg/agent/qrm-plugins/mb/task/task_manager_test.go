@@ -82,7 +82,7 @@ func Test_manager_refreshTasks(t *testing.T) {
 	_ = fs.MkdirAll("/sys/fs/resctrl/system/mon_groups/pod123-456", resctrlconsts.FolderPerm)
 	_ = fs.MkdirAll("/sys/fs/resctrl/system/mon_groups/pod505-999", resctrlconsts.FolderPerm)
 	_ = afero.WriteFile(fs, "/sys/fs/cgroup/cpuset/kubepods/burstable/pod505-999/cpuset.mems", []byte("8"), resctrlconsts.FilePerm)
-	_ = afero.WriteFile(fs, "/sys/fs/cgroup/cpuset/kubepods/burstable/pod505-999/cpuset.cpus", []byte("16-23,116-123"), resctrlconsts.FilePerm)
+	_ = afero.WriteFile(fs, "/sys/fs/cgroup/cpuset/kubepods/burstable/pod505-999/cpuset.cpus", []byte("16-19,116-119"), resctrlconsts.FilePerm)
 
 	dataCleaner := new(mockDataCleaner)
 	dataCleaner.On("Cleanup", "/sys/fs/resctrl/system/mon_groups/pod789-000")
@@ -108,6 +108,7 @@ func Test_manager_refreshTasks(t *testing.T) {
 			name: "happy path new 1 remove 1",
 			fields: fields{
 				rawStateCleaner: dataCleaner,
+				cpuCCD:          map[int]int{16: 5, 17: 5, 18: 6, 19: 6, 116: 35, 117: 35, 118: 36, 119: 36},
 				tasks: map[string]*Task{
 					"pod123-456": {
 						QoSGroup: "system",
@@ -127,10 +128,11 @@ func Test_manager_refreshTasks(t *testing.T) {
 					PodUID:   "pod123-456",
 				},
 				"pod505-999": {
-					QoSGroup: "system",
-					PodUID:   "pod505-999",
-					NumaNode: []int{8},
-					CPUs:     []int{16, 17, 18, 19, 20, 21, 22, 23, 116, 117, 118, 119, 120, 121, 122, 123},
+					QoSGroup:  "system",
+					PodUID:    "pod505-999",
+					NumaNodes: []int{8},
+					CCDs:      []int{5, 6, 35, 36},
+					CPUs:      []int{16, 17, 18, 19, 116, 117, 118, 119},
 				},
 			},
 			wantErr: assert.NoError,

@@ -106,8 +106,8 @@ func TestTask_GetResctrlMonGroup(t1 *testing.T) {
 func TestTask_GetCCDs(t1 *testing.T) {
 	t1.Parallel()
 	type fields struct {
-		CPUs   []int
-		cpuCCD map[int]int
+		CPUs []int
+		CCDs []int
 	}
 	tests := []struct {
 		name   string
@@ -117,8 +117,8 @@ func TestTask_GetCCDs(t1 *testing.T) {
 		{
 			name: "happy path",
 			fields: fields{
-				CPUs:   []int{93, 94, 126, 127},
-				cpuCCD: map[int]int{0: 0, 1: 0, 92: 24, 93: 24, 94: 24, 126: 32, 127: 33},
+				CPUs: []int{93, 94, 126, 127},
+				CCDs: []int{24, 32, 33},
 			},
 			want: []int{24, 32, 33},
 		},
@@ -128,10 +128,10 @@ func TestTask_GetCCDs(t1 *testing.T) {
 		t1.Run(tt.name, func(t1 *testing.T) {
 			t1.Parallel()
 			t := Task{
-				CPUs:   tt.fields.CPUs,
-				cpuCCD: tt.fields.cpuCCD,
+				CPUs: tt.fields.CPUs,
+				CCDs: tt.fields.CCDs,
 			}
-			got := t.GetCCDs()
+			got := t.CCDs
 			sort.Slice(got, func(i, j int) bool { return i < j })
 			if !reflect.DeepEqual(got, tt.want) {
 				t1.Errorf("GetCCDs() = %v, want %v", got, tt.want)

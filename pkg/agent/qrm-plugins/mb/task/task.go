@@ -32,15 +32,9 @@ type Task struct {
 	// including pod prefix and uid string, like "poda47c5c03-cf94-4a36-b52f-c1cb17dc1675"
 	PodUID string
 
-	pid   int
-	spids []int
-
-	// todo: remove them if not really needed
-	NumaNode []int
-	nodeCCDs map[int]sets.Int
-
-	CPUs   []int
-	cpuCCD map[int]int
+	NumaNodes []int
+	CCDs      []int
+	CPUs      []int
 }
 
 func (t Task) GetID() string {
@@ -65,10 +59,15 @@ func (t Task) GetResctrlMonGroup() (string, error) {
 	return path.Join(taskCtrlGroup, resctrlconsts.SubGroupMonRoot, taskFolder), nil
 }
 
-func (t Task) GetCCDs() []int {
+func getCCDs(cpus []int, cpuCCD map[int]int) ([]int, error) {
 	ccds := make(sets.Int)
-	for _, cpu := range t.CPUs {
-		ccds.Insert(t.cpuCCD[cpu])
+	for _, cpu := range cpus {
+		ccd, ok := cpuCCD[cpu]
+		if !ok {
+			return nil, fmt.Errorf("cpu %d has no ccd", cpu)
+		}
+
+		ccds.Insert(ccd)
 	}
 
 	result := make(sort.IntSlice, len(ccds))
@@ -78,7 +77,7 @@ func (t Task) GetCCDs() []int {
 		i++
 	}
 	result.Sort()
-	return result
+	return result, nil
 }
 
 func getCgroupCPUSetPath(podUID string, qosGroup QoSGroup) (string, error) {
