@@ -78,7 +78,7 @@ func Test_getProportionalPlan(t *testing.T) {
 		{
 			name: "happy path",
 			args: args{
-				total: 24_000,
+				total: 21_000,
 				mbQoSGroups: map[task.QoSGroup]*monitor.MBQoSGroup{
 					"shared_30": {CCDMB: map[int]int{
 						6: 20_000,
@@ -88,8 +88,8 @@ func Test_getProportionalPlan(t *testing.T) {
 			},
 			want: &plan.MBAlloc{Plan: map[task.QoSGroup]map[int]int{
 				"shared_30": {
-					6: 16_000,
-					7: 10_000,
+					6: 14_000,
+					7: 8_000,
 				},
 			}},
 		},
