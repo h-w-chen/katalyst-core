@@ -93,7 +93,7 @@ func (m mbMonitor) getReadsMBs() (map[task.QoSGroup]map[int]int, error) {
 
 	// todo: read in parallel to speed up
 	for _, pod := range m.taskManager.GetTasks() {
-		ccdMB, err := m.rmbReader.ReadMB(pod)
+		ccdMB, err := m.rmbReader.GetMB(pod)
 		if err != nil {
 			return nil, err
 		}

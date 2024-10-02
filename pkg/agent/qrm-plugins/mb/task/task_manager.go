@@ -222,13 +222,17 @@ func (m *manager) NewTask(podID string, qos QoSGroup) (*Task, error) {
 		return nil, err
 	}
 
+	ccds, err := getCCDs(cpus, m.cpuCCD)
+	if err != nil {
+		return nil, err
+	}
+
 	task := &Task{
-		QoSGroup: qos,
-		PodUID:   podID,
-		NumaNode: nodes,
-		nodeCCDs: m.nodeCCDs,
-		CPUs:     cpus,
-		cpuCCD:   m.cpuCCD,
+		QoSGroup:  qos,
+		PodUID:    podID,
+		NumaNodes: nodes,
+		CCDs:      ccds,
+		CPUs:      cpus,
 	}
 
 	m.addTask(task)

@@ -64,7 +64,7 @@ func Test_taskMBReader_ReadMB(t1 *testing.T) {
 					QoSGroup: "reclaimed",
 					PodUID:   "pod123-321-1122",
 					CPUs:     []int{16, 17},
-					cpuCCD:   map[int]int{16: 4, 17: 5},
+					CCDs:     []int{4, 5},
 				},
 			},
 			want:    map[int]int{4: 111, 5: 222},
@@ -78,13 +78,13 @@ func Test_taskMBReader_ReadMB(t1 *testing.T) {
 			t := taskMBReader{
 				monGroupReader: tt.fields.monGroupReader,
 			}
-			got, err := t.ReadMB(tt.args.task)
+			got, err := t.GetMB(tt.args.task)
 			if (err != nil) != tt.wantErr {
-				t1.Errorf("ReadMB() error = %v, wantErr %v", err, tt.wantErr)
+				t1.Errorf("GetMB() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t1.Errorf("ReadMB() got = %v, want %v", got, tt.want)
+				t1.Errorf("GetMB() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
