@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/mock"
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/writemb"
@@ -54,7 +55,7 @@ type mockWriteMBReader struct {
 	mock.Mock
 }
 
-func (m mockWriteMBReader) GetMB(ccd int) (int, error) {
+func (m *mockWriteMBReader) GetMB(ccd int) (int, error) {
 	args := m.Called(ccd)
 	return args.Int(0), args.Error(1)
 }
@@ -157,6 +158,7 @@ func Test_mbMonitor_GetMBQoSGroups(t1 *testing.T) {
 			},
 			want: map[task.QoSGroup]*MBQoSGroup{
 				"foo": {
+					CCDs: sets.Int{2: sets.Empty{}, 3: sets.Empty{}},
 					CCDMB: map[int]int{
 						2: 220,
 						3: 330,

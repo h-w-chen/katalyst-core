@@ -39,40 +39,43 @@ type mbMonitor struct {
 	wmbReader   writemb.WriteMBReader
 }
 
-func (t mbMonitor) GetMBQoSGroups() (map[task.QoSGroup]*MBQoSGroup, error) {
-	if err := t.refreshTasks(); err != nil {
+func (m mbMonitor) GetMBQoSGroups() (map[task.QoSGroup]*MBQoSGroup, error) {
+	if err := m.refreshTasks(); err != nil {
 		return nil, err
 	}
 
-	rQoSCCDMB, err := t.getReadsMBs()
+	rQoSCCDMB, err := m.getReadsMBs()
 	if err != nil {
 		return nil, err
 	}
 
-	wQoSCCDMB, err := t.getWritesMBs(getCCDQoSGroups(rQoSCCDMB))
+	wQoSCCDMB, err := m.getWritesMBs(getCCDQoSGroups(rQoSCCDMB))
 	if err != nil {
 		return nil, err
 	}
 
+	groupCCDMBs := sumGroupCCDMBs(rQoSCCDMB, wQoSCCDMB)
 	groups := make(map[task.QoSGroup]*MBQoSGroup)
-	for qos, ccdMB := range rQoSCCDMB {
-		groups[qos] = &MBQoSGroup{
-			CCDMB: ccdMB,
-		}
-	}
-	for qos, ccdMB := range wQoSCCDMB {
-		if qroup, ok := groups[qos]; !ok {
-			groups[qos] = &MBQoSGroup{
-				CCDMB: ccdMB,
-			}
-		} else {
-			for ccd, mb := range ccdMB {
-				qroup.CCDMB[ccd] += mb
-			}
-		}
+	for qos, ccdMB := range groupCCDMBs {
+		groups[qos] = newMBQoSGroup(ccdMB)
 	}
 
 	return groups, nil
+}
+
+func sumGroupCCDMBs(rGroupCCDMB, wGroupCCDMB map[task.QoSGroup]map[int]int) map[task.QoSGroup]map[int]int {
+	// precondition: rGroupCCDMB, wGroupCCDMB have identical keys of qos group
+	groupCCDMBs := make(map[task.QoSGroup]map[int]int)
+	for qos, ccdMB := range rGroupCCDMB {
+		groupCCDMBs[qos] = ccdMB
+	}
+	for qos, ccdMB := range wGroupCCDMB {
+		for ccd, mb := range ccdMB {
+			groupCCDMBs[qos][ccd] += mb
+		}
+	}
+
+	return groupCCDMBs
 }
 
 func getCCDQoSGroups(qosMBs map[task.QoSGroup]map[int]int) map[int][]task.QoSGroup {
@@ -85,12 +88,12 @@ func getCCDQoSGroups(qosMBs map[task.QoSGroup]map[int]int) map[int][]task.QoSGro
 	return result
 }
 
-func (t mbMonitor) getReadsMBs() (map[task.QoSGroup]map[int]int, error) {
+func (m mbMonitor) getReadsMBs() (map[task.QoSGroup]map[int]int, error) {
 	result := make(map[task.QoSGroup]map[int]int)
 
 	// todo: read in parallel to speed up
-	for _, pod := range t.taskManager.GetTasks() {
-		ccdMB, err := t.rmbReader.ReadMB(pod)
+	for _, pod := range m.taskManager.GetTasks() {
+		ccdMB, err := m.rmbReader.ReadMB(pod)
 		if err != nil {
 			return nil, err
 		}
@@ -106,10 +109,10 @@ func (t mbMonitor) getReadsMBs() (map[task.QoSGroup]map[int]int, error) {
 	return result, nil
 }
 
-func (t mbMonitor) getWritesMBs(ccdQoSGroup map[int][]task.QoSGroup) (map[task.QoSGroup]map[int]int, error) {
+func (m mbMonitor) getWritesMBs(ccdQoSGroup map[int][]task.QoSGroup) (map[task.QoSGroup]map[int]int, error) {
 	result := make(map[task.QoSGroup]map[int]int)
 	for ccd, groups := range ccdQoSGroup {
-		mb, err := t.wmbReader.GetMB(ccd)
+		mb, err := m.wmbReader.GetMB(ccd)
 		if err != nil {
 			return nil, err
 		}
