@@ -34,6 +34,19 @@ type MBQoSGroup struct {
 	CCDMB map[int]int
 }
 
+func newMBQoSGroup(ccdMB map[int]int) *MBQoSGroup {
+	result := &MBQoSGroup{
+		CCDs:  make(sets.Int),
+		CCDMB: ccdMB,
+	}
+
+	for ccd, _ := range ccdMB {
+		result.CCDs.Insert(ccd)
+	}
+
+	return result
+}
+
 func SumMB(groups map[task.QoSGroup]*MBQoSGroup) int {
 	sum := 0
 
@@ -41,14 +54,4 @@ func SumMB(groups map[task.QoSGroup]*MBQoSGroup) int {
 		sum += util.SumCCDMB(group.CCDMB)
 	}
 	return sum
-}
-
-func GetQoSKeys(qosGroups map[task.QoSGroup]*MBQoSGroup) []task.QoSGroup {
-	keys := make([]task.QoSGroup, len(qosGroups))
-	i := 0
-	for qos, _ := range qosGroups {
-		keys[i] = qos
-		i++
-	}
-	return keys
 }
