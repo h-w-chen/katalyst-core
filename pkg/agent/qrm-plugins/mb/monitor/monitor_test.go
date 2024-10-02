@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/writemb"
 )
 
 type mockTaskManager struct {
@@ -35,6 +36,11 @@ func (m *mockTaskManager) GetTasks() []*task.Task {
 	return args.Get(0).([]*task.Task)
 }
 
+func (m *mockTaskManager) RefreshTasks() error {
+	args := m.Called()
+	return args.Error(0)
+}
+
 type mockTaskMBReader struct {
 	mock.Mock
 }
@@ -42,6 +48,15 @@ type mockTaskMBReader struct {
 func (m *mockTaskMBReader) ReadMB(task *task.Task) (map[int]int, error) {
 	args := m.Called(task)
 	return args.Get(0).(map[int]int), args.Error(1)
+}
+
+type mockWriteMBReader struct {
+	mock.Mock
+}
+
+func (m mockWriteMBReader) GetMB(ccd int) (int, error) {
+	args := m.Called(ccd)
+	return args.Int(0), args.Error(1)
 }
 
 func Test_mbMonitor_GetQoSMBs(t1 *testing.T) {
@@ -87,15 +102,86 @@ func Test_mbMonitor_GetQoSMBs(t1 *testing.T) {
 			t1.Parallel()
 			t := mbMonitor{
 				taskManager: tt.fields.taskManager,
-				mbReader:    tt.fields.mbReader,
+				rmbReader:   tt.fields.mbReader,
 			}
-			got, err := t.getQoSMBs()
+			got, err := t.getReadsMBs()
 			if (err != nil) != tt.wantErr {
-				t1.Errorf("getQoSMBs() error = %v, wantErr %v", err, tt.wantErr)
+				t1.Errorf("getReadsMBs() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t1.Errorf("getQoSMBs() got = %v, want %v", got, tt.want)
+				t1.Errorf("getReadsMBs() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_mbMonitor_GetMBQoSGroups(t1 *testing.T) {
+	t1.Parallel()
+
+	testTask := &task.Task{
+		QoSGroup: "foo",
+		PodUID:   "123-4567",
+		NumaNode: nil,
+		CPUs:     nil,
+	}
+
+	taskManager := new(mockTaskManager)
+	taskManager.On("RefreshTasks").Return(nil)
+	taskManager.On("GetTasks").Return([]*task.Task{testTask})
+
+	taskMBReader := new(mockTaskMBReader)
+	taskMBReader.On("ReadMB", testTask).Return(map[int]int{2: 200, 3: 300}, nil)
+
+	wmbReader := new(mockWriteMBReader)
+	wmbReader.On("GetMB", 2).Return(20, nil)
+	wmbReader.On("GetMB", 3).Return(30, nil)
+
+	type fields struct {
+		taskManager task.Manager
+		rmbReader   task.TaskMBReader
+		wmbReader   writemb.WriteMBReader
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		want    map[task.QoSGroup]*MBQoSGroup
+		wantErr bool
+	}{
+		{
+			name: "happy path",
+			fields: fields{
+				taskManager: taskManager,
+				rmbReader:   taskMBReader,
+				wmbReader:   wmbReader,
+			},
+			want: map[task.QoSGroup]*MBQoSGroup{
+				"foo": {
+					CCDMB: map[int]int{
+						2: 220,
+						3: 330,
+					},
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t1.Run(tt.name, func(t1 *testing.T) {
+			t1.Parallel()
+			t := mbMonitor{
+				taskManager: tt.fields.taskManager,
+				rmbReader:   tt.fields.rmbReader,
+				wmbReader:   tt.fields.wmbReader,
+			}
+			got, err := t.GetMBQoSGroups()
+			if (err != nil) != tt.wantErr {
+				t1.Errorf("GetMBQoSGroups() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t1.Errorf("GetMBQoSGroups() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
