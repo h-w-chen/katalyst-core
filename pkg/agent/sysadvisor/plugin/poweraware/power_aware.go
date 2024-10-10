@@ -19,6 +19,8 @@ package poweraware
 import (
 	"context"
 
+	"github.com/pkg/errors"
+
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/metacache"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/capper"
@@ -66,16 +68,13 @@ func NewPowerAwarePlugin(
 ) (plugin.SysAdvisorPlugin, error) {
 	emitter := emitterPool.GetDefaultMetricsEmitter().WithTags(metricName)
 
-	// avoid returning error as that would exit whole application
-	// failure of its components should limit affect inside this plugin only
-	// whole service shall be downgraded, but running nonetheless
 	var err error
 	var podEvictor evictor.PodEvictor
 	if conf.DisablePowerPressureEvict {
 		podEvictor = evictor.NewNoopPodEvictor()
 	} else {
 		if podEvictor, err = evictserver.NewPowerPressureEvictionPlugin(conf, emitter); err != nil {
-			general.Errorf("pap: failed to create power aware plugin: %v", err)
+			return nil, errors.Wrap(err, "pap: failed to create power aware plugin")
 		}
 	}
 
@@ -84,7 +83,7 @@ func NewPowerAwarePlugin(
 		powerCapper = capper.NewNoopCapper()
 	} else {
 		if powerCapper, err = capserver.NewPowerCapPlugin(conf, emitter); err != nil {
-			general.Errorf("pap: failed to create power aware plugin: %v", err)
+			return nil, errors.Wrap(err, "pap: failed to create power aware plugin")
 		}
 	}
 
