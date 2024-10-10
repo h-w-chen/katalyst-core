@@ -62,11 +62,17 @@ type dummyPowerReconciler struct {
 
 type dummyPodEvictor struct {
 	evictor.PodEvictor
-	resetCalled bool
+	calledReset bool
+	calledInit  bool
 }
 
 func (d *dummyPodEvictor) Reset(ctx context.Context) {
-	d.resetCalled = true
+	d.calledReset = true
+}
+
+func (d *dummyPodEvictor) Init() error {
+	d.calledInit = true
+	return nil
 }
 
 type dummyPowerCapper struct {
@@ -232,63 +238,26 @@ func Test_powerAwareAdvisor_run_return_on_Pause_op(t *testing.T) {
 	}
 }
 
-type dummyErrorPowerReader struct {
-	reader.PowerReader
-	calledCleanup bool
-}
-
-func (dsr *dummyErrorPowerReader) Init() error {
-	return errors.New("test dummy error")
-}
-
 func Test_powerAwareAdvisor_Run_does_Init_Cleanup(t *testing.T) {
 	t.Parallel()
 
-	depSpecFetcher := &dummySpecFetcher{}
 	depPowerReader := &dummyPowerReader{}
 	depPodEvictor := &dummyPodEvictor{}
-	depInitResetter := &dummyPowerCapper{}
 
 	advisor := powerAwareAdvisor{
-		specFetcher: depSpecFetcher,
 		powerReader: depPowerReader,
-		powerCapper: depInitResetter,
 		podEvictor:  depPodEvictor,
 	}
 
-	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
+	err := advisor.Init()
 
-	// call cancel before Run to ensure the loop body is bypassed in test
-	cancel()
-	advisor.Run(ctx)
-
+	if err == nil || err.Error() != "no power capping server is provided" {
+		t.Errorf("expected error 'no power capping server is provided', got %v", err)
+	}
 	if !depPowerReader.calledInit {
 		t.Errorf("expected power reader init called called; got %v", depPowerReader.calledInit)
 	}
-	if !depInitResetter.initCalled {
-		t.Errorf("expected power capper init called; got %v", depInitResetter.initCalled)
-	}
-	if !depPowerReader.calledCleanup {
-		t.Errorf("expected power reader cleanup called; got %v", depPowerReader.calledCleanup)
-	}
-	if !depInitResetter.resetCalled {
-		t.Errorf("expected reset called; got %v", depInitResetter.resetCalled)
-	}
-}
-
-func Test_powerAwareAdvisor_Run_Exit_on_Init_error(t *testing.T) {
-	t.Parallel()
-
-	depPowerReader := &dummyErrorPowerReader{}
-
-	advisor := powerAwareAdvisor{
-		powerReader: depPowerReader,
-	}
-
-	advisor.Run(context.TODO())
-
-	if depPowerReader.calledCleanup {
-		t.Errorf("expected power reader cleanup not called; got %v", depPowerReader.calledCleanup)
+	if !depPodEvictor.calledInit {
+		t.Errorf("expected power evict init called called; got %v", depPodEvictor.calledInit)
 	}
 }

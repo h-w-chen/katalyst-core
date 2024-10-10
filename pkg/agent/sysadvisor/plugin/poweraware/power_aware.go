@@ -20,6 +20,7 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/metacache"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin"
@@ -49,6 +50,12 @@ func (p powerAwarePlugin) Name() string {
 
 func (p powerAwarePlugin) Init() error {
 	general.Infof("pap initialized")
+
+	if err := p.advisor.Init(); err != nil {
+		klog.Errorf("pap: failed to initialize power advisor: %v", err)
+		return errors.Wrap(err, "failed to initialize power advisor")
+	}
+
 	return nil
 }
 

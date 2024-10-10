@@ -20,6 +20,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog/v2"
 
@@ -48,6 +49,8 @@ const (
 type PowerAwareAdvisor interface {
 	// Run depicts the whole process taking in power related inputs, generating action plans, and delegating the executions
 	Run(ctx context.Context)
+	// Init initializes components
+	Init() error
 }
 
 type powerAwareAdvisor struct {
@@ -63,34 +66,38 @@ type powerAwareAdvisor struct {
 	inFreqCap bool
 }
 
-func (p *powerAwareAdvisor) Run(ctx context.Context) {
+func (p *powerAwareAdvisor) Init() error {
 	if p.powerReader == nil {
-		general.Errorf("pap: no power reader is provided; contrroller stopped")
-		return
+		return errors.New("no power reader is provided")
 	}
 	if err := p.powerReader.Init(); err != nil {
-		klog.Errorf("pap: failed to initialize power reader: %v; controller stopped", err)
-		return
+		return errors.Wrap(err, "failed to initialize power reader")
 	}
 
 	if p.podEvictor == nil {
-		klog.Errorf("pap: no pod eviction server is provided; controller stopped")
-		return
+		return errors.New("no pod eviction server is provided")
 	}
-	p.podEvictor.Reset(ctx)
+	if err := p.podEvictor.Init(); err != nil {
+		return errors.Wrap(err, "failed to initialize evict service")
+	}
 
 	if p.powerCapper == nil {
-		klog.Errorf("pap: no power capping server is provided; controller stopped")
-		return
+		return errors.New("no power capping server is provided")
 	}
 	if err := p.powerCapper.Init(); err != nil {
-		klog.Errorf("pap: failed to initialize power capping: %v; controller roller stopped", err)
-		return
+		return errors.Wrap(err, "failed to initialize power capping server")
 	}
 
+	return nil
+}
+
+func (p *powerAwareAdvisor) Run(ctx context.Context) {
+	p.podEvictor.Reset(ctx)
+
+	general.Infof("pap: advisor Run started")
 	wait.Until(func() { p.run(ctx) }, intervalSpecFetch, ctx.Done())
 
-	general.Infof("pap: controller Run exit")
+	general.Infof("pap: advisor Run exited")
 	p.powerReader.Cleanup()
 	p.powerCapper.Reset()
 }

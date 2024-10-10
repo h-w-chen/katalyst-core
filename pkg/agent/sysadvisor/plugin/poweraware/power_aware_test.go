@@ -18,6 +18,8 @@ package poweraware
 
 import (
 	"context"
+	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/capper"
+	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/reader"
 	"testing"
 
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/advisor"
@@ -123,7 +125,7 @@ func Test_powerAwarePlugin_Init(t *testing.T) {
 				name:   tt.fields.name,
 				dryRun: tt.fields.dryRun,
 				advisor: advisor.NewAdvisor(false, evictor.NewNoopPodEvictor(), dummyEmitter,
-					tt.fields.nodeFetcher, nil, nil, nil, nil,
+					tt.fields.nodeFetcher, nil, nil, reader.NewDummyPowerReader(), capper.NewNoopCapper(),
 				),
 			}
 			if err := p.Init(); (err != nil) != tt.wantErr {

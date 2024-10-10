@@ -41,8 +41,16 @@ const (
 )
 
 type powerPressureEvictServer struct {
-	mutex  sync.Mutex
-	evicts map[types.UID]*v1.Pod
+	mutex   sync.Mutex
+	evicts  map[types.UID]*v1.Pod
+	service *skeleton.PluginRegistrationWrapper
+}
+
+func (p *powerPressureEvictServer) Init() error {
+	if err := p.service.Start(); err != nil {
+		return errors.Wrap(err, "failed to start power pressure eviction plugin server")
+	}
+	return nil
 }
 
 // Reset method clears all pending eviction requests not fetched by remote client
@@ -127,7 +135,7 @@ func newPowerPressureEvictServer() *powerPressureEvictServer {
 	}
 }
 
-func newPowerPressureEvictService(conf *config.Configuration, emitter metrics.MetricEmitter) (evictor.PodEvictor, *skeleton.PluginRegistrationWrapper, error) {
+func newPowerPressureEvictService(conf *config.Configuration, emitter metrics.MetricEmitter) (evictor.PodEvictor, error) {
 	plugin := newPowerPressureEvictServer()
 	regWrapper, err := skeleton.NewRegistrationPluginWrapper(plugin,
 		[]string{conf.PluginRegistrationDir}, // unix socket dirs
@@ -138,10 +146,11 @@ func newPowerPressureEvictService(conf *config.Configuration, emitter metrics.Me
 			})...)
 		})
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to register pap power pressure eviction service")
+		return nil, errors.Wrap(err, "failed to register pap power pressure eviction service")
 	}
 
-	return plugin, regWrapper, nil
+	plugin.service = regWrapper
+	return plugin, nil
 }
 
 func NewPowerPressureEvictionPlugin(conf *config.Configuration, emitter metrics.MetricEmitter) (podEvictor evictor.PodEvictor, err error) {
@@ -149,13 +158,9 @@ func NewPowerPressureEvictionPlugin(conf *config.Configuration, emitter metrics.
 }
 
 func startPowerPressurePodEvictorService(conf *config.Configuration, emitter metrics.MetricEmitter) (evictor.PodEvictor, error) {
-	podEvictor, service, err := newPowerPressureEvictService(conf, emitter)
+	podEvictor, err := newPowerPressureEvictService(conf, emitter)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create power pressure eviction plugin server")
-	}
-
-	if err := service.Start(); err != nil {
-		return nil, errors.Wrap(err, "failed to start power pressure eviction plugin server")
 	}
 
 	return podEvictor, nil
