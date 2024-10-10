@@ -83,47 +83,11 @@ func (p *powerPressureEvictServer) GetToken(ctx context.Context, empty *pluginap
 }
 
 func (p *powerPressureEvictServer) ThresholdMet(ctx context.Context, empty *pluginapi.Empty) (*pluginapi.ThresholdMetResponse, error) {
-	p.mutex.Lock()
-	defer p.mutex.Unlock()
-
-	if len(p.evicts) == 0 {
-		return &pluginapi.ThresholdMetResponse{
-			MetType: pluginapi.ThresholdMetType_NOT_MET,
-		}, nil
-	}
-
-	return &pluginapi.ThresholdMetResponse{
-		ThresholdValue: float64(len(p.evicts)),
-		MetType:        pluginapi.ThresholdMetType_HARD_MET,
-	}, nil
+	return &pluginapi.ThresholdMetResponse{}, nil
 }
 
 func (p *powerPressureEvictServer) GetTopEvictionPods(ctx context.Context, request *pluginapi.GetTopEvictionPodsRequest) (*pluginapi.GetTopEvictionPodsResponse, error) {
-	evictReq := &pluginapi.GetEvictPodsRequest{
-		ActivePods: request.ActivePods,
-	}
-
-	evictResp, err := p.GetEvictPods(ctx, evictReq)
-	if err != nil {
-		return nil, err
-	}
-
-	retSize := int(request.TopN)
-	if retSize > len(evictResp.EvictPods) {
-		retSize = len(evictResp.EvictPods)
-	}
-
-	resp := &pluginapi.GetTopEvictionPodsResponse{
-		TargetPods: make([]*v1.Pod, retSize),
-	}
-	for i, evict := range evictResp.EvictPods {
-		if i >= retSize {
-			break
-		}
-		resp.TargetPods[i] = evict.Pod
-	}
-
-	return resp, err
+	return &pluginapi.GetTopEvictionPodsResponse{}, nil
 }
 
 // GetEvictPods is called from a remote evict plugin client to get evict candidates
