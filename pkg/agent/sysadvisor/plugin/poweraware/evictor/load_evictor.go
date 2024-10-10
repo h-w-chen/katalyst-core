@@ -21,7 +21,6 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 
-	apiconsts "github.com/kubewharf/katalyst-api/pkg/consts"
 	"github.com/kubewharf/katalyst-core/pkg/config/generic"
 	"github.com/kubewharf/katalyst-core/pkg/metaserver/agent/pod"
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
@@ -39,13 +38,8 @@ type loadEvictor struct {
 }
 
 func (l loadEvictor) isBE(pod *v1.Pod) bool {
-	qosLevel, err := l.qosConfig.GetQoSLevelForPod(pod)
-	if err != nil {
-		// unknown, not BE anyway
-		return false
-	}
-
-	return qosLevel == apiconsts.PodAnnotationQoSLevelReclaimedCores
+	isReclaimedQoS, err := l.qosConfig.CheckReclaimedQoSForPod(pod)
+	return err == nil && isReclaimedQoS
 }
 
 func (l loadEvictor) Evict(ctx context.Context, targetPercent int) {
