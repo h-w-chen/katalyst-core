@@ -23,7 +23,6 @@ import (
 )
 
 type PowerAwarePluginOptions struct {
-	Disabled                  bool
 	DryRun                    bool
 	DisablePowerCapping       bool
 	DisablePowerPressureEvict bool
@@ -31,7 +30,6 @@ type PowerAwarePluginOptions struct {
 
 func (p *PowerAwarePluginOptions) AddFlags(fss *cliflag.NamedFlagSets) {
 	fs := fss.FlagSet("power-aware-plugin")
-	fs.BoolVar(&p.Disabled, "power-aware-Disabled", p.Disabled, "flag for disabling power aware advisor")
 	fs.BoolVar(&p.DryRun, "power-aware-dryrun", p.DryRun, "flag for dry run power aware advisor")
 	fs.BoolVar(&p.DisablePowerPressureEvict, "power-pressure-evict-Disabled", p.DisablePowerPressureEvict, "flag for power aware plugin disabling power pressure eviction")
 	fs.BoolVar(&p.DisablePowerCapping, "power-capping-Disabled", p.DisablePowerCapping, "flag for power aware plugin disabling power capping")
@@ -39,7 +37,6 @@ func (p *PowerAwarePluginOptions) AddFlags(fss *cliflag.NamedFlagSets) {
 
 func (p *PowerAwarePluginOptions) ApplyTo(o *poweraware.PowerAwarePluginConfiguration) error {
 	o.DryRun = p.DryRun
-	o.Disabled = p.Disabled
 	o.DisablePowerPressureEvict = p.DisablePowerPressureEvict
 	o.DisablePowerCapping = p.DisablePowerCapping
 	return nil

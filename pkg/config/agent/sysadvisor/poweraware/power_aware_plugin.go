@@ -17,7 +17,6 @@ limitations under the License.
 package poweraware
 
 type PowerAwarePluginConfiguration struct {
-	Disabled                  bool
 	DryRun                    bool
 	DisablePowerCapping       bool
 	DisablePowerPressureEvict bool

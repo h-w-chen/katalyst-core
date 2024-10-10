@@ -42,7 +42,6 @@ func Test_powerAwarePlugin_Name(t *testing.T) {
 
 	expectedName := "test"
 	expectedDryRun := true
-	expectedDisabled := false
 
 	stubMetaServer := &metaserver.MetaServer{
 		MetaAgent: &agent.MetaAgent{
@@ -50,8 +49,7 @@ func Test_powerAwarePlugin_Name(t *testing.T) {
 		},
 	}
 	dummyPluginConf := poweraware.PowerAwarePluginConfiguration{
-		Disabled: expectedDisabled,
-		DryRun:   expectedDryRun,
+		DryRun: expectedDryRun,
 	}
 	dummyEmitterPool := metricspool.DummyMetricsEmitterPool{}
 	dummyController := controller.NewController(
@@ -91,9 +89,6 @@ func Test_powerAwarePlugin_Name(t *testing.T) {
 	if pap.dryRun != expectedDryRun {
 		t.Errorf("expected dryrun %v, got %v", expectedDryRun, pap.dryRun)
 	}
-	if pap.disabled != expectedDisabled {
-		t.Errorf("expected disabled %v, got %v", expectedDisabled, pap.disabled)
-	}
 }
 
 func Test_powerAwarePlugin_Init(t *testing.T) {
@@ -119,23 +114,14 @@ func Test_powerAwarePlugin_Init(t *testing.T) {
 			},
 			wantErr: false,
 		},
-		{
-			name: "disabled path returns error",
-			fields: fields{
-				name:     "dummy",
-				disabled: true,
-			},
-			wantErr: true,
-		},
 	}
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			p := powerAwarePlugin{
-				name:     tt.fields.name,
-				disabled: tt.fields.disabled,
-				dryRun:   tt.fields.dryRun,
+				name:   tt.fields.name,
+				dryRun: tt.fields.dryRun,
 				controller: controller.NewController(false, evictor.NewNoopPodEvictor(), dummyEmitter,
 					tt.fields.nodeFetcher, nil, nil, nil, nil,
 				),
@@ -161,7 +147,6 @@ func Test_powerAwarePlugin_Run(t *testing.T) {
 	dummyController := &dummyController{}
 	type fields struct {
 		name       string
-		disabled   bool
 		dryRun     bool
 		controller controller.PowerAwareController
 	}
@@ -189,7 +174,6 @@ func Test_powerAwarePlugin_Run(t *testing.T) {
 			t.Parallel()
 			p := powerAwarePlugin{
 				name:       tt.fields.name,
-				disabled:   tt.fields.disabled,
 				dryRun:     tt.fields.dryRun,
 				controller: tt.fields.controller,
 			}

@@ -19,8 +19,6 @@ package poweraware
 import (
 	"context"
 
-	"github.com/pkg/errors"
-
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/metacache"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/capper"
@@ -37,11 +35,8 @@ import (
 
 const metricName = "poweraware-advisor-plugin"
 
-var PluginDisabledError = errors.New("plugin disabled")
-
 type powerAwarePlugin struct {
 	name       string
-	disabled   bool
 	dryRun     bool
 	controller controller.PowerAwareController
 }
@@ -51,10 +46,6 @@ func (p powerAwarePlugin) Name() string {
 }
 
 func (p powerAwarePlugin) Init() error {
-	if p.disabled {
-		general.Infof("pap is disabled")
-		return PluginDisabledError
-	}
 	general.Infof("pap initialized")
 	return nil
 }
@@ -80,7 +71,7 @@ func NewPowerAwarePlugin(
 	// whole service shall be downgraded, but running nonetheless
 	var err error
 	var podEvictor evictor.PodEvictor
-	if conf.Disabled || conf.DisablePowerPressureEvict {
+	if conf.DisablePowerPressureEvict {
 		podEvictor = evictor.NewNoopPodEvictor()
 	} else {
 		if podEvictor, err = evictserver.NewPowerPressureEvictionPlugin(conf, emitter); err != nil {
@@ -89,7 +80,7 @@ func NewPowerAwarePlugin(
 	}
 
 	var powerCapper capper.PowerCapper
-	if conf.Disabled || conf.DisablePowerCapping {
+	if conf.DisablePowerCapping {
 		powerCapper = capper.NewNoopCapper()
 	} else {
 		if powerCapper, err = capserver.NewPowerCapPlugin(conf, emitter); err != nil {
@@ -118,7 +109,6 @@ func NewPowerAwarePlugin(
 func newPluginWithController(pluginName string, conf *config.Configuration, controller controller.PowerAwareController) (plugin.SysAdvisorPlugin, error) {
 	return &powerAwarePlugin{
 		name:       pluginName,
-		disabled:   conf.PowerAwarePluginConfiguration.Disabled,
 		dryRun:     conf.PowerAwarePluginConfiguration.DryRun,
 		controller: controller,
 	}, nil
