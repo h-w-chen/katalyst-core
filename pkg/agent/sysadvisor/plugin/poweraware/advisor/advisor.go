@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controller
+package advisor
 
 import (
 	"context"
@@ -23,9 +23,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog/v2"
 
+	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/advisor/action"
+	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/advisor/action/strategy"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/capper"
-	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/controller/action"
-	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/controller/action/strategy"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/evictor"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/reader"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/spec"
@@ -44,11 +44,13 @@ const (
 	metricPowerAwareDesiredPowerInWatt = "power_desired_watt"
 )
 
-type PowerAwareController interface {
+// PowerAwareAdvisor is the interface that runs the whole power advisory process
+type PowerAwareAdvisor interface {
+	// Run depicts the whole process taking in power related inputs, generating action plans, and delegating the executions
 	Run(ctx context.Context)
 }
 
-type powerAwareController struct {
+type powerAwareAdvisor struct {
 	emitter     metrics.MetricEmitter
 	specFetcher spec.SpecFetcher
 	powerReader reader.PowerReader
@@ -61,7 +63,7 @@ type powerAwareController struct {
 	inFreqCap bool
 }
 
-func (p *powerAwareController) Run(ctx context.Context) {
+func (p *powerAwareAdvisor) Run(ctx context.Context) {
 	if p.powerReader == nil {
 		general.Errorf("pap: no power reader is provided; contrroller stopped")
 		return
@@ -93,7 +95,7 @@ func (p *powerAwareController) Run(ctx context.Context) {
 	p.powerCapper.Reset()
 }
 
-func (p *powerAwareController) run(ctx context.Context) {
+func (p *powerAwareAdvisor) run(ctx context.Context) {
 	powerSpec, err := p.specFetcher.GetPowerSpec(ctx)
 	if err != nil {
 		klog.Errorf("pap: getting power spec failed: %#v", err)
@@ -141,7 +143,7 @@ func (p *powerAwareController) run(ctx context.Context) {
 	}
 }
 
-func NewController(dryRun bool,
+func NewAdvisor(dryRun bool,
 	podEvictor evictor.PodEvictor,
 	emitter metrics.MetricEmitter,
 	nodeFetcher node.NodeFetcher,
@@ -149,8 +151,8 @@ func NewController(dryRun bool,
 	podFetcher pod.PodFetcher,
 	reader reader.PowerReader,
 	capper capper.PowerCapper,
-) PowerAwareController {
-	return &powerAwareController{
+) PowerAwareAdvisor {
+	return &powerAwareAdvisor{
 		emitter:     emitter,
 		specFetcher: spec.NewFetcher(nodeFetcher),
 		powerReader: reader,

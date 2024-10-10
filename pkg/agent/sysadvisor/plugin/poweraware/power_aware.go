@@ -23,9 +23,9 @@ import (
 
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/metacache"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin"
+	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/advisor"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/capper"
 	capserver "github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/capper/server"
-	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/controller"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/evictor"
 	evictserver "github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/evictor/server"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/reader"
@@ -38,9 +38,9 @@ import (
 const metricName = "poweraware-advisor-plugin"
 
 type powerAwarePlugin struct {
-	name       string
-	dryRun     bool
-	controller controller.PowerAwareController
+	name    string
+	dryRun  bool
+	advisor advisor.PowerAwareAdvisor
 }
 
 func (p powerAwarePlugin) Name() string {
@@ -54,7 +54,7 @@ func (p powerAwarePlugin) Init() error {
 
 func (p powerAwarePlugin) Run(ctx context.Context) {
 	general.Infof("pap running")
-	p.controller.Run(ctx)
+	p.advisor.Run(ctx)
 	general.Infof("pap ran and finished")
 }
 
@@ -92,7 +92,7 @@ func NewPowerAwarePlugin(
 	// todo: consider plugin fashion for reader to hook in
 	var powerReader reader.PowerReader
 
-	powerController := controller.NewController(conf.PowerAwarePluginConfiguration.DryRun,
+	powerController := advisor.NewAdvisor(conf.PowerAwarePluginConfiguration.DryRun,
 		podEvictor,
 		emitter,
 		metaServer.NodeFetcher,
@@ -105,10 +105,10 @@ func NewPowerAwarePlugin(
 	return newPluginWithController(pluginName, conf, powerController)
 }
 
-func newPluginWithController(pluginName string, conf *config.Configuration, controller controller.PowerAwareController) (plugin.SysAdvisorPlugin, error) {
+func newPluginWithController(pluginName string, conf *config.Configuration, advisor advisor.PowerAwareAdvisor) (plugin.SysAdvisorPlugin, error) {
 	return &powerAwarePlugin{
-		name:       pluginName,
-		dryRun:     conf.PowerAwarePluginConfiguration.DryRun,
-		controller: controller,
+		name:    pluginName,
+		dryRun:  conf.PowerAwarePluginConfiguration.DryRun,
+		advisor: advisor,
 	}, nil
 }

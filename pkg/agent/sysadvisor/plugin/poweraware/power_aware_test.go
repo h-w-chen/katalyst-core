@@ -20,7 +20,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/controller"
+	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/advisor"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/evictor"
 	"github.com/kubewharf/katalyst-core/pkg/config"
 	agentconf "github.com/kubewharf/katalyst-core/pkg/config/agent"
@@ -52,7 +52,7 @@ func Test_powerAwarePlugin_Name(t *testing.T) {
 		DryRun: expectedDryRun,
 	}
 	dummyEmitterPool := metricspool.DummyMetricsEmitterPool{}
-	dummyController := controller.NewController(
+	stubAdvisor := advisor.NewAdvisor(
 		expectedDryRun,
 		evictor.NewNoopPodEvictor(),
 		dummyEmitterPool.GetDefaultMetricsEmitter(),
@@ -75,7 +75,7 @@ func Test_powerAwarePlugin_Name(t *testing.T) {
 				QoSConfiguration: generic.NewQoSConfiguration(),
 			},
 		},
-		dummyController,
+		stubAdvisor,
 	)
 	if err != nil {
 		t.Errorf("unexpected error: %#v", err)
@@ -122,7 +122,7 @@ func Test_powerAwarePlugin_Init(t *testing.T) {
 			p := powerAwarePlugin{
 				name:   tt.fields.name,
 				dryRun: tt.fields.dryRun,
-				controller: controller.NewController(false, evictor.NewNoopPodEvictor(), dummyEmitter,
+				advisor: advisor.NewAdvisor(false, evictor.NewNoopPodEvictor(), dummyEmitter,
 					tt.fields.nodeFetcher, nil, nil, nil, nil,
 				),
 			}
@@ -133,22 +133,22 @@ func Test_powerAwarePlugin_Init(t *testing.T) {
 	}
 }
 
-type dummyController struct {
-	controller.PowerAwareController
+type dummyAdvisor struct {
+	advisor.PowerAwareAdvisor
 	called bool
 }
 
-func (d *dummyController) Run(ctx context.Context) {
+func (d *dummyAdvisor) Run(ctx context.Context) {
 	d.called = true
 }
 
 func Test_powerAwarePlugin_Run(t *testing.T) {
 	t.Parallel()
-	dummyController := &dummyController{}
+	testAdvisor := &dummyAdvisor{}
 	type fields struct {
-		name       string
-		dryRun     bool
-		controller controller.PowerAwareController
+		name    string
+		dryRun  bool
+		advisor advisor.PowerAwareAdvisor
 	}
 	type args struct {
 		ctx context.Context
@@ -159,9 +159,9 @@ func Test_powerAwarePlugin_Run(t *testing.T) {
 		args   args
 	}{
 		{
-			name: "happy path calls controller Run",
+			name: "happy path calls advisor Run",
 			fields: fields{
-				controller: dummyController,
+				advisor: testAdvisor,
 			},
 			args: args{
 				ctx: context.TODO(),
@@ -173,13 +173,13 @@ func Test_powerAwarePlugin_Run(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			p := powerAwarePlugin{
-				name:       tt.fields.name,
-				dryRun:     tt.fields.dryRun,
-				controller: tt.fields.controller,
+				name:    tt.fields.name,
+				dryRun:  tt.fields.dryRun,
+				advisor: tt.fields.advisor,
 			}
 			p.Run(tt.args.ctx)
-			if !dummyController.called {
-				t.Error("expected controller Run called; but not")
+			if !testAdvisor.called {
+				t.Error("expected advisor Run called; but not")
 			}
 		})
 	}
