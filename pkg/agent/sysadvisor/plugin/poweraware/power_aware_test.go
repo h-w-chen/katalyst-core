@@ -49,7 +49,7 @@ func Test_powerAwarePlugin_Name(t *testing.T) {
 			NodeFetcher: &stubNodeFetcher{},
 		},
 	}
-	dummyPluginConf := poweraware.PowerAwarePluginOptions{
+	dummyPluginConf := poweraware.PowerAwarePluginConfiguration{
 		Disabled: expectedDisabled,
 		DryRun:   expectedDryRun,
 	}
@@ -69,7 +69,7 @@ func Test_powerAwarePlugin_Name(t *testing.T) {
 			AgentConfiguration: &agentconf.AgentConfiguration{
 				StaticAgentConfiguration: &agentconf.StaticAgentConfiguration{
 					SysAdvisorPluginsConfiguration: &sysadvisor.SysAdvisorPluginsConfiguration{
-						PowerAwarePluginOptions: &dummyPluginConf,
+						PowerAwarePluginConfiguration: &dummyPluginConf,
 					},
 				},
 			},

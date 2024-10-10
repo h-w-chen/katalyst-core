@@ -16,7 +16,7 @@ limitations under the License.
 
 package poweraware
 
-type PowerAwarePluginOptions struct {
+type PowerAwarePluginConfiguration struct {
 	Disabled                  bool
 	DryRun                    bool
 	DisablePowerCapping       bool
@@ -24,6 +24,6 @@ type PowerAwarePluginOptions struct {
 }
 
 // NewPowerAwarePluginOptions creates an Options with default configs
-func NewPowerAwarePluginOptions() *PowerAwarePluginOptions {
-	return &PowerAwarePluginOptions{}
+func NewPowerAwarePluginOptions() *PowerAwarePluginConfiguration {
+	return &PowerAwarePluginConfiguration{}
 }

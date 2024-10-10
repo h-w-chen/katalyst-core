@@ -37,7 +37,7 @@ func (p *PowerAwarePluginOptions) AddFlags(fss *cliflag.NamedFlagSets) {
 	fs.BoolVar(&p.disablePowerCapping, "power-capping-disabled", p.disablePowerCapping, "flag for power aware plugin disabling power capping")
 }
 
-func (p *PowerAwarePluginOptions) ApplyTo(o *poweraware.PowerAwarePluginOptions) error {
+func (p *PowerAwarePluginOptions) ApplyTo(o *poweraware.PowerAwarePluginConfiguration) error {
 	o.DryRun = p.dryRun
 	o.Disabled = p.disabled
 	o.DisablePowerPressureEvict = p.disablePowerPressureEvict

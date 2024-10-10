@@ -102,7 +102,7 @@ func NewPowerAwarePlugin(
 	// todo: consider plugin fashion for reader to hook in
 	var powerReader reader.PowerReader
 
-	powerController := controller.NewController(conf.PowerAwarePluginOptions.DryRun,
+	powerController := controller.NewController(conf.PowerAwarePluginConfiguration.DryRun,
 		podEvictor,
 		emitter,
 		metaServer.NodeFetcher,
@@ -118,8 +118,8 @@ func NewPowerAwarePlugin(
 func newPluginWithController(pluginName string, conf *config.Configuration, controller controller.PowerAwareController) (plugin.SysAdvisorPlugin, error) {
 	return &powerAwarePlugin{
 		name:       pluginName,
-		disabled:   conf.PowerAwarePluginOptions.Disabled,
-		dryRun:     conf.PowerAwarePluginOptions.DryRun,
+		disabled:   conf.PowerAwarePluginConfiguration.Disabled,
+		dryRun:     conf.PowerAwarePluginConfiguration.DryRun,
 		controller: controller,
 	}, nil
 }
