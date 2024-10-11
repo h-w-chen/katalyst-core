@@ -128,11 +128,12 @@ type mockPodFetcher struct {
 }
 
 func (m mockPodFetcher) GetPodList(ctx context.Context, podFilter func(*v1.Pod) bool) ([]*v1.Pod, error) {
+	// this mock fetcher disregards pod filter; make sure to have pod of proper qos level
 	return []*v1.Pod{
 		{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{
-					consts.PodAnnotationQoSLevelKey: consts.PodAnnotationQoSLevelSharedCores,
+					consts.PodAnnotationQoSLevelKey: consts.PodAnnotationQoSLevelReclaimedCores,
 				},
 			},
 		},
