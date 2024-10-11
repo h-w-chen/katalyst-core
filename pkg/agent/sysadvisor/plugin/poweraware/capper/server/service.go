@@ -38,9 +38,9 @@ const (
 	// ServiceNamePowerCap also is the unix socket name of the server is listening on
 	ServiceNamePowerCap = "node_power_cap"
 
-	metricPowerCappingTargetName  = "power-capping-target"
-	metricPowerCappingResetName   = "power-capping-reset"
-	metricPowerCappingNoActorName = "power-capping-no-actor"
+	metricPowerCappingTargetName  = "power_capping_target"
+	metricPowerCappingResetName   = "power_capping_reset"
+	metricPowerCappingNoActorName = "power_capping_no_actor"
 )
 
 type powerCapService struct {
