@@ -48,7 +48,7 @@ func Test_powerReconciler_Reconcile_DryRun(t *testing.T) {
 	type fields struct {
 		dryRun      bool
 		priorAction action.PowerAction
-		evictor     evictor.LoadEvictor
+		evictor     evictor.PercentageEvictor
 		capper      capper.PowerCapper
 		strategy    strategy.PowerActionStrategy
 	}

@@ -26,8 +26,8 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
 )
 
-// LoadEvictor is the interface used in advisor policy
-type LoadEvictor interface {
+// PercentageEvictor is the interface used in advisor policy
+type PercentageEvictor interface {
 	Evict(ctx context.Context, targetPercent int)
 }
 
@@ -72,7 +72,7 @@ func (l loadEvictor) Evict(ctx context.Context, targetPercent int) {
 
 	// todo: replace this FIFO evict policy with one having sort of randomization
 	if err := l.podEvictor.Evict(ctx, getN(bePods, countToEvict)); err != nil {
-		// power alert eviction is the best effort by design
+		// power alert eviction is the best effort by design; ok to log the error here
 		general.Warningf("pap: failed to request eviction of pods: %v", err)
 	}
 }
@@ -80,7 +80,7 @@ func (l loadEvictor) Evict(ctx context.Context, targetPercent int) {
 func NewPowerLoadEvict(qosConfig *generic.QoSConfiguration,
 	podFetcher pod.PodFetcher,
 	podEvictor PodEvictor,
-) LoadEvictor {
+) PercentageEvictor {
 	return &loadEvictor{
 		qosConfig:  qosConfig,
 		podFetcher: podFetcher,

@@ -38,7 +38,7 @@ type powerReconciler struct {
 	dryRun      bool
 	priorAction action.PowerAction
 
-	evictor  evictor.LoadEvictor
+	evictor  evictor.PercentageEvictor
 	capper   capper.PowerCapper
 	strategy strategy.PowerActionStrategy
 }
