@@ -37,7 +37,7 @@ type PowerActionStrategy interface {
 }
 
 type ruleBasedPowerStrategy struct {
-	coefficient linearDecay
+	coefficient exponentialDecay
 }
 
 func (p ruleBasedPowerStrategy) RecommendAction(actualWatt int,
@@ -93,11 +93,11 @@ func (p ruleBasedPowerStrategy) autoAction(actualWatt, desiredWatt int, ttl time
 	return spec.InternalOpNoop
 }
 
-type linearDecay struct {
+type exponentialDecay struct {
 	b float64
 }
 
-func (d linearDecay) calcExcessiveInPercent(target, curr int, ttl time.Duration) int {
+func (d exponentialDecay) calcExcessiveInPercent(target, curr int, ttl time.Duration) int {
 	// exponential decaying formula: a*b^(-t)
 	a := 100 - target*100/curr
 	decay := math.Pow(d.b, float64(-int(ttl.Minutes())/10))
@@ -107,5 +107,5 @@ func (d linearDecay) calcExcessiveInPercent(target, curr int, ttl time.Duration)
 var _ PowerActionStrategy = &ruleBasedPowerStrategy{}
 
 func NewRuleBasedPowerStrategy() PowerActionStrategy {
-	return ruleBasedPowerStrategy{coefficient: linearDecay{b: defaultDecayB}}
+	return ruleBasedPowerStrategy{coefficient: exponentialDecay{b: defaultDecayB}}
 }
