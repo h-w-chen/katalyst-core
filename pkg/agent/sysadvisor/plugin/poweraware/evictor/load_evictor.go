@@ -71,6 +71,7 @@ func (l loadEvictor) Evict(ctx context.Context, targetPercent int) {
 		len(pods), len(evictablePods), targetPercent, countToEvict)
 
 	// todo: replace this FIFO evict policy with one having sort of randomization
+	// todo: explore more efficient ways that takes into account cpu utilization etc
 	if err := l.podEvictor.Evict(ctx, getN(evictablePods, countToEvict)); err != nil {
 		// power alert eviction is the best effort by design; ok to log the error here
 		general.Warningf("pap: failed to request eviction of pods: %v", err)
