@@ -21,6 +21,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/advisor/action"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/advisor/action/strategy"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/capper"
@@ -33,11 +35,102 @@ type dummyStrategy struct {
 	strategy.PowerActionStrategy
 }
 
-func (p dummyStrategy) RecommendAction(_, _ int, _ spec.PowerAlert, _ spec.InternalOp, _ time.Duration,
+func (p dummyStrategy) RecommendAction(_, _ int, _ spec.PowerAlert, op spec.InternalOp, _ time.Duration,
 ) action.PowerAction {
+	opPlan := spec.InternalOpFreqCap
+	if op != spec.InternalOpAuto {
+		opPlan = op
+	}
 	return action.PowerAction{
-		Op:  spec.InternalOpFreqCap,
+		Op:  opPlan,
 		Arg: 127,
+	}
+}
+
+type dummyPercentageEvictor struct {
+	called bool
+}
+
+func (d *dummyPercentageEvictor) Evict(ctx context.Context, targetPercent int) {
+	d.called = true
+}
+
+func Test_powerReconciler_Engages_Capper_Evictor(t *testing.T) {
+	t.Parallel()
+
+	type fields struct {
+		evictor *dummyPercentageEvictor
+		capper  *dummyPowerCapper
+	}
+	type args struct {
+		desired *spec.PowerSpec
+		actual  int
+	}
+	tests := []struct {
+		name              string
+		fields            fields
+		args              args
+		wantCapperCalled  bool
+		wantEvictorCalled bool
+		wantFreqCapped    bool
+	}{
+		{
+			name: "internal op freqCap should involve capper only",
+			fields: fields{
+				evictor: &dummyPercentageEvictor{},
+				capper:  &dummyPowerCapper{},
+			},
+			args: args{
+				desired: &spec.PowerSpec{
+					Alert:      spec.PowerAlertP0,
+					Budget:     127,
+					InternalOp: spec.InternalOpFreqCap,
+					AlertTime:  time.Time{},
+				},
+				actual: 100,
+			},
+			wantCapperCalled:  true,
+			wantEvictorCalled: false,
+			wantFreqCapped:    true,
+		},
+		{
+			name: "internal op Evict should involve evictor only",
+			fields: fields{
+				evictor: &dummyPercentageEvictor{},
+				capper:  &dummyPowerCapper{},
+			},
+			args: args{
+				desired: &spec.PowerSpec{
+					Alert:      spec.PowerAlertP0,
+					Budget:     127,
+					InternalOp: spec.InternalOpEvict,
+					AlertTime:  time.Time{},
+				},
+				actual: 100,
+			},
+			wantCapperCalled:  false,
+			wantEvictorCalled: true,
+			wantFreqCapped:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			p := &powerReconciler{
+				evictor:  tt.fields.evictor,
+				capper:   tt.fields.capper,
+				strategy: &dummyStrategy{},
+				emitter:  metricspool.DummyMetricsEmitterPool{}.GetDefaultMetricsEmitter().WithTags("test"),
+			}
+
+			freqCapped, err := p.Reconcile(context.TODO(), tt.args.desired, tt.args.actual)
+			assert.NoError(t, err)
+			assert.Equalf(t, tt.wantFreqCapped, freqCapped, "unexpected freqCapped returned")
+			assert.Equalf(t, tt.wantCapperCalled, tt.fields.capper.capCalled, "unexpected behavior calling capper")
+			assert.Equalf(t, tt.wantEvictorCalled, tt.fields.evictor.called, "unexpected behavior calling evictor")
+		})
 	}
 }
 
@@ -123,7 +216,8 @@ func Test_powerReconciler_Reconcile_DryRun(t *testing.T) {
 				strategy:    tt.fields.strategy,
 				emitter:     dummyEmitter,
 			}
-			p.Reconcile(tt.args.ctx, tt.args.desired, tt.args.actual)
+			_, err := p.Reconcile(tt.args.ctx, tt.args.desired, tt.args.actual)
+			assert.NoError(t, err)
 		})
 	}
 }

@@ -79,15 +79,20 @@ type dummyPowerCapper struct {
 	capper.PowerCapper
 	resetCalled bool
 	initCalled  bool
+	capCalled   bool
 }
 
-func (ca *dummyPowerCapper) Reset() {
-	ca.resetCalled = true
+func (d *dummyPowerCapper) Reset() {
+	d.resetCalled = true
 }
 
-func (dsr *dummyPowerCapper) Init() error {
-	dsr.initCalled = true
+func (d *dummyPowerCapper) Init() error {
+	d.initCalled = true
 	return nil
+}
+
+func (d *dummyPowerCapper) Cap(ctx context.Context, targetWatts, currWatt int) {
+	d.capCalled = true
 }
 
 func (re *dummyPowerReconciler) Reconcile(ctx context.Context, desired *spec.PowerSpec, actual int) (bool, error) {
