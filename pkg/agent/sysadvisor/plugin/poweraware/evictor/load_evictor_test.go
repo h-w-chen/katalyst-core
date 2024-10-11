@@ -155,3 +155,50 @@ func Test_loadEvictor_Evict(t *testing.T) {
 		t.Errorf("expected to call 1 times, got %d", podEvictor.called)
 	}
 }
+
+func Test_getN(t *testing.T) {
+	t.Parallel()
+	type args struct {
+		pods []*v1.Pod
+		n    int
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantLen int
+	}{
+		{
+			name: "happy path of shorter slice",
+			args: args{
+				pods: []*v1.Pod{
+					{ObjectMeta: metav1.ObjectMeta{Name: "pod0"}},
+					{ObjectMeta: metav1.ObjectMeta{Name: "pod1"}},
+					{ObjectMeta: metav1.ObjectMeta{Name: "pod2"}},
+				},
+				n: 2,
+			},
+			wantLen: 2,
+		},
+		{
+			name: "happy path of bigger number",
+			args: args{
+				pods: []*v1.Pod{
+					{ObjectMeta: metav1.ObjectMeta{Name: "pod0"}},
+					{ObjectMeta: metav1.ObjectMeta{Name: "pod1"}},
+					{ObjectMeta: metav1.ObjectMeta{Name: "pod2"}},
+				},
+				n: 5,
+			},
+			wantLen: 3,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if got := getN(tt.args.pods, tt.args.n); tt.wantLen != len(got) {
+				t.Errorf("unexpected length of slice: expected %d, got %d", tt.wantLen, len(got))
+			}
+		})
+	}
+}

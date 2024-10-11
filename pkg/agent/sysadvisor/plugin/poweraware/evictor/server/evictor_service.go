@@ -41,7 +41,7 @@ const (
 )
 
 type powerPressureEvictServer struct {
-	mutex   sync.Mutex
+	mutex   sync.RWMutex
 	evicts  map[types.UID]*v1.Pod
 	service *skeleton.PluginRegistrationWrapper
 }
@@ -53,22 +53,33 @@ func (p *powerPressureEvictServer) Init() error {
 	return nil
 }
 
-// Reset method clears all pending eviction requests not fetched by remote client
-func (p *powerPressureEvictServer) Reset(ctx context.Context) {
-	p.mutex.Lock()
-	defer p.mutex.Unlock()
+// reset method clears all pending eviction requests not fetched by remote client
+func (p *powerPressureEvictServer) reset(ctx context.Context) {
 	p.evicts = make(map[types.UID]*v1.Pod)
 }
 
-// Evict method puts request to evict a pod in the pool; it will be sent out to plugin client via the eviction protocol
+// Evict method puts request to evict pods in the pool; it will be sent out to plugin client via the eviction protocol
 // the real eviction will be done by the (remote) eviction manager where the plugin client is registered with
-func (p *powerPressureEvictServer) Evict(ctx context.Context, pod *v1.Pod) error {
+func (p *powerPressureEvictServer) Evict(ctx context.Context, pods []*v1.Pod) error {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
+	// discard pending requests not handled yet; we will provide a new sleet of evict requests anyway
+	p.reset(ctx)
+
+	for _, pod := range pods {
+		if err := p.evictPod(ctx, pod); err != nil {
+			return errors.Wrap(err, "failed to put evict pods to the service pool")
+		}
+	}
+
+	return nil
+}
+
+func (p *powerPressureEvictServer) evictPod(ctx context.Context, pod *v1.Pod) error {
 	if pod == nil {
 		return errors.New("unexpected nil pod")
 	}
-
-	p.mutex.Lock()
-	defer p.mutex.Unlock()
 
 	p.evicts[pod.GetUID()] = pod
 	return nil
@@ -108,8 +119,8 @@ func (p *powerPressureEvictServer) GetEvictPods(ctx context.Context, request *pl
 		}
 	}
 
-	p.mutex.Lock()
-	defer p.mutex.Unlock()
+	p.mutex.RLock()
+	defer p.mutex.RUnlock()
 
 	evictPods := make([]*pluginapi.EvictPod, 0)
 

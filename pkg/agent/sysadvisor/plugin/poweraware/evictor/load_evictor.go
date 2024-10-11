@@ -42,6 +42,13 @@ func (l loadEvictor) isBE(pod *v1.Pod) bool {
 	return err == nil && isReclaimedQoS
 }
 
+func getN(pods []*v1.Pod, n int) []*v1.Pod {
+	if n >= len(pods) {
+		return pods
+	}
+	return pods[:n]
+}
+
 func (l loadEvictor) Evict(ctx context.Context, targetPercent int) {
 	pods, err := l.podFetcher.GetPodList(ctx, nil)
 	if err != nil {
@@ -63,16 +70,10 @@ func (l loadEvictor) Evict(ctx context.Context, targetPercent int) {
 	general.InfofV(6, "pap: evict: %d pods, %d BE; going to evict BE up to %d%%%% pods = %d",
 		len(pods), len(bePods), targetPercent, countToEvict)
 
-	// discard pending requests not handled yet; we will provide a new sleet of evict requests anyway
-	l.podEvictor.Reset(ctx)
-
 	// todo: replace this FIFO evict policy with one having sort of randomization
-	for i, p := range bePods {
-		// not care much for returned error as power alert eviction is the best effort by design
-		if i >= countToEvict {
-			break
-		}
-		_ = l.podEvictor.Evict(ctx, p)
+	if err := l.podEvictor.Evict(ctx, getN(bePods, countToEvict)); err != nil {
+		// power alert eviction is the best effort by design
+		general.Warningf("pap: failed to request eviction of pods: %v", err)
 	}
 }
 

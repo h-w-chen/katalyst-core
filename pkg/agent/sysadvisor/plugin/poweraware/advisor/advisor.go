@@ -92,8 +92,6 @@ func (p *powerAwareAdvisor) Init() error {
 }
 
 func (p *powerAwareAdvisor) Run(ctx context.Context) {
-	p.podEvictor.Reset(ctx)
-
 	general.Infof("pap: advisor Run started")
 	wait.Until(func() { p.run(ctx) }, intervalSpecFetch, ctx.Done())
 
