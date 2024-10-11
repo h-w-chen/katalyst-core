@@ -41,11 +41,11 @@ const (
 	// PowerAlertOK is derivative power alert code which corresponds to NON-existent power alert annotation
 	PowerAlertOK PowerAlert = "ok"
 
-	InternalOpAuto     InternalOp = 0
-	InternalOpThrottle InternalOp = 1
-	InternalOpEvict    InternalOp = 2
-	InternalOpFreqCap  InternalOp = 4
-	InternalOpPause    InternalOp = 8
+	InternalOpAuto     InternalOp = 0 // default op allowing plugin makes decision by itself
+	InternalOpThrottle InternalOp = 1 // op demanding plugin choose throttling compute resources only
+	InternalOpEvict    InternalOp = 2 // op demanding plugin choose eviction only
+	InternalOpFreqCap  InternalOp = 4 // op demanding plugin to choose cpu frequency capping only
+	InternalOpPause    InternalOp = 8 // op demanding plugin not making any policy
 
 	AnnoKeyPowerAlert      = "tce.kubernetes.io/power-alert"
 	AnnoKeyPowerBudget     = "tce.kubernetes.io/power-budget"
