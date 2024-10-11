@@ -67,8 +67,11 @@ func (p *powerCapService) RemovePod(ctx context.Context, request *advisorsvc.Rem
 }
 
 func (p *powerCapService) ListAndWatch(empty *advisorsvc.Empty, server advisorsvc.AdvisorService_ListAndWatchServer) error {
-	ctx := server.Context()
-	ch := p.notify.Register(ctx)
+	ctx := wrapFanoutContext(server.Context())
+	ch, err := p.notify.Register(ctx)
+	if err != nil {
+		return errors.Wrap(err, "listAndWatch error")
+	}
 
 stream:
 	for {
@@ -89,8 +92,7 @@ stream:
 		}
 	}
 
-	p.notify.Unregister(ctx)
-	return nil
+	return p.notify.Unregister(ctx)
 }
 
 func (p *powerCapService) Reset() {
