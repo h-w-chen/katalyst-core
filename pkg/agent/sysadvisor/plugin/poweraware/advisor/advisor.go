@@ -24,8 +24,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog/v2"
 
-	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/advisor/action"
-	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/advisor/action/strategy"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/capper"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/evictor"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/reader"
@@ -43,6 +41,9 @@ const (
 
 	metricPowerAwareCurrentPowerInWatt = "power_current_watt"
 	metricPowerAwareDesiredPowerInWatt = "power_desired_watt"
+	metricPowerAwareActionPlan         = "power_action_plan"
+	metricTagNameActionPlanOp          = "op"
+	metricTagNameActionPlanMode        = "mode"
 )
 
 // PowerAwareAdvisor is the interface that runs the whole power advisory process
@@ -164,13 +165,7 @@ func NewAdvisor(dryRun bool,
 		powerReader: reader,
 		podEvictor:  podEvictor,
 		powerCapper: capper,
-		reconciler: &powerReconciler{
-			dryRun:      dryRun,
-			priorAction: action.PowerAction{},
-			evictor:     evictor.NewPowerLoadEvict(qosConfig, podFetcher, podEvictor),
-			capper:      capper,
-			strategy:    strategy.NewRuleBasedPowerStrategy(),
-		},
-		inFreqCap: false,
+		reconciler:  newReconciler(dryRun, emitter, evictor.NewPowerLoadEvict(qosConfig, podFetcher, podEvictor), capper),
+		inFreqCap:   false,
 	}
 }

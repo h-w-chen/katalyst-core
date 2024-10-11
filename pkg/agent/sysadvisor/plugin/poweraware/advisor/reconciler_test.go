@@ -26,6 +26,7 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/capper"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/evictor"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/spec"
+	metricspool "github.com/kubewharf/katalyst-core/pkg/metrics/metrics-pool"
 )
 
 type dummyStrategy struct {
@@ -44,6 +45,7 @@ func Test_powerReconciler_Reconcile_DryRun(t *testing.T) {
 	t.Parallel()
 
 	mockStrategy := &dummyStrategy{}
+	dummyEmitter := metricspool.DummyMetricsEmitterPool{}.GetDefaultMetricsEmitter().WithTags("advisor-poweraware")
 
 	type fields struct {
 		dryRun      bool
@@ -119,6 +121,7 @@ func Test_powerReconciler_Reconcile_DryRun(t *testing.T) {
 				evictor:     tt.fields.evictor,
 				capper:      tt.fields.capper,
 				strategy:    tt.fields.strategy,
+				emitter:     dummyEmitter,
 			}
 			p.Reconcile(tt.args.ctx, tt.args.desired, tt.args.actual)
 		})
