@@ -79,5 +79,8 @@ func (n *fanoutNotifier) Unregister(ctx context.Context) {
 	n.Lock()
 	defer n.Unlock()
 
+	if ch, ok := n.receptacles[ctx]; ok {
+		close(ch)
+	}
 	delete(n.receptacles, ctx)
 }
