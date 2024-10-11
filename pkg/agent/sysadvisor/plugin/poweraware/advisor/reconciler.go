@@ -83,9 +83,11 @@ func (p *powerReconciler) Reconcile(ctx context.Context, desired *spec.PowerSpec
 	switch actionPlan.Op {
 	case spec.InternalOpFreqCap:
 		p.capper.Cap(ctx, actionPlan.Arg, actual)
+		general.Infof("pap: req to cap target %d, actual %d watts", actionPlan.Arg, actual)
 		return true, nil
 	case spec.InternalOpEvict:
 		p.evictor.Evict(ctx, actionPlan.Arg)
+		general.Infof("pap: req to evict target percentage %d", actionPlan.Arg)
 		return false, nil
 	default:
 		// todo: add feature of pod suppressions (with their resource usage)
