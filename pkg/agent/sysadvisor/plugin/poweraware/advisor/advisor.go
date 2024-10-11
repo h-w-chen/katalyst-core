@@ -93,11 +93,12 @@ func (p *powerAwareAdvisor) Init() error {
 
 func (p *powerAwareAdvisor) Run(ctx context.Context) {
 	general.Infof("pap: advisor Run started")
+	defer p.powerReader.Cleanup()
+	defer p.powerCapper.Reset()
+
 	wait.Until(func() { p.run(ctx) }, intervalSpecFetch, ctx.Done())
 
 	general.Infof("pap: advisor Run exited")
-	p.powerReader.Cleanup()
-	p.powerCapper.Reset()
 }
 
 func (p *powerAwareAdvisor) run(ctx context.Context) {
