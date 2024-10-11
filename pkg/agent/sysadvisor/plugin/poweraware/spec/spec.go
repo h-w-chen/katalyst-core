@@ -54,17 +54,15 @@ const (
 )
 
 var (
-	powerAlertResponseTime = map[PowerAlert]time.Duration{}
-	unknownAlertError      = errors.New("unknown alert")
-)
+	powerAlertResponseTime = map[PowerAlert]time.Duration{
+		PowerAlertS0: time.Minute * 2,
+		PowerAlertP0: time.Minute * 30,
+		PowerAlertP1: time.Hour * 1,
+		PowerAlertP2: time.Hour * 4,
+	}
 
-func init() {
-	// todo: update response deadline settings for power alert levels in line with power management team
-	powerAlertResponseTime[PowerAlertS0] = time.Minute * 2
-	powerAlertResponseTime[PowerAlertP0] = time.Minute * 30
-	powerAlertResponseTime[PowerAlertP1] = time.Hour * 1
-	powerAlertResponseTime[PowerAlertP2] = time.Hour * 4
-}
+	unknownAlertError = errors.New("unknown alert")
+)
 
 func GetPowerAlertResponseTimeLimit(alert PowerAlert) (time.Duration, error) {
 	alert = PowerAlert(strings.ToLower(string(alert)))
