@@ -58,8 +58,8 @@ func (p *powerReconciler) emitOpCode(action action.PowerAction, mode string) {
 func (p *powerReconciler) Reconcile(ctx context.Context, desired *spec.PowerSpec, actual int) (bool, error) {
 	alertTimeLimit, err := spec.GetPowerAlertResponseTimeLimit(desired.Alert)
 	if err != nil {
-		general.InfofV(6, "pap: failed to get creation time of alert: %v", err)
-		// ok to ignore this mal-formatted alert for now
+		general.InfofV(6, "pap: failed to get response time limit of alert: %v", err)
+		// ok to ignore this mal-formatted alert for now; hopefully next iteration it will be correct
 		return false, nil
 	}
 	deadline := desired.AlertTime.Add(alertTimeLimit)
