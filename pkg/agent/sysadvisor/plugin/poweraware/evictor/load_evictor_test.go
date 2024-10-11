@@ -28,7 +28,7 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/metaserver/agent/pod"
 )
 
-func Test_loadEvictor_isBE(t *testing.T) {
+func Test_loadEvictor_isEvictablePod(t *testing.T) {
 	t.Parallel()
 	qosConfig := generic.NewQoSConfiguration()
 
@@ -116,8 +116,8 @@ func Test_loadEvictor_isBE(t *testing.T) {
 			l := loadEvictor{
 				qosConfig: qosConfig,
 			}
-			if got := l.isBE(tt.args.pod); got != tt.want {
-				t.Errorf("isBE() = %v, want %v", got, tt.want)
+			if got := l.isEvictablePod(tt.args.pod); got != tt.want {
+				t.Errorf("isEvictablePod() = %v, want %v", got, tt.want)
 			}
 		})
 	}
