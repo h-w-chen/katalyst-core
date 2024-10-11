@@ -110,6 +110,9 @@ func (p *powerPressureEvictServer) GetTopEvictionPods(ctx context.Context, reque
 }
 
 // GetEvictPods is called from a remote evict plugin client to get evict candidates
+// In the current eviction manager framework, plugins are expected to implement either GetEvictPods or GetTopEvictionPods + ThresholdMet;
+// the former allows the plugin to explicitly specify force and soft eviction candidates, which suits this plugin's use case.
+// Adequate to implement only GetEvictPods and simply let GetTopEvictionPods and ThresholdMet return default responses.
 func (p *powerPressureEvictServer) GetEvictPods(ctx context.Context, request *pluginapi.GetEvictPodsRequest) (*pluginapi.GetEvictPodsResponse, error) {
 	general.InfofV(6, "pap: evict: GetEvictPods request with %d active pods", len(request.GetActivePods()))
 	activePods := map[types.UID]struct{}{}
