@@ -95,6 +95,23 @@ type PowerSpec struct {
 	AlertTime  time.Time
 }
 
+func validateOpCode(code int) error {
+	switch code {
+	case int(InternalOpAuto):
+		return nil
+	case int(InternalOpThrottle):
+		return nil
+	case int(InternalOpEvict):
+		return nil
+	case int(InternalOpFreqCap):
+		return nil
+	case int(InternalOpNoop):
+		return nil
+	default:
+		return fmt.Errorf("invalid op code %d", code)
+	}
+}
+
 func GetPowerSpec(node *v1.Node) (*PowerSpec, error) {
 	alert := PowerAlert(node.Annotations[AnnoKeyPowerAlert])
 	if len(alert) == 0 {
@@ -119,6 +136,9 @@ func GetPowerSpec(node *v1.Node) (*PowerSpec, error) {
 		code, err := strconv.Atoi(node.Annotations[AnnoKeyPowerInternalOp])
 		if err != nil {
 			return nil, errors.Wrap(err, "op is not a digit")
+		}
+		if err := validateOpCode(code); err != nil {
+			return nil, errors.Wrap(err, "power internal op error")
 		}
 		internalOp = InternalOp(code)
 	}
