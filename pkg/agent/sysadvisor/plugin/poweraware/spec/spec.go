@@ -111,14 +111,14 @@ func GetPowerSpec(node *v1.Node) (*PowerSpec, error) {
 	// input float number like 611.31 is allowed
 	budget, err := strconv.ParseFloat(node.Annotations[AnnoKeyPowerBudget], 32)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "budget is not a numeral")
 	}
 
 	internalOp := InternalOpAuto
 	if len(node.Annotations[AnnoKeyPowerInternalOp]) > 0 {
 		code, err := strconv.Atoi(node.Annotations[AnnoKeyPowerInternalOp])
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "op is not a digit")
 		}
 		internalOp = InternalOp(code)
 	}
@@ -126,7 +126,7 @@ func GetPowerSpec(node *v1.Node) (*PowerSpec, error) {
 	alertTimeStr := node.Annotations[AnnoKeyPowerAlertTime]
 	alertTime, err := time.Parse(time.RFC3339, alertTimeStr)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "alert time is not in RFC3339 format")
 	}
 	return &PowerSpec{
 		Alert:      alert,
