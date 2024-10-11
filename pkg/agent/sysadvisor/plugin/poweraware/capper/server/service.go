@@ -28,8 +28,6 @@ import (
 	"google.golang.org/grpc"
 	"k8s.io/klog/v2"
 
-	"github.com/kubewharf/katalyst-api/pkg/plugins/registration"
-
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/advisorsvc"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/capper"
 	"github.com/kubewharf/katalyst-core/pkg/config"
@@ -115,11 +113,7 @@ func (p *powerCapService) emitRawMetric(name string, value int) {
 		return
 	}
 
-	_ = p.emitter.StoreInt64(name,
-		int64(value),
-		metrics.MetricTypeNameRaw,
-		metrics.ConvertMapToTags(map[string]string{"pluginName": ServiceNamePowerCap, "pluginType": registration.QoSResourcePlugin})...,
-	)
+	_ = p.emitter.StoreInt64(name, int64(value), metrics.MetricTypeNameRaw)
 }
 
 func (p *powerCapService) Cap(ctx context.Context, targetWatts, currWatt int) {
