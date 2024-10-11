@@ -47,12 +47,12 @@ func (p ruleBasedPowerStrategy) RecommendAction(actualWatt int,
 	ttl time.Duration,
 ) action.PowerAction {
 	if actualWatt <= desiredWatt {
-		return action.PowerAction{Op: spec.InternalOpPause, Arg: 0}
+		return action.PowerAction{Op: spec.InternalOpNoop, Arg: 0}
 	}
 
 	// stale request; ignore and return no-op; hopefully next time it will rectify
-	if ttl <= -time.Minute*5 || spec.InternalOpPause == internalOp {
-		return action.PowerAction{Op: spec.InternalOpPause, Arg: 0}
+	if ttl <= -time.Minute*5 || spec.InternalOpNoop == internalOp {
+		return action.PowerAction{Op: spec.InternalOpNoop, Arg: 0}
 	}
 
 	if ttl <= time.Minute*2 {
@@ -74,7 +74,7 @@ func (p ruleBasedPowerStrategy) RecommendAction(actualWatt int,
 		}
 	}
 
-	return action.PowerAction{Op: spec.InternalOpPause, Arg: 0}
+	return action.PowerAction{Op: spec.InternalOpNoop, Arg: 0}
 }
 
 func (p ruleBasedPowerStrategy) autoAction(actualWatt, desiredWatt int, ttl time.Duration) spec.InternalOp {
@@ -90,7 +90,7 @@ func (p ruleBasedPowerStrategy) autoAction(actualWatt, desiredWatt int, ttl time
 	}
 
 	// todo: consider throttle(suppression) action, after load throttle is enabled
-	return spec.InternalOpPause
+	return spec.InternalOpNoop
 }
 
 type linearDecay struct {

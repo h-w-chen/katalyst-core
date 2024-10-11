@@ -73,7 +73,7 @@ func Test_specFetcherByNodeAnnotation_GetPowerSpec(t *testing.T) {
 			want: &PowerSpec{
 				Alert:      PowerAlertS0,
 				Budget:     128,
-				InternalOp: InternalOpPause,
+				InternalOp: InternalOpNoop,
 				AlertTime:  time.Date(2024, time.June, 1, 19, 15, 58, 0, time.UTC),
 			},
 			wantErr: false,

@@ -148,7 +148,7 @@ func Test_ruleBasedPowerStrategy_RecommendAction(t *testing.T) {
 				ttl:         time.Second * 60,
 			},
 			want: action.PowerAction{
-				Op:  spec.InternalOpPause,
+				Op:  spec.InternalOpNoop,
 				Arg: 0,
 			},
 		},
@@ -163,7 +163,7 @@ func Test_ruleBasedPowerStrategy_RecommendAction(t *testing.T) {
 				ttl:         -time.Minute * 5,
 			},
 			want: action.PowerAction{
-				Op:  spec.InternalOpPause,
+				Op:  spec.InternalOpNoop,
 				Arg: 0,
 			},
 		},

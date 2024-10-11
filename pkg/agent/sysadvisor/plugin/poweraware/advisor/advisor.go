@@ -119,7 +119,7 @@ func (p *powerAwareAdvisor) run(ctx context.Context) {
 		return
 	}
 
-	if spec.InternalOpPause == powerSpec.InternalOp {
+	if spec.InternalOpNoop == powerSpec.InternalOp {
 		return
 	}
 

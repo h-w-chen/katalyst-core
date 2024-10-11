@@ -115,7 +115,7 @@ func (d *dummySpecFetcher) GetPowerSpec(ctx context.Context) (*spec.PowerSpec, e
 	case "run_return_on_Pause_op":
 		return &spec.PowerSpec{
 			Alert:      spec.PowerAlertS0,
-			InternalOp: spec.InternalOpPause,
+			InternalOp: spec.InternalOpNoop,
 		}, nil
 	default:
 		return nil, errors.New("unknown test")

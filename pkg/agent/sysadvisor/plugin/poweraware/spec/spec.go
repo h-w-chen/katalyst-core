@@ -45,7 +45,7 @@ const (
 	InternalOpThrottle InternalOp = 1 // op demanding plugin choose throttling compute resources only
 	InternalOpEvict    InternalOp = 2 // op demanding plugin choose eviction only
 	InternalOpFreqCap  InternalOp = 4 // op demanding plugin to choose cpu frequency capping only
-	InternalOpPause    InternalOp = 8 // op demanding plugin not making any policy
+	InternalOpNoop     InternalOp = 8 // op demanding plugin not making any policy
 
 	AnnoKeyPowerAlert      = "tce.kubernetes.io/power-alert"
 	AnnoKeyPowerBudget     = "tce.kubernetes.io/power-budget"
@@ -83,7 +83,7 @@ func (o InternalOp) String() string {
 		return "Evict"
 	case InternalOpFreqCap:
 		return "FreqCap"
-	case InternalOpPause:
+	case InternalOpNoop:
 		return "Noop"
 	default:
 		return fmt.Sprintf("%d", int(o))
