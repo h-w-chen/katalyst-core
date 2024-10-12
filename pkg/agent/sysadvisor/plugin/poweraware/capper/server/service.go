@@ -66,12 +66,24 @@ func (p *powerCapService) RemovePod(ctx context.Context, request *advisorsvc.Rem
 	return nil, errors.New("not implemented")
 }
 
+func (p *powerCapService) deliverPendingReset(ch chan<- struct{}) {
+	p.Lock()
+	defer p.Unlock()
+
+	if p.capInstruction != nil && p.capInstruction.OpCode == capper.OpReset {
+		ch <- struct{}{}
+	}
+}
+
 func (p *powerCapService) ListAndWatch(empty *advisorsvc.Empty, server advisorsvc.AdvisorService_ListAndWatchServer) error {
 	ctx := wrapFanoutContext(server.Context())
 	ch, err := p.notify.Register(ctx)
 	if err != nil {
 		return errors.Wrap(err, "listAndWatch error")
 	}
+
+	// Reset action is critical; ensure it shall be delivered if it was the last one
+	p.deliverPendingReset(ch)
 
 stream:
 	for {
@@ -98,7 +110,6 @@ stream:
 func (p *powerCapService) Reset() {
 	p.emitRawMetric(metricPowerCappingResetName, 1)
 	if p.notify.IsEmpty() {
-		// todo: log unavailability of down stream component
 		klog.Warningf("pap: no power capping plugin connected; Reset op is lost")
 		p.emitRawMetric(metricPowerCappingNoActorName, 1)
 	}

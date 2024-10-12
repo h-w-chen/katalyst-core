@@ -86,7 +86,7 @@ func getFanoutKey(ctx context.Context) (string, error) {
 	return key, nil
 }
 
-func (n *fanoutNotifier) Register(ctx context.Context) (<-chan struct{}, error) {
+func (n *fanoutNotifier) Register(ctx context.Context) (chan struct{}, error) {
 	n.Lock()
 	defer n.Unlock()
 
