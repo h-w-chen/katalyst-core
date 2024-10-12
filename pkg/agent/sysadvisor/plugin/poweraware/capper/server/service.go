@@ -31,15 +31,17 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/capper"
 	"github.com/kubewharf/katalyst-core/pkg/config"
 	"github.com/kubewharf/katalyst-core/pkg/metrics"
+	"github.com/kubewharf/katalyst-core/pkg/util/general"
 )
 
 const (
 	// ServiceNamePowerCap also is the unix socket name of the server is listening on
 	ServiceNamePowerCap = "node_power_cap"
 
-	metricPowerCappingTargetName  = "power_capping_target"
-	metricPowerCappingResetName   = "power_capping_reset"
-	metricPowerCappingNoActorName = "power_capping_no_actor"
+	metricPowerCappingTargetName           = "power_capping_target"
+	metricPowerCappingResetName            = "power_capping_reset"
+	metricPowerCappingNoActorName          = "power_capping_no_actor"
+	metricPowerCappingLWSendResponseFailed = "power_capping_lw_send_response_failed"
 )
 
 type powerCapService struct {
@@ -104,6 +106,8 @@ stream:
 			resp := capInst.ToListAndWatchResponse()
 			err := server.Send(resp)
 			if err != nil {
+				general.Errorf("pap: [power capping] send response failed: %v", err)
+				_ = p.emitter.StoreInt64(metricPowerCappingLWSendResponseFailed, 1, metrics.MetricTypeNameCount)
 				break stream
 			}
 		}
