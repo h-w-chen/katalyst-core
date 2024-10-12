@@ -62,11 +62,12 @@ func (n *fanoutNotifier) Notify() {
 			continue
 		}
 
-		if len(recep.ch) >= 1 {
-			general.Warningf("pap: power capping server: client not fetching req timely")
+		select {
+		case recep.ch <- struct{}{}:
 			continue
+		default:
+			general.Warningf("pap: power capping server: client not fetching req timely")
 		}
-		recep.ch <- struct{}{}
 	}
 }
 
