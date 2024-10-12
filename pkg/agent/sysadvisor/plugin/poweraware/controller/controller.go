@@ -142,6 +142,7 @@ func (p *powerAwareController) run(ctx context.Context) {
 }
 
 func NewController(dryRun bool,
+	annotationKeyPrefix string,
 	podEvictor evictor.PodEvictor,
 	emitter metrics.MetricEmitter,
 	nodeFetcher node.NodeFetcher,
@@ -152,7 +153,7 @@ func NewController(dryRun bool,
 ) PowerAwareController {
 	return &powerAwareController{
 		emitter:     emitter,
-		specFetcher: spec.NewFetcher(nodeFetcher),
+		specFetcher: spec.NewFetcher(nodeFetcher, annotationKeyPrefix),
 		powerReader: reader,
 		podEvictor:  podEvictor,
 		powerCapper: capper,

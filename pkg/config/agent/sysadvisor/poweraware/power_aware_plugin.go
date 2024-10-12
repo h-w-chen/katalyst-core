@@ -21,6 +21,7 @@ type PowerAwarePluginOptions struct {
 	DryRun                    bool
 	DisablePowerCapping       bool
 	DisablePowerPressureEvict bool
+	AnnotationKeyPrefix       string
 }
 
 // NewPowerAwarePluginOptions creates an Options with default configs

@@ -27,6 +27,7 @@ type PowerAwarePluginOptions struct {
 	dryRun                    bool
 	disablePowerCapping       bool
 	disablePowerPressureEvict bool
+	annotationKeyPrefix       string
 }
 
 func (p *PowerAwarePluginOptions) AddFlags(fss *cliflag.NamedFlagSets) {
@@ -35,6 +36,7 @@ func (p *PowerAwarePluginOptions) AddFlags(fss *cliflag.NamedFlagSets) {
 	fs.BoolVar(&p.dryRun, "power-aware-dryrun", p.dryRun, "flag for dry run power aware advisor")
 	fs.BoolVar(&p.disablePowerPressureEvict, "power-pressure-evict-disabled", p.disablePowerPressureEvict, "flag for power aware plugin disabling power pressure eviction")
 	fs.BoolVar(&p.disablePowerCapping, "power-capping-disabled", p.disablePowerCapping, "flag for power aware plugin disabling power capping")
+	fs.StringVar(&p.annotationKeyPrefix, "power-aware-annotation-key-prefix", p.annotationKeyPrefix, "prefix of node annotation keys used by power aware plugin")
 }
 
 func (p *PowerAwarePluginOptions) ApplyTo(o *poweraware.PowerAwarePluginOptions) error {
@@ -42,6 +44,7 @@ func (p *PowerAwarePluginOptions) ApplyTo(o *poweraware.PowerAwarePluginOptions)
 	o.Disabled = p.disabled
 	o.DisablePowerPressureEvict = p.disablePowerPressureEvict
 	o.DisablePowerCapping = p.disablePowerCapping
+	o.AnnotationKeyPrefix = p.annotationKeyPrefix
 	return nil
 }
 

@@ -47,10 +47,10 @@ const (
 	InternalOpFreqCap  InternalOp = 4
 	InternalOpPause    InternalOp = 8
 
-	AnnoKeyPowerAlert      = "tce.kubernetes.io/power-alert"
-	AnnoKeyPowerBudget     = "tce.kubernetes.io/power-budget"
-	AnnoKeyPowerAlertTime  = "tce.kubernetes.io/power-alert-time"
-	AnnoKeyPowerInternalOp = "tce.kubernetes.io/power-internal-op"
+	AnnoKeyPowerAlert      = "power-alert"
+	AnnoKeyPowerBudget     = "power-budget"
+	AnnoKeyPowerAlertTime  = "power-alert-time"
+	AnnoKeyPowerInternalOp = "power-internal-op"
 )
 
 var (
@@ -59,7 +59,7 @@ var (
 )
 
 func init() {
-	// todo: update response deadline settings for power alert levels in line with power management team
+	// response deadline settings for power alert levels
 	powerAlertResponseTime[PowerAlertS0] = time.Minute * 2
 	powerAlertResponseTime[PowerAlertP0] = time.Minute * 30
 	powerAlertResponseTime[PowerAlertP1] = time.Hour * 1
@@ -97,8 +97,16 @@ type PowerSpec struct {
 	AlertTime  time.Time
 }
 
-func GetPowerSpec(node *v1.Node) (*PowerSpec, error) {
-	alert := PowerAlert(node.Annotations[AnnoKeyPowerAlert])
+func getFullAnnotationKey(annotationPrefix, key string) string {
+	if len(annotationPrefix) == 0 {
+		return key
+	}
+	return fmt.Sprintf("%s/%s", annotationPrefix, key)
+}
+
+func getPowerSpec(annotationPrefix string, node *v1.Node) (*PowerSpec, error) {
+	annoKeyPowerAlert := getFullAnnotationKey(annotationPrefix, AnnoKeyPowerAlert)
+	alert := PowerAlert(node.Annotations[annoKeyPowerAlert])
 	if len(alert) == 0 {
 		return &PowerSpec{
 			Alert:      PowerAlertOK,
@@ -111,21 +119,24 @@ func GetPowerSpec(node *v1.Node) (*PowerSpec, error) {
 	alert = PowerAlert(strings.ToLower(string(alert)))
 
 	// input float number like 611.31 is allowed
-	budget, err := strconv.ParseFloat(node.Annotations[AnnoKeyPowerBudget], 32)
+	annoKeyPowerBudget := getFullAnnotationKey(annotationPrefix, AnnoKeyPowerBudget)
+	budget, err := strconv.ParseFloat(node.Annotations[annoKeyPowerBudget], 32)
 	if err != nil {
 		return nil, err
 	}
 
 	internalOp := InternalOpAuto
-	if len(node.Annotations[AnnoKeyPowerInternalOp]) > 0 {
-		code, err := strconv.Atoi(node.Annotations[AnnoKeyPowerInternalOp])
+	annoKeyPowerInternalOp := getFullAnnotationKey(annotationPrefix, AnnoKeyPowerInternalOp)
+	if len(node.Annotations[annoKeyPowerInternalOp]) > 0 {
+		code, err := strconv.Atoi(node.Annotations[annoKeyPowerInternalOp])
 		if err != nil {
 			return nil, err
 		}
 		internalOp = InternalOp(code)
 	}
 
-	alertTimeStr := node.Annotations[AnnoKeyPowerAlertTime]
+	annoKeyPowerAlertTime := getFullAnnotationKey(annotationPrefix, AnnoKeyPowerAlertTime)
+	alertTimeStr := node.Annotations[annoKeyPowerAlertTime]
 	alertTime, err := time.Parse(time.RFC3339, alertTimeStr)
 	if err != nil {
 		return nil, err

@@ -103,6 +103,7 @@ func NewPowerAwarePlugin(
 	var powerReader reader.PowerReader
 
 	powerController := controller.NewController(conf.PowerAwarePluginOptions.DryRun,
+		conf.PowerAwarePluginOptions.AnnotationKeyPrefix,
 		podEvictor,
 		emitter,
 		metaServer.NodeFetcher,
