@@ -77,7 +77,7 @@ func Test_powerPressureEvictPluginServer_GetEvictPods_OnWire(t *testing.T) {
 	evictServer, client, closer := setupGrpcServer(ctx)
 	defer closer()
 
-	_ = evictServer.Evict(ctx, []*v1.Pod{&v1.Pod{ObjectMeta: metav1.ObjectMeta{UID: "test123456"}}})
+	_ = evictServer.Evict(ctx, []*v1.Pod{{ObjectMeta: metav1.ObjectMeta{UID: "test123456"}}})
 
 	got, err := client.GetEvictPods(ctx, &evictionv1apha1.GetEvictPodsRequest{
 		ActivePods: []*v1.Pod{{
