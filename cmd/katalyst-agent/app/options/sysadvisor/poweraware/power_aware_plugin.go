@@ -23,9 +23,10 @@ import (
 )
 
 type PowerAwarePluginOptions struct {
-	DryRun                    bool
-	DisablePowerCapping       bool
-	DisablePowerPressureEvict bool
+	DryRun                           bool
+	DisablePowerCapping              bool
+	DisablePowerPressureEvict        bool
+	PowerCappingAdvisorSocketAbsPath string
 }
 
 func (p *PowerAwarePluginOptions) AddFlags(fss *cliflag.NamedFlagSets) {
@@ -33,12 +34,14 @@ func (p *PowerAwarePluginOptions) AddFlags(fss *cliflag.NamedFlagSets) {
 	fs.BoolVar(&p.DryRun, "power-aware-dryrun", p.DryRun, "flag for dry run power aware advisor")
 	fs.BoolVar(&p.DisablePowerPressureEvict, "power-pressure-evict-Disabled", p.DisablePowerPressureEvict, "flag for power aware plugin disabling power pressure eviction")
 	fs.BoolVar(&p.DisablePowerCapping, "power-capping-Disabled", p.DisablePowerCapping, "flag for power aware plugin disabling power capping")
+	fs.StringVar(&p.PowerCappingAdvisorSocketAbsPath, "power-capping-advisor-sock-abs-path", p.PowerCappingAdvisorSocketAbsPath, "absolute path of socket file for power capping advisor served in sys-advisor")
 }
 
 func (p *PowerAwarePluginOptions) ApplyTo(o *poweraware.PowerAwarePluginConfiguration) error {
 	o.DryRun = p.DryRun
 	o.DisablePowerPressureEvict = p.DisablePowerPressureEvict
 	o.DisablePowerCapping = p.DisablePowerCapping
+	o.PowerCappingAdvisorSocketAbsPath = p.PowerCappingAdvisorSocketAbsPath
 	return nil
 }
 

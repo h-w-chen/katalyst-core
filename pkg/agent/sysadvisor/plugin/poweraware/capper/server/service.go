@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"path"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -159,9 +158,7 @@ func newPowerCapServiceSuite(conf *config.Configuration, emitter metrics.MetricE
 	powerCapSvc := newPowerCapService()
 	powerCapSvc.emitter = emitter
 
-	pluginRootFolder := conf.PluginRegistrationDir
-	socketPath := path.Join(pluginRootFolder, fmt.Sprintf("%s.sock", powerCapSvc.Name()))
-
+	socketPath := conf.PowerCappingAdvisorSocketAbsPath
 	if err := os.Remove(socketPath); err != nil && !os.IsNotExist(err) {
 		return nil, nil, errors.Wrap(err, "failed to clean up the residue file")
 	}

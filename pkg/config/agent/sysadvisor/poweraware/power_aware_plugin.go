@@ -17,9 +17,10 @@ limitations under the License.
 package poweraware
 
 type PowerAwarePluginConfiguration struct {
-	DryRun                    bool
-	DisablePowerCapping       bool
-	DisablePowerPressureEvict bool
+	DryRun                           bool
+	DisablePowerCapping              bool
+	DisablePowerPressureEvict        bool
+	PowerCappingAdvisorSocketAbsPath string
 }
 
 // NewPowerAwarePluginOptions creates an Options with default configs
