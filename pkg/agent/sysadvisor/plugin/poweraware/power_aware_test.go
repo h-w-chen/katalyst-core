@@ -56,6 +56,7 @@ func Test_powerAwarePlugin_Name(t *testing.T) {
 	dummyEmitterPool := metricspool.DummyMetricsEmitterPool{}
 	stubAdvisor := advisor.NewAdvisor(
 		expectedDryRun,
+		"foo",
 		evictor.NewNoopPodEvictor(),
 		dummyEmitterPool.GetDefaultMetricsEmitter(),
 		stubMetaServer.NodeFetcher,
@@ -124,7 +125,7 @@ func Test_powerAwarePlugin_Init(t *testing.T) {
 			p := powerAwarePlugin{
 				name:   tt.fields.name,
 				dryRun: tt.fields.dryRun,
-				advisor: advisor.NewAdvisor(false, evictor.NewNoopPodEvictor(), dummyEmitter,
+				advisor: advisor.NewAdvisor(false, "bar", evictor.NewNoopPodEvictor(), dummyEmitter,
 					tt.fields.nodeFetcher, nil, nil, reader.NewDummyPowerReader(), capper.NewNoopCapper(),
 				),
 			}

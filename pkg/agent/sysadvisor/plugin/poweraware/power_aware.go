@@ -98,7 +98,8 @@ func NewPowerAwarePlugin(
 	// we may temporarily have a local reader on top of ipmi (in dev branch), before malachite is ready
 	powerReader := reader.NewDummyPowerReader()
 
-	powerController := advisor.NewAdvisor(conf.PowerAwarePluginConfiguration.DryRun,
+	powerAdvisor := advisor.NewAdvisor(conf.PowerAwarePluginConfiguration.DryRun,
+		conf.PowerAwarePluginConfiguration.AnnotationKeyPrefix,
 		podEvictor,
 		emitter,
 		metaServer.NodeFetcher,
@@ -108,7 +109,7 @@ func NewPowerAwarePlugin(
 		powerCapper,
 	)
 
-	return newPluginWithController(pluginName, conf, powerController)
+	return newPluginWithController(pluginName, conf, powerAdvisor)
 }
 
 func newPluginWithController(pluginName string, conf *config.Configuration, advisor advisor.PowerAwareAdvisor) (plugin.SysAdvisorPlugin, error) {

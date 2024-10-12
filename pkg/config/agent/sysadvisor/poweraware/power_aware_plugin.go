@@ -21,6 +21,7 @@ type PowerAwarePluginConfiguration struct {
 	DisablePowerCapping              bool
 	DisablePowerPressureEvict        bool
 	PowerCappingAdvisorSocketAbsPath string
+	AnnotationKeyPrefix              string
 }
 
 // NewPowerAwarePluginOptions creates an Options with default configs

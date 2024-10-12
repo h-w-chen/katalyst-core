@@ -160,6 +160,7 @@ func (p *powerAwareAdvisor) run(ctx context.Context) {
 }
 
 func NewAdvisor(dryRun bool,
+	annotationKeyPrefix string,
 	podEvictor evictor.PodEvictor,
 	emitter metrics.MetricEmitter,
 	nodeFetcher node.NodeFetcher,
@@ -170,7 +171,7 @@ func NewAdvisor(dryRun bool,
 ) PowerAwareAdvisor {
 	return &powerAwareAdvisor{
 		emitter:     emitter,
-		specFetcher: spec.NewFetcher(nodeFetcher),
+		specFetcher: spec.NewFetcher(nodeFetcher, annotationKeyPrefix),
 		powerReader: reader,
 		podEvictor:  podEvictor,
 		powerCapper: capper,
