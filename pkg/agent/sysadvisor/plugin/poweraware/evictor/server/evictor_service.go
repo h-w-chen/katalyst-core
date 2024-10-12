@@ -47,9 +47,6 @@ type powerPressureEvictServer struct {
 }
 
 func (p *powerPressureEvictServer) Init() error {
-	if err := p.service.Start(); err != nil {
-		return errors.Wrap(err, "failed to start power pressure eviction plugin server")
-	}
 	return nil
 }
 
@@ -90,6 +87,9 @@ func (p *powerPressureEvictServer) Name() string {
 }
 
 func (p *powerPressureEvictServer) Start() error {
+	if err := p.service.Start(); err != nil {
+		return errors.Wrap(err, "failed to start power pressure eviction plugin server")
+	}
 	return nil
 }
 

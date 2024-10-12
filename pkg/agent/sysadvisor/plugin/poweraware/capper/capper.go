@@ -20,12 +20,17 @@ import "context"
 
 type PowerCapper interface {
 	Init() error
+	Start() error
 	Reset()
 	Cap(ctx context.Context, targetWatts, currWatt int)
 }
 
 // noopCapper is placeholder for disabled power capping server
 type noopCapper struct{}
+
+func (n noopCapper) Start() error {
+	return nil
+}
 
 func (n noopCapper) Init() error {
 	return nil

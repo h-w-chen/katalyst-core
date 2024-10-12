@@ -25,6 +25,7 @@ import (
 // PodEvictor is the adapter interface for underlying eviction mechanism
 type PodEvictor interface {
 	Init() error
+	Start() error
 	Evict(ctx context.Context, pods []*v1.Pod) error
 }
 
@@ -32,6 +33,10 @@ type PodEvictor interface {
 // used in unit test, or when eviction feature is disabled
 type noopPodEvictor struct {
 	called int
+}
+
+func (d *noopPodEvictor) Start() error {
+	return nil
 }
 
 func (d *noopPodEvictor) Init() error { return nil }

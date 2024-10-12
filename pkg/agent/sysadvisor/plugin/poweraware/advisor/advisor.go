@@ -94,6 +94,15 @@ func (p *powerAwareAdvisor) Init() error {
 
 func (p *powerAwareAdvisor) Run(ctx context.Context) {
 	general.Infof("pap: advisor Run started")
+	if err := p.podEvictor.Start(); err != nil {
+		general.Errorf("pap: failed to start pod evict service: %v", err)
+		return
+	}
+	if err := p.powerCapper.Start(); err != nil {
+		general.Errorf("pap: failed to start power capping service: %v", err)
+		return
+	}
+
 	defer p.powerReader.Cleanup()
 	defer p.powerCapper.Reset()
 

@@ -47,6 +47,12 @@ type powerCapService struct {
 	capInstruction *capper.CapInstruction
 	notify         *fanoutNotifier
 	emitter        metrics.MetricEmitter
+	grpcServer     *grpcServer
+}
+
+func (p *powerCapService) Start() error {
+	p.grpcServer.Run()
+	return nil
 }
 
 func (p *powerCapService) Init() error {
@@ -154,7 +160,7 @@ func newPowerCapService() *powerCapService {
 	}
 }
 
-func newPowerCapServiceSuite(conf *config.Configuration, emitter metrics.MetricEmitter) (capper.PowerCapper, *grpcServer, error) {
+func newPowerCapServiceSuite(conf *config.Configuration, emitter metrics.MetricEmitter) (*powerCapService, *grpcServer, error) {
 	powerCapSvc := newPowerCapService()
 	powerCapSvc.emitter = emitter
 
@@ -180,6 +186,6 @@ func NewPowerCapPlugin(conf *config.Configuration, emitter metrics.MetricEmitter
 		return nil, errors.Wrap(err, "failed to create power capping server")
 	}
 
-	grpcServer.Run()
+	powerCapAdvisor.grpcServer = grpcServer
 	return powerCapAdvisor, nil
 }
