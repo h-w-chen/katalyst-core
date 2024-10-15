@@ -17,20 +17,53 @@ limitations under the License.
 package monitor
 
 import (
+	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/util/sets"
+
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl/state"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/writemb"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/writemb/l3pmc"
 )
 
 type MBMonitor interface {
 	GetMBQoSGroups() (map[task.QoSGroup]*MBQoSGroup, error)
 }
 
-func New(taskManager task.Manager, rmbReader task.TaskMBReader, wmbReader writemb.WriteMBReader) (MBMonitor, error) {
+func newMBMonitor(taskManager task.Manager, rmbReader task.TaskMBReader, wmbReader writemb.WriteMBReader) (MBMonitor, error) {
 	return &mbMonitor{
 		taskManager: taskManager,
 		rmbReader:   rmbReader,
 		wmbReader:   wmbReader,
 	}, nil
+}
+
+func NewDefaultMBMonitor(numaDies map[int]sets.Int, dieCPUs map[int][]int) (MBMonitor, error) {
+	dataKeeper, err := state.NewMBRawDataKeeper()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create raw data state keeper")
+	}
+
+	taskManager, err := task.New(numaDies, dieCPUs, dataKeeper)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create task manager")
+	}
+
+	taskMBReader, err := task.CreateTaskMBReader(dataKeeper)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create task mb reader")
+	}
+
+	wmbReader, err := l3pmc.NewWriteMBReader()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create writes mb reader")
+	}
+	podMBMonitor, err := newMBMonitor(taskManager, taskMBReader, wmbReader)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create pod mb monitor")
+	}
+
+	return podMBMonitor, nil
 }
 
 type mbMonitor struct {

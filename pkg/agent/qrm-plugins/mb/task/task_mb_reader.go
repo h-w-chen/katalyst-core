@@ -16,7 +16,12 @@ limitations under the License.
 
 package task
 
-import "github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl"
+import (
+	"github.com/pkg/errors"
+
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl/state"
+)
 
 type TaskMBReader interface {
 	GetMB(task *Task) (map[int]int, error)
@@ -35,8 +40,27 @@ func (t taskMBReader) GetMB(task *Task) (map[int]int, error) {
 	return t.monGroupReader.ReadMB(taskMonGroup, task.CCDs)
 }
 
-func NewTaskMBReader(monGroupReader resctrl.MonGroupReader) (TaskMBReader, error) {
+func newTaskMBReader(monGroupReader resctrl.MonGroupReader) (TaskMBReader, error) {
 	return &taskMBReader{
 		monGroupReader: monGroupReader,
 	}, nil
+}
+
+func CreateTaskMBReader(dataKeeper state.MBRawDataKeeper) (TaskMBReader, error) {
+	ccdMBCalc, err := resctrl.NewCCDMBCalculator(dataKeeper)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create ccd mb calculator")
+	}
+
+	ccdMBReader, err := resctrl.NewCCDMBReader(ccdMBCalc)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create resctrl ccd mb reader")
+	}
+
+	monGroupReader, err := resctrl.NewMonGroupReader(ccdMBReader)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create resctrl mon group mb reader")
+	}
+
+	return newTaskMBReader(monGroupReader)
 }
