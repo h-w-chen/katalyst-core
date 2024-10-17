@@ -29,8 +29,8 @@ import (
 func Test_getResctrlMonGroups(t *testing.T) {
 	t.Parallel()
 	fs := afero.NewMemMapFs()
-	_ = fs.MkdirAll("/sys/fs/resctrl/foo/mon_groups/podPODxxx", resctrlconsts.FolderPerm)
-	_ = fs.MkdirAll("/sys/fs/resctrl/foo/mon_groups/podPODyyy", resctrlconsts.FolderPerm)
+	_ = fs.MkdirAll("/sys/fs/resctrl/dedicated/mon_groups/podPODxxx", resctrlconsts.FolderPerm)
+	_ = fs.MkdirAll("/sys/fs/resctrl/dedicated/mon_groups/podPODyyy", resctrlconsts.FolderPerm)
 
 	type args struct {
 		fs afero.Fs
@@ -47,8 +47,8 @@ func Test_getResctrlMonGroups(t *testing.T) {
 				fs: fs,
 			},
 			want: []string{
-				"/sys/fs/resctrl/foo/mon_groups/podPODxxx",
-				"/sys/fs/resctrl/foo/mon_groups/podPODyyy",
+				"/sys/fs/resctrl/dedicated/mon_groups/podPODxxx",
+				"/sys/fs/resctrl/dedicated/mon_groups/podPODyyy",
 			},
 			wantErr: assert.NoError,
 		},

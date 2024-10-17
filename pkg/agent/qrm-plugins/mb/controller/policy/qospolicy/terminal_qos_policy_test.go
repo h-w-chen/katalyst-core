@@ -80,9 +80,9 @@ func Test_getProportionalPlan(t *testing.T) {
 			args: args{
 				total: 21_000,
 				mbQoSGroups: map[task.QoSGroup]*monitor.MBQoSGroup{
-					"shared_30": {CCDMB: map[int]int{
-						6: 20_000,
-						7: 10_000,
+					"shared_30": {CCDMB: map[int]*monitor.MBData{
+						6: {ReadsMB: 20_000},
+						7: {ReadsMB: 10_000},
 					}},
 				},
 			},

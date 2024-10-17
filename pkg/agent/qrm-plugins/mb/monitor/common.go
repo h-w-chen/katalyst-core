@@ -14,21 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package util
+package monitor
 
 import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
 )
 
-func SumCCDMB(ccdMB map[int]int) int {
+func SumCCDMB(ccdMB map[int]*MBData) int {
 	sum := 0
 	for _, mb := range ccdMB {
-		sum += mb
+		sum += mb.ReadsMB + mb.WritesMB
 	}
 	return sum
 }
 
-func Sum(qosCCDMB map[task.QoSGroup]map[int]int) int {
+func Sum(qosCCDMB map[task.QoSGroup]map[int]*MBData) int {
 	sum := 0
 
 	for _, ccdMB := range qosCCDMB {

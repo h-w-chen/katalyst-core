@@ -157,9 +157,9 @@ func Test_mbMonitor_GetMBQoSGroups(t1 *testing.T) {
 			want: map[task.QoSGroup]*MBQoSGroup{
 				"foo": {
 					CCDs: sets.Int{2: sets.Empty{}, 3: sets.Empty{}},
-					CCDMB: map[int]int{
-						2: 220,
-						3: 330,
+					CCDMB: map[int]*MBData{
+						2: {ReadsMB: 200, WritesMB: 20},
+						3: {ReadsMB: 300, WritesMB: 30},
 					},
 				},
 			},
