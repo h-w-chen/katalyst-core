@@ -29,12 +29,13 @@ import (
 type Task struct {
 	QoSGroup QoSGroup
 
+	// PodUID is the pod identifier that leverage host cgroup to locate the cpu/ccd/numa node info
 	// including pod prefix and uid string, like "poda47c5c03-cf94-4a36-b52f-c1cb17dc1675"
 	PodUID string
 
-	NumaNodes []int
-	CCDs      []int
-	CPUs      []int
+	NumaNodes []int // NumaNodes are the set of numa nodes associated to the task via its bound CCDs
+	CCDs      []int // CCDs are the set of CCDs bound to the task via CPUs the task is running on
+	CPUs      []int // CPUs are the set of cpus that task is running on
 }
 
 func (t Task) GetID() string {

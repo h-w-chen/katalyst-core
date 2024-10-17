@@ -17,11 +17,11 @@ limitations under the License.
 package task
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 	"sync"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 	"k8s.io/apimachinery/pkg/util/sets"
 
@@ -29,6 +29,7 @@ import (
 	resctrlfile "github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl/file"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl/state"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task/cgutil"
+	"github.com/kubewharf/katalyst-core/pkg/util/general"
 )
 
 type Manager interface {
@@ -51,6 +52,8 @@ func New(nodeCCDs map[int]sets.Int, cpusInCCD map[int][]int, cleaner state.MBRaw
 		rawStateCleaner: cleaner,
 		nodeCCDs:        nodeCCDs,
 		cpuCCD:          cpuCCD,
+		tasks:           make(map[string]*Task),
+		taskQoS:         make(map[string]QoSGroup),
 		fs:              afero.NewOsFs(),
 	}, nil
 }
@@ -68,13 +71,13 @@ type manager struct {
 }
 
 func (m *manager) RefreshTasks() error {
-	monGroupPathRefeshed, err := resctrlfile.GetResctrlMonGroups(m.fs)
+	monGroupPathRefreshed, err := resctrlfile.GetResctrlMonGroups(m.fs)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to get mon groups from resctrl FS")
 	}
 
 	// ensure task manager's tasks in line with mon groups identified
-	tasksToDelete, err := m.identifyTaskToDelete(monGroupPathRefeshed)
+	tasksToDelete, err := m.identifyTaskToDelete(monGroupPathRefreshed)
 	if err != nil {
 		return err
 	}
@@ -82,18 +85,19 @@ func (m *manager) RefreshTasks() error {
 		m.DeleteTask(tasksToDelete)
 	}
 
-	newMonGroups, err := m.identifyNewMonGroups(monGroupPathRefeshed)
+	newMonGroups, err := m.identifyNewMonGroups(monGroupPathRefreshed)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to identify mon group")
 	}
 	for _, newMonGroup := range newMonGroups {
 		qos, podUID, err := ParseMonGroup(newMonGroup)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "failed to parse mon group")
 		}
 		_, err = m.NewTask(podUID, qos)
 		if err != nil {
-			return err
+			// ok to ignore error; hopefully next iteration will rectify itself
+			general.Errorf("mbm: failed to create task for pod %s of qos level %s: %v", podUID, qos, err)
 		}
 	}
 
@@ -214,17 +218,17 @@ func (m *manager) getBoundCPUs(podUID string, qos QoSGroup) ([]int, error) {
 func (m *manager) NewTask(podID string, qos QoSGroup) (*Task, error) {
 	nodes, err := m.getNumaNodes(podID, qos)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to get numa node")
 	}
 
 	cpus, err := m.getBoundCPUs(podID, qos)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to get bound cpus")
 	}
 
 	ccds, err := getCCDs(cpus, m.cpuCCD)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to identify bound ccd")
 	}
 
 	task := &Task{

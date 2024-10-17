@@ -54,6 +54,9 @@ func GetResctrlMonGroups(fs afero.Fs) ([]string, error) {
 		if !fi.IsDir() {
 			continue
 		}
+		if !resctrlconsts.IsTopCtrlGroup(fi.Name()) {
+			continue
+		}
 		qosLevel := fi.Name()
 		monGroupPaths, err := getResctrlSubMonGroups(fs, qosLevel)
 		if err != nil {
