@@ -17,9 +17,13 @@ limitations under the License.
 package monitor
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/sets"
 
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl/state"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/writemb"
@@ -74,17 +78,17 @@ type mbMonitor struct {
 
 func (m mbMonitor) GetMBQoSGroups() (map[task.QoSGroup]*MBQoSGroup, error) {
 	if err := m.refreshTasks(); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to refresh task")
 	}
 
 	rQoSCCDMB, err := m.getReadsMBs()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to get reads mb")
 	}
 
 	wQoSCCDMB, err := m.getWritesMBs(getCCDQoSGroups(rQoSCCDMB))
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to get writes mb")
 	}
 
 	groupCCDMBs := sumGroupCCDMBs(rQoSCCDMB, wQoSCCDMB)
@@ -128,7 +132,10 @@ func (m mbMonitor) getReadsMBs() (map[task.QoSGroup]map[int]int, error) {
 	for _, pod := range m.taskManager.GetTasks() {
 		ccdMB, err := m.rmbReader.GetMB(pod)
 		if err != nil {
-			return nil, err
+			if errors.Is(err, resctrl.ErrUninitialized) {
+				continue
+			}
+			return nil, errors.Wrap(err, fmt.Sprintf("failed to get mb of pod %s", pod.PodUID))
 		}
 
 		if _, ok := result[pod.QoSGroup]; !ok {
@@ -149,7 +156,7 @@ func (m mbMonitor) getWritesMBs(ccdQoSGroup map[int][]task.QoSGroup) (map[task.Q
 		if err != nil {
 			return nil, err
 		}
-		// there may have more than one qos ctrl group binding to a specific ccd
+		// theoretically there may have more than one qos ctrl group binding to a specific ccd
 		// for now it is fine to duplicate mb usages among them (as in POC shared_30 groups are exclusive)
 		// todo: figure out proper distributions of mb among qos ctrl groups binding to given ccd
 		for _, qos := range groups {
@@ -165,4 +172,16 @@ func (m mbMonitor) getWritesMBs(ccdQoSGroup map[int][]task.QoSGroup) (map[task.Q
 
 func (m mbMonitor) refreshTasks() error {
 	return m.taskManager.RefreshTasks()
+}
+
+func DisplayMBSummary(qosCCDMB map[task.QoSGroup]*MBQoSGroup) string {
+	var sb strings.Builder
+	sb.WriteString("----- mb summary -----\n")
+	for qos, ccdmb := range qosCCDMB {
+		sb.WriteString(fmt.Sprintf("--QoS: %s\n", qos))
+		for ccd, mb := range ccdmb.CCDMB {
+			sb.WriteString(fmt.Sprintf("      ccd %d: %d", ccd, mb))
+		}
+	}
+	return sb.String()
 }

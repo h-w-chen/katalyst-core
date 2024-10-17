@@ -17,6 +17,8 @@ limitations under the License.
 package task
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl"
@@ -34,7 +36,7 @@ type taskMBReader struct {
 func (t taskMBReader) GetMB(task *Task) (map[int]int, error) {
 	taskMonGroup, err := task.GetResctrlMonGroup()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, fmt.Sprintf("failed to locate resctrl mon group for qos level %s task %s", task.QoSGroup, task.PodUID))
 	}
 
 	return t.monGroupReader.ReadMB(taskMonGroup, task.CCDs)
