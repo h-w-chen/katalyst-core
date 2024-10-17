@@ -18,7 +18,6 @@ package qospolicy
 
 import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy/plan"
-	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/util"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
 )
@@ -56,10 +55,10 @@ func BuildHiPrioDetectedQoSMBPolicy() QoSMBPolicy {
 	anyDedicatedShared50PodExist := func(mbQoSGroups map[task.QoSGroup]*monitor.MBQoSGroup, _ bool) bool {
 		mbTraffic := 0
 		if shared50, ok := mbQoSGroups["shared_50"]; ok {
-			mbTraffic += util.SumCCDMB(shared50.CCDMB)
+			mbTraffic += monitor.SumCCDMB(shared50.CCDMB)
 		}
 		if dedicated, ok := mbQoSGroups["dedicated"]; ok {
-			mbTraffic += util.SumCCDMB(dedicated.CCDMB)
+			mbTraffic += monitor.SumCCDMB(dedicated.CCDMB)
 		}
 		return mbTraffic > 0
 	}

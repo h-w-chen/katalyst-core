@@ -19,9 +19,13 @@ package monitor
 import (
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/util"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
 )
+
+type MBData struct {
+	ReadsMB  int
+	WritesMB int
+}
 
 // MBQoSGroup keeps MB of qos control group at level of CCD
 type MBQoSGroup struct {
@@ -31,10 +35,10 @@ type MBQoSGroup struct {
 	CCDs sets.Int
 
 	// CCDMB MUST be in line with CCDs
-	CCDMB map[int]int
+	CCDMB map[int]*MBData
 }
 
-func newMBQoSGroup(ccdMB map[int]int) *MBQoSGroup {
+func newMBQoSGroup(ccdMB map[int]*MBData) *MBQoSGroup {
 	result := &MBQoSGroup{
 		CCDs:  make(sets.Int),
 		CCDMB: ccdMB,
@@ -51,7 +55,7 @@ func SumMB(groups map[task.QoSGroup]*MBQoSGroup) int {
 	sum := 0
 
 	for _, group := range groups {
-		sum += util.SumCCDMB(group.CCDMB)
+		sum += SumCCDMB(group.CCDMB)
 	}
 	return sum
 }

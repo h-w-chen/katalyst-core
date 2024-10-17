@@ -91,7 +91,7 @@ func (m mbMonitor) GetMBQoSGroups() (map[task.QoSGroup]*MBQoSGroup, error) {
 		return nil, errors.Wrap(err, "failed to get writes mb")
 	}
 
-	groupCCDMBs := sumGroupCCDMBs(rQoSCCDMB, wQoSCCDMB)
+	groupCCDMBs := getGroupCCDMBs(rQoSCCDMB, wQoSCCDMB)
 	groups := make(map[task.QoSGroup]*MBQoSGroup)
 	for qos, ccdMB := range groupCCDMBs {
 		groups[qos] = newMBQoSGroup(ccdMB)
@@ -100,15 +100,18 @@ func (m mbMonitor) GetMBQoSGroups() (map[task.QoSGroup]*MBQoSGroup, error) {
 	return groups, nil
 }
 
-func sumGroupCCDMBs(rGroupCCDMB, wGroupCCDMB map[task.QoSGroup]map[int]int) map[task.QoSGroup]map[int]int {
+func getGroupCCDMBs(rGroupCCDMB, wGroupCCDMB map[task.QoSGroup]map[int]int) map[task.QoSGroup]map[int]*MBData {
 	// precondition: rGroupCCDMB, wGroupCCDMB have identical keys of qos group
-	groupCCDMBs := make(map[task.QoSGroup]map[int]int)
+	groupCCDMBs := make(map[task.QoSGroup]map[int]*MBData)
 	for qos, ccdMB := range rGroupCCDMB {
-		groupCCDMBs[qos] = ccdMB
+		groupCCDMBs[qos] = make(map[int]*MBData)
+		for ccd, mb := range ccdMB {
+			groupCCDMBs[qos][ccd] = &MBData{ReadsMB: mb}
+		}
 	}
 	for qos, ccdMB := range wGroupCCDMB {
 		for ccd, mb := range ccdMB {
-			groupCCDMBs[qos][ccd] += mb
+			groupCCDMBs[qos][ccd].WritesMB = mb
 		}
 	}
 
@@ -180,7 +183,7 @@ func DisplayMBSummary(qosCCDMB map[task.QoSGroup]*MBQoSGroup) string {
 	for qos, ccdmb := range qosCCDMB {
 		sb.WriteString(fmt.Sprintf("--QoS: %s\n", qos))
 		for ccd, mb := range ccdmb.CCDMB {
-			sb.WriteString(fmt.Sprintf("      ccd %d: %d", ccd, mb))
+			sb.WriteString(fmt.Sprintf("      ccd %d: r %d, w %d\n", ccd, mb.ReadsMB, mb.WritesMB))
 		}
 	}
 	return sb.String()
