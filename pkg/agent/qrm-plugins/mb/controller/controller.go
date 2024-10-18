@@ -25,6 +25,7 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/allocator"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/mbdomain"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy/config"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
 )
@@ -62,7 +63,7 @@ func (c *Controller) run(ctx context.Context) {
 	general.InfofV(6, "mbm: mb usage summary: %v", monitor.DisplayMBSummary(qosCCDMB))
 
 	for i, domain := range c.domainManager.Domains {
-		mbAlloc := c.policy.GetPlan(domain, qosCCDMB)
+		mbAlloc := c.policy.GetPlan(config.DomainTotalMB, domain, qosCCDMB)
 		general.InfofV(6, "mbm: domain %d mb alloc plan: %v", i, mbAlloc)
 
 		if err := c.mbPlanAllocator.Allocate(mbAlloc); err != nil {
