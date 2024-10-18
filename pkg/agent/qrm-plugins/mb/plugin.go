@@ -45,6 +45,10 @@ func (c *plugin) Start() error {
 	general.InfofV(6, "mbm: plugin component starting ....")
 	general.InfofV(6, "mbm: numa-CCD-cpu topology: \n%s", c.dieTopology)
 
+	if !c.dieTopology.FakeNUMAEnabled {
+		return errors.New("mbm: not virtual numa; no need to dynamically manage the memory bandwidth")
+	}
+
 	var err error
 	podMBMonitor, err := monitor.NewDefaultMBMonitor(c.dieTopology.DiesInNuma, c.dieTopology.CPUsInDie)
 	if err != nil {
