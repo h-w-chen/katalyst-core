@@ -34,7 +34,7 @@ func NewMBOptions() *MBOptions {
 }
 
 func (m *MBOptions) AddFlags(fss *cliflag.NamedFlagSets) {
-	fs := fss.FlagSet("io_resource_plugin")
+	fs := fss.FlagSet("mb_resource_plugin")
 	fs.DurationVar(&m.IncubationInterval, "mb-incubation-interval", m.IncubationInterval,
 		"time to protect socket pod before it is fully exercise memory bandwidth")
 }

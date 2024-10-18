@@ -46,6 +46,7 @@ func (c *plugin) Name() string {
 
 func (c *plugin) Start() error {
 	general.InfofV(6, "mbm: plugin component starting ....")
+	general.InfofV(6, "mbm: mb incubation interval %v", c.incubationInterval)
 	general.InfofV(6, "mbm: numa-CCD-cpu topology: \n%s", c.dieTopology)
 
 	if !c.dieTopology.FakeNUMAEnabled {
