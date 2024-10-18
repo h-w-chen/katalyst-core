@@ -23,6 +23,7 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy/qospolicy"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
+	"time"
 )
 
 // constraintDomainMBPolicy implements soft-constraint mb policy
@@ -40,7 +41,7 @@ func newConstraintDomainMBPolicy(qosMBPolicy qospolicy.QoSMBPolicy) DomainMBPoli
 	}
 }
 
-func NewDefaultConstraintDomainMBPolicy() DomainMBPolicy {
-	qosMBPolicy := qospolicy.BuildHiPrioDetectedQoSMBPolicy()
+func NewDefaultConstraintDomainMBPolicy(incubationInterval time.Duration) DomainMBPolicy {
+	qosMBPolicy := qospolicy.BuildHiPrioDetectedQoSMBPolicy(incubationInterval)
 	return newConstraintDomainMBPolicy(qosMBPolicy)
 }

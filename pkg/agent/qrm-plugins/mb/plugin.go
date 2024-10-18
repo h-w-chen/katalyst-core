@@ -17,6 +17,8 @@ limitations under the License.
 package mb
 
 import (
+	"time"
+
 	"github.com/pkg/errors"
 
 	"github.com/kubewharf/katalyst-core/cmd/katalyst-agent/app/agent"
@@ -32,7 +34,8 @@ import (
 )
 
 type plugin struct {
-	dieTopology *machine.DieTopology
+	dieTopology        *machine.DieTopology
+	incubationInterval time.Duration
 
 	mbController *controller.Controller
 }
@@ -61,7 +64,7 @@ func (c *plugin) Start() error {
 	}
 
 	domainManager := mbdomain.NewMBDomainManager(c.dieTopology)
-	domainPolicy, err := policy.NewDefaultDomainMBPolicy()
+	domainPolicy, err := policy.NewDefaultDomainMBPolicy(c.incubationInterval)
 	if err != nil {
 		return errors.Wrap(err, "mbm: failed to create domain manager")
 	}
@@ -107,7 +110,8 @@ func NewComponent(agentCtx *agent.GenericContext, conf *config.Configuration,
 	_ interface{}, agentName string,
 ) (bool, agent.Component, error) {
 	mbController := &plugin{
-		dieTopology: agentCtx.DieTopology,
+		dieTopology:        agentCtx.DieTopology,
+		incubationInterval: conf.IncubationInterval,
 	}
 
 	return true, &agent.PluginWrapper{GenericPlugin: mbController}, nil

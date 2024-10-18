@@ -17,6 +17,8 @@ limitations under the License.
 package qospolicy
 
 import (
+	"time"
+
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy/plan"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
@@ -28,7 +30,8 @@ type QoSMBPolicy interface {
 }
 
 // BuildFullyChainedQoSPolicy builds up the full chain of {dedicated, shared_50, system} -> {shared_30}
-func BuildFullyChainedQoSPolicy() QoSMBPolicy {
+func BuildFullyChainedQoSPolicy(incubationInterval time.Duration) QoSMBPolicy {
+	// todo: utilize incubation benefit
 	return NewChainedQoSMBPolicy(
 		map[task.QoSGroup]struct{}{
 			"dedicated": {},
@@ -40,12 +43,12 @@ func BuildFullyChainedQoSPolicy() QoSMBPolicy {
 	)
 }
 
-func BuildHiPrioDetectedQoSMBPolicy() QoSMBPolicy {
+func BuildHiPrioDetectedQoSMBPolicy(incubationInterval time.Duration) QoSMBPolicy {
 	//--[if any dedicated|shared_50 pod exist]:    {dedicated, shared_50, system} -> {shared_30}
 	//        \ or ---------------------------:    {system, shared_30}
 
 	// to build up {dedicated, shared_50, system} -> {shared_30}
-	policyEither := BuildFullyChainedQoSPolicy()
+	policyEither := BuildFullyChainedQoSPolicy(incubationInterval)
 
 	// to build up {system, shared_30}
 	policyOr := NewTerminalQoSPolicy()
