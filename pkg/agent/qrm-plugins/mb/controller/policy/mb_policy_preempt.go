@@ -17,8 +17,6 @@ limitations under the License.
 package policy
 
 import (
-	"time"
-
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/mbdomain"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy/config"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy/plan"
@@ -52,13 +50,16 @@ func getReservationPlan(domain *mbdomain.MBDomain, preemptingNodes []int) *plan.
 	}
 }
 
-func (p preemptDomainMBPolicy) GetPlan(domain *mbdomain.MBDomain, currQoSMB map[task.QoSGroup]*monitor.MBQoSGroup) *plan.MBAlloc {
+func (p preemptDomainMBPolicy) GetPlan(totalMB int, domain *mbdomain.MBDomain, currQoSMB map[task.QoSGroup]*monitor.MBQoSGroup) *plan.MBAlloc {
 	preemptingNodes := domain.GetPreemptingNodes()
-	mbToServe := config.ReservedPerNuma * len(preemptingNodes)
+	mbToReserve := config.ReservedPerNuma * len(preemptingNodes)
 	reservationPlan := getReservationPlan(domain, preemptingNodes)
 	general.InfofV(6, "mbm: domain %d hard reservation mb plan: %v", domain.ID, reservationPlan)
 
-	mbAllocatable := config.DomainTotalMB - mbToServe
+	mbAllocatable := totalMB - mbToReserve
+	if mbAllocatable < 0 {
+		mbAllocatable = 0
+	}
 	allocatablePlan := p.qosMBPolicy.GetPlan(mbAllocatable, currQoSMB, false)
 
 	return plan.Merge(reservationPlan, allocatablePlan)
@@ -70,8 +71,8 @@ func newPreemptDomainMBPolicy(chainedPolicy qospolicy.QoSMBPolicy) DomainMBPolic
 	}
 }
 
-func NewDefaultPreemptDomainMBPolicy(incubationInterval time.Duration) DomainMBPolicy {
+func NewDefaultPreemptDomainMBPolicy() DomainMBPolicy {
 	// since there is admitting socket pod, the qos policy is {dedicated, shared_50, system} -> {shared_30}
-	qosMBPolicy := qospolicy.BuildFullyChainedQoSPolicy(incubationInterval)
+	qosMBPolicy := qospolicy.BuildFullyChainedQoSPolicy()
 	return newPreemptDomainMBPolicy(qosMBPolicy)
 }
