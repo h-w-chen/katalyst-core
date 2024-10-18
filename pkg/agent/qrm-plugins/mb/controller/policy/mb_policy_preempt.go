@@ -17,6 +17,8 @@ limitations under the License.
 package policy
 
 import (
+	"time"
+
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/mbdomain"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy/config"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy/plan"
@@ -68,8 +70,8 @@ func newPreemptDomainMBPolicy(chainedPolicy qospolicy.QoSMBPolicy) DomainMBPolic
 	}
 }
 
-func NewDefaultPreemptDomainMBPolicy() DomainMBPolicy {
+func NewDefaultPreemptDomainMBPolicy(incubationInterval time.Duration) DomainMBPolicy {
 	// since there is admitting socket pod, the qos policy is {dedicated, shared_50, system} -> {shared_30}
-	qosMBPolicy := qospolicy.BuildFullyChainedQoSPolicy()
+	qosMBPolicy := qospolicy.BuildFullyChainedQoSPolicy(incubationInterval)
 	return newPreemptDomainMBPolicy(qosMBPolicy)
 }
