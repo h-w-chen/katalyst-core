@@ -21,6 +21,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"k8s.io/apimachinery/pkg/util/sets"
 
@@ -39,6 +40,8 @@ type MBDomain struct {
 	// numa nodes that will be assigned to dedicated pods that still are in Admit state
 	PreemptyNodes sets.Int
 	ccdIncubated  IncubatedCCDs
+
+	incubationInterval time.Duration
 }
 
 func (m *MBDomain) String() string {
@@ -56,6 +59,17 @@ func (m *MBDomain) String() string {
 	}
 
 	return sb.String()
+}
+
+func (m *MBDomain) startIncubation(ccds sets.Int) {
+	m.rwLock.Lock()
+	defer m.rwLock.Unlock()
+
+	for _, ccd := range m.CCDs {
+		if ccds.Has(ccd) {
+			m.ccdIncubated[ccd] = time.Now().Add(m.incubationInterval)
+		}
+	}
 }
 
 func (m *MBDomain) PreemptNodes(nodes []int) {
@@ -107,18 +121,27 @@ type MBDomainManager struct {
 	Domains map[int]*MBDomain
 }
 
-func NewMBDomainManager(dieTopology *machine.DieTopology) *MBDomainManager {
+func (m *MBDomainManager) StartIncubation(ccds []int) {
+	dict := sets.NewInt(ccds...)
+	for _, domain := range m.Domains {
+		domain.startIncubation(dict)
+	}
+}
+
+func NewMBDomainManager(dieTopology *machine.DieTopology, incubationInterval time.Duration) *MBDomainManager {
 	manager := &MBDomainManager{
 		Domains: make(map[int]*MBDomain),
 	}
 
 	for packageID := 0; packageID < dieTopology.Packages; packageID++ {
 		mbDomain := &MBDomain{
-			ID:            packageID,
-			NumaNodes:     dieTopology.NUMAsInPackage[packageID],
-			CCDNode:       make(map[int]int),
-			NodeCCDs:      make(map[int][]int),
-			PreemptyNodes: make(sets.Int),
+			ID:                 packageID,
+			NumaNodes:          dieTopology.NUMAsInPackage[packageID],
+			CCDNode:            make(map[int]int),
+			NodeCCDs:           make(map[int][]int),
+			PreemptyNodes:      make(sets.Int),
+			ccdIncubated:       make(IncubatedCCDs),
+			incubationInterval: incubationInterval,
 		}
 
 		for node, ccds := range dieTopology.DiesInNuma {

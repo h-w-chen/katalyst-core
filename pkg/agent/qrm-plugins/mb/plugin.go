@@ -53,8 +53,10 @@ func (c *plugin) Start() error {
 		return errors.New("mbm: not virtual numa; no need to dynamically manage the memory bandwidth")
 	}
 
+	domainManager := mbdomain.NewMBDomainManager(c.dieTopology, c.incubationInterval)
+
 	var err error
-	podMBMonitor, err := monitor.NewDefaultMBMonitor(c.dieTopology.DiesInNuma, c.dieTopology.CPUsInDie)
+	podMBMonitor, err := monitor.NewDefaultMBMonitor(c.dieTopology.DiesInNuma, c.dieTopology.CPUsInDie, domainManager)
 	if err != nil {
 		return errors.Wrap(err, "mbm: failed to create default mb monitor")
 	}
@@ -64,7 +66,6 @@ func (c *plugin) Start() error {
 		return errors.Wrap(err, "mbm: failed to create mb plan allocator")
 	}
 
-	domainManager := mbdomain.NewMBDomainManager(c.dieTopology)
 	domainPolicy, err := policy.NewDefaultDomainMBPolicy(c.incubationInterval)
 	if err != nil {
 		return errors.Wrap(err, "mbm: failed to create domain manager")
