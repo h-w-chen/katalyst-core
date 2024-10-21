@@ -49,6 +49,7 @@ func (c *plugin) Start() error {
 	general.InfofV(6, "mbm: mb incubation interval %v", c.incubationInterval)
 	general.InfofV(6, "mbm: numa-CCD-cpu topology: \n%s", c.dieTopology)
 
+	// todo: NOT to return error (to crash explicitly); consider downgrade service
 	if !c.dieTopology.FakeNUMAEnabled {
 		return errors.New("mbm: not virtual numa; no need to dynamically manage the memory bandwidth")
 	}

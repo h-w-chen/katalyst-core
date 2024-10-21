@@ -102,6 +102,7 @@ func (m *manager) RefreshTasks() error {
 		if err != nil {
 			// ok to ignore error; hopefully next iteration will rectify itself
 			general.Errorf("mbm: failed to create task for pod %s of qos level %s: %v", podUID, qos, err)
+			continue
 		}
 
 		// new dedicated QoS task shall be in incubation

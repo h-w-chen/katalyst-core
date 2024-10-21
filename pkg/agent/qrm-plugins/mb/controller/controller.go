@@ -20,6 +20,7 @@ import (
 	"context"
 	"time"
 
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/allocator"
@@ -27,6 +28,7 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy/config"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
 )
 
@@ -63,7 +65,11 @@ func (c *Controller) run(ctx context.Context) {
 	general.InfofV(6, "mbm: mb usage summary: %v", monitor.DisplayMBSummary(qosCCDMB))
 
 	for i, domain := range c.domainManager.Domains {
-		mbAlloc := c.policy.GetPlan(config.DomainTotalMB, domain, qosCCDMB)
+		// we only care about qosCCDMB manageable by the domain
+		applicableQoSCCDMB := getApplicableQoSCCDMB(domain, qosCCDMB)
+		general.InfofV(6, "mbm: domain %d mb stat: %#v", i, applicableQoSCCDMB)
+
+		mbAlloc := c.policy.GetPlan(config.DomainTotalMB, domain, applicableQoSCCDMB)
 		general.InfofV(6, "mbm: domain %d mb alloc plan: %v", i, mbAlloc)
 
 		if err := c.mbPlanAllocator.Allocate(mbAlloc); err != nil {
@@ -88,4 +94,29 @@ func New(podMBMonitor monitor.MBMonitor, mbPlanAllocator allocator.PlanAllocator
 		domainManager:   domainManager,
 		policy:          policy,
 	}, nil
+}
+
+func getApplicableQoSCCDMB(domain *mbdomain.MBDomain, qosccdmb map[task.QoSGroup]*monitor.MBQoSGroup) map[task.QoSGroup]*monitor.MBQoSGroup {
+	result := make(map[task.QoSGroup]*monitor.MBQoSGroup)
+
+	for qos, mbQosGroup := range qosccdmb {
+		for ccd, _ := range mbQosGroup.CCDs {
+			if _, ok := mbQosGroup.CCDMB[ccd]; !ok {
+				// no ccd-mb stat; skip it
+				continue
+			}
+			if _, ok := domain.CCDNode[ccd]; ok {
+				if _, ok := result[qos]; !ok {
+					result[qos] = &monitor.MBQoSGroup{
+						CCDs:  make(sets.Int),
+						CCDMB: make(map[int]*monitor.MBData),
+					}
+				}
+				result[qos].CCDs.Insert(ccd)
+				result[qos].CCDMB[ccd] = qosccdmb[qos].CCDMB[ccd]
+			}
+		}
+	}
+
+	return result
 }
