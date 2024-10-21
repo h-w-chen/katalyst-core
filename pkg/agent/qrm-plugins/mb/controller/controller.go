@@ -73,7 +73,7 @@ func (c *Controller) run(ctx context.Context) {
 		general.InfofV(6, "mbm: domain %d mb alloc plan: %v", i, mbAlloc)
 
 		if err := c.mbPlanAllocator.Allocate(mbAlloc); err != nil {
-			general.Errorf("mbm: failed to allocate mb plan for domain %d", i)
+			general.Errorf("mbm: failed to allocate mb plan for domain %d: %v", i, err)
 		}
 	}
 }
