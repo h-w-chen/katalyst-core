@@ -18,15 +18,11 @@ package mbdomain
 
 import (
 	"fmt"
-	"sort"
 	"strings"
 	"sync"
 	"time"
 
 	"k8s.io/apimachinery/pkg/util/sets"
-
-	"github.com/kubewharf/katalyst-core/pkg/util/general"
-	"github.com/kubewharf/katalyst-core/pkg/util/machine"
 )
 
 type MBDomain struct {
@@ -115,53 +111,4 @@ func (m *MBDomain) CloneIncubates() IncubatedCCDs {
 	}
 
 	return clone
-}
-
-type MBDomainManager struct {
-	Domains map[int]*MBDomain
-}
-
-func (m *MBDomainManager) StartIncubation(ccds []int) {
-	dict := sets.NewInt(ccds...)
-	for _, domain := range m.Domains {
-		domain.startIncubation(dict)
-	}
-}
-
-func NewMBDomainManager(dieTopology *machine.DieTopology, incubationInterval time.Duration) *MBDomainManager {
-	manager := &MBDomainManager{
-		Domains: make(map[int]*MBDomain),
-	}
-
-	for packageID := 0; packageID < dieTopology.Packages; packageID++ {
-		mbDomain := &MBDomain{
-			ID:                 packageID,
-			NumaNodes:          dieTopology.NUMAsInPackage[packageID],
-			CCDNode:            make(map[int]int),
-			NodeCCDs:           make(map[int][]int),
-			PreemptyNodes:      make(sets.Int),
-			ccdIncubated:       make(IncubatedCCDs),
-			incubationInterval: incubationInterval,
-		}
-
-		for node, ccds := range dieTopology.DiesInNuma {
-			for ccd, _ := range ccds {
-				mbDomain.CCDNode[ccd] = node
-				mbDomain.NodeCCDs[node] = append(mbDomain.NodeCCDs[node], ccd)
-				mbDomain.CCDs = append(mbDomain.CCDs, ccd)
-			}
-			sort.Slice(mbDomain.NodeCCDs[node], func(i, j int) bool {
-				return mbDomain.NodeCCDs[node][i] < mbDomain.NodeCCDs[node][j]
-			})
-		}
-
-		sort.Slice(mbDomain.CCDs, func(i, j int) bool {
-			return mbDomain.CCDs[i] < mbDomain.CCDs[j]
-		})
-
-		manager.Domains[packageID] = mbDomain
-		general.InfofV(6, "mbm: %s", mbDomain.String())
-	}
-
-	return manager
 }
