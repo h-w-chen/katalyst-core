@@ -31,6 +31,7 @@ type MBDomainManager struct {
 }
 
 func (m MBDomainManager) StartIncubation(ccds []int) {
+	general.InfofV(6, "mbm: need to incubate CCD %v from %v", ccds, time.Now())
 	dict := sets.NewInt(ccds...)
 	for _, domain := range m.Domains {
 		domain.startIncubation(dict)

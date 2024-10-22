@@ -24,6 +24,7 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy/plan"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
+	"github.com/kubewharf/katalyst-core/pkg/util/general"
 )
 
 type DomainMBPolicy interface {
@@ -63,7 +64,10 @@ func (d domainMBPolicy) GetPlan(totalMB int, domain *mbdomain.MBDomain, currQoSM
 	// special care need to take to ensure they have no less than the reserved mb
 	// by subtracting the mb for incubation
 	domain.CleanseIncubates()
-	availableMB := totalMB - calcResvForIncubation(domain.CloneIncubates(), currQoSMB)
+	mbForIncubation := calcResvForIncubation(domain.CloneIncubates(), currQoSMB)
+	general.InfofV(6, "mbm: domain %v reserve mb for incubation %d", domain.ID, mbForIncubation)
+
+	availableMB := totalMB - mbForIncubation
 	if availableMB < 0 {
 		availableMB = 0
 	}
