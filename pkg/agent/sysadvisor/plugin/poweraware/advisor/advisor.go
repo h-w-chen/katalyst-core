@@ -103,8 +103,7 @@ func (p *powerAwareAdvisor) Run(ctx context.Context) {
 		return
 	}
 
-	defer p.stop()
-	defer p.powerReader.Cleanup()
+	defer p.cleanup()
 	defer p.powerCapper.Reset()
 
 	wait.Until(func() { p.run(ctx) }, intervalSpecFetch, ctx.Done())
@@ -112,7 +111,8 @@ func (p *powerAwareAdvisor) Run(ctx context.Context) {
 	general.Infof("pap: advisor Run exited")
 }
 
-func (p *powerAwareAdvisor) stop() {
+func (p *powerAwareAdvisor) cleanup() {
+	p.powerReader.Cleanup()
 	if err := p.podEvictor.Stop(); err != nil {
 		general.Errorf("pap: failed to stop power pod evictor: %v", err)
 	}
