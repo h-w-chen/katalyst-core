@@ -109,10 +109,10 @@ func NewPowerAwarePlugin(
 		powerCapper,
 	)
 
-	return newPluginWithController(pluginName, conf, powerAdvisor)
+	return newPluginWithAdvisor(pluginName, conf, powerAdvisor)
 }
 
-func newPluginWithController(pluginName string, conf *config.Configuration, advisor advisor.PowerAwareAdvisor) (plugin.SysAdvisorPlugin, error) {
+func newPluginWithAdvisor(pluginName string, conf *config.Configuration, advisor advisor.PowerAwareAdvisor) (plugin.SysAdvisorPlugin, error) {
 	return &powerAwarePlugin{
 		name:    pluginName,
 		dryRun:  conf.PowerAwarePluginConfiguration.DryRun,

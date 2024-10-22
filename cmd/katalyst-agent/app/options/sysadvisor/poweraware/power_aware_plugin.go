@@ -27,7 +27,7 @@ type PowerAwarePluginOptions struct {
 	DisablePowerCapping              bool
 	DisablePowerPressureEvict        bool
 	PowerCappingAdvisorSocketAbsPath string
-	annotationKeyPrefix              string
+	AnnotationKeyPrefix              string
 }
 
 func (p *PowerAwarePluginOptions) AddFlags(fss *cliflag.NamedFlagSets) {
@@ -36,7 +36,7 @@ func (p *PowerAwarePluginOptions) AddFlags(fss *cliflag.NamedFlagSets) {
 	fs.BoolVar(&p.DisablePowerPressureEvict, "power-pressure-evict-Disabled", p.DisablePowerPressureEvict, "flag for power aware plugin disabling power pressure eviction")
 	fs.BoolVar(&p.DisablePowerCapping, "power-capping-Disabled", p.DisablePowerCapping, "flag for power aware plugin disabling power capping")
 	fs.StringVar(&p.PowerCappingAdvisorSocketAbsPath, "power-capping-advisor-sock-abs-path", p.PowerCappingAdvisorSocketAbsPath, "absolute path of socket file for power capping advisor served in sys-advisor")
-	fs.StringVar(&p.annotationKeyPrefix, "power-aware-annotation-key-prefix", p.annotationKeyPrefix, "prefix of node annotation keys used by power aware plugin")
+	fs.StringVar(&p.AnnotationKeyPrefix, "power-aware-annotation-key-prefix", p.AnnotationKeyPrefix, "prefix of node annotation keys used by power aware plugin")
 }
 
 func (p *PowerAwarePluginOptions) ApplyTo(o *poweraware.PowerAwarePluginConfiguration) error {
@@ -44,7 +44,7 @@ func (p *PowerAwarePluginOptions) ApplyTo(o *poweraware.PowerAwarePluginConfigur
 	o.DisablePowerPressureEvict = p.DisablePowerPressureEvict
 	o.DisablePowerCapping = p.DisablePowerCapping
 	o.PowerCappingAdvisorSocketAbsPath = p.PowerCappingAdvisorSocketAbsPath
-	o.AnnotationKeyPrefix = p.annotationKeyPrefix
+	o.AnnotationKeyPrefix = p.AnnotationKeyPrefix
 
 	return nil
 }
