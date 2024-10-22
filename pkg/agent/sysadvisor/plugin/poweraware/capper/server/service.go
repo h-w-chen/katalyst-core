@@ -46,13 +46,34 @@ const (
 
 type powerCapService struct {
 	sync.Mutex
+	started        bool
 	capInstruction *capper.CapInstruction
 	notify         *fanoutNotifier
 	emitter        metrics.MetricEmitter
 	grpcServer     *grpcServer
 }
 
+func (p *powerCapService) Stop() error {
+	p.Lock()
+	defer p.Unlock()
+	if !p.started {
+		return nil
+	}
+
+	p.started = false
+	p.grpcServer.server.Stop()
+	return nil
+}
+
 func (p *powerCapService) Start() error {
+	p.Lock()
+	defer p.Unlock()
+
+	if p.started {
+		return nil
+	}
+
+	p.started = true
 	p.grpcServer.Run()
 	return nil
 }
@@ -126,6 +147,11 @@ func (p *powerCapService) Reset() {
 	p.Lock()
 	defer p.Unlock()
 
+	if !p.started {
+		general.Warningf("pap: power capping service is unavailable")
+		return
+	}
+
 	p.capInstruction = capper.PowerCapReset
 	p.notify.Notify()
 }
@@ -153,6 +179,11 @@ func (p *powerCapService) Cap(ctx context.Context, targetWatts, currWatt int) {
 
 	p.Lock()
 	defer p.Unlock()
+
+	if !p.started {
+		general.Warningf("pap: power capping service is unavailable")
+		return
+	}
 
 	p.capInstruction = capInst
 	p.notify.Notify()

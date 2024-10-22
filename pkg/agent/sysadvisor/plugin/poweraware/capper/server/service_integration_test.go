@@ -78,6 +78,7 @@ func Test_powerCapAdvisorPluginServer_Cap_Client_Recv(t *testing.T) {
 	svc := newPowerCapService()
 	baseServer := grpc.NewServer()
 	advisorsvc.RegisterAdvisorServiceServer(baseServer, svc)
+	svc.started = true
 	go func() {
 		if err := baseServer.Serve(lis); err != nil {
 			fmt.Printf("error serving server: %v/n", err)
