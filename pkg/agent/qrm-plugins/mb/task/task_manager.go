@@ -107,6 +107,7 @@ func (m *manager) RefreshTasks() error {
 
 		// new dedicated QoS task shall be in incubation
 		if qos == QoSGroupDedicated {
+			general.InfofV(6, "mbm: task %s qos %v just created", podUID, qos)
 			m.domainManager.StartIncubation(task.CCDs)
 		}
 	}

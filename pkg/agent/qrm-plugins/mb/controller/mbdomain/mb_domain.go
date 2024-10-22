@@ -95,7 +95,7 @@ func (m *MBDomain) CleanseIncubates() {
 	m.rwLock.Unlock()
 
 	for ccd, v := range m.ccdIncubated {
-		if isIncubated(v) {
+		if !isIncubated(v) {
 			delete(m.ccdIncubated, ccd)
 		}
 	}
