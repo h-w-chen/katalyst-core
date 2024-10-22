@@ -43,6 +43,7 @@ func setupGrpcServer(ctx context.Context) (evictor.PodEvictor, evictionv1apha1.E
 	server := &powerPressureEvictServer{}
 	baseServer := grpc.NewServer()
 	evictionv1apha1.RegisterEvictionPluginServer(baseServer, server)
+	server.started = true
 	go func() {
 		if err := baseServer.Serve(lis); err != nil {
 			fmt.Printf("error serving server: %v/n", err)

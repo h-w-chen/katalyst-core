@@ -40,8 +40,11 @@ const (
 	evictReason                         = "host under power pressure"
 )
 
+var errPowerPressureEvictionPluginUnavailable = errors.New("power pressure eviction plugin is unavailable")
+
 type powerPressureEvictServer struct {
 	mutex   sync.RWMutex
+	started bool
 	evicts  map[types.UID]*v1.Pod
 	service *skeleton.PluginRegistrationWrapper
 }
@@ -60,6 +63,10 @@ func (p *powerPressureEvictServer) reset(ctx context.Context) {
 func (p *powerPressureEvictServer) Evict(ctx context.Context, pods []*v1.Pod) error {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
+
+	if !p.started {
+		return errPowerPressureEvictionPluginUnavailable
+	}
 
 	// discard pending requests not handled yet; we will provide a new sleet of evict requests anyway
 	p.reset(ctx)
@@ -87,14 +94,32 @@ func (p *powerPressureEvictServer) Name() string {
 }
 
 func (p *powerPressureEvictServer) Start() error {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
+	if p.started {
+		general.InfofV(6, "pap: power pressure eviction server already started")
+		return nil
+	}
+
 	if err := p.service.Start(); err != nil {
 		return errors.Wrap(err, "failed to start power pressure eviction plugin server")
 	}
+	p.started = true
 	return nil
 }
 
 func (p *powerPressureEvictServer) Stop() error {
-	return nil
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
+	if !p.started {
+		general.InfofV(6, "pap: power pressure eviction server already stopped")
+		return nil
+	}
+
+	p.started = false
+	return p.service.Stop()
 }
 
 func (p *powerPressureEvictServer) GetToken(ctx context.Context, empty *pluginapi.Empty) (*pluginapi.GetTokenResponse, error) {

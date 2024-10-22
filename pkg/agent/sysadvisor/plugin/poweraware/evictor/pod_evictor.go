@@ -26,6 +26,7 @@ import (
 type PodEvictor interface {
 	Init() error
 	Start() error
+	Stop() error
 	Evict(ctx context.Context, pods []*v1.Pod) error
 }
 
@@ -33,6 +34,10 @@ type PodEvictor interface {
 // used in unit test, or when eviction feature is disabled
 type noopPodEvictor struct {
 	called int
+}
+
+func (d *noopPodEvictor) Stop() error {
+	return nil
 }
 
 func (d *noopPodEvictor) Start() error {
