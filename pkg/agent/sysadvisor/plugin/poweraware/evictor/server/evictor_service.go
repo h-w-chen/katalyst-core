@@ -149,7 +149,7 @@ func newPowerPressureEvictServer() *powerPressureEvictServer {
 	}
 }
 
-func newPowerPressureEvictService(conf *config.Configuration, emitter metrics.MetricEmitter) (evictor.PodEvictor, error) {
+func NewPowerPressureEvictionPlugin(conf *config.Configuration, emitter metrics.MetricEmitter) (evictor.PodEvictor, error) {
 	plugin := newPowerPressureEvictServer()
 	regWrapper, err := skeleton.NewRegistrationPluginWrapper(plugin,
 		[]string{conf.PluginRegistrationDir}, // unix socket dirs
@@ -160,22 +160,9 @@ func newPowerPressureEvictService(conf *config.Configuration, emitter metrics.Me
 			})...)
 		})
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to register pap power pressure eviction service")
+		return nil, errors.Wrap(err, "failed to register pap power pressure eviction plugin")
 	}
 
 	plugin.service = regWrapper
 	return plugin, nil
-}
-
-func NewPowerPressureEvictionPlugin(conf *config.Configuration, emitter metrics.MetricEmitter) (podEvictor evictor.PodEvictor, err error) {
-	return startPowerPressurePodEvictorService(conf, emitter)
-}
-
-func startPowerPressurePodEvictorService(conf *config.Configuration, emitter metrics.MetricEmitter) (evictor.PodEvictor, error) {
-	podEvictor, err := newPowerPressureEvictService(conf, emitter)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create power pressure eviction plugin server")
-	}
-
-	return podEvictor, nil
 }
