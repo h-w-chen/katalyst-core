@@ -17,7 +17,10 @@ limitations under the License.
 package podadmit
 
 import (
+	"fmt"
 	"net"
+	"os"
+	"path"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -30,7 +33,7 @@ import (
 )
 
 type service struct {
-	sync.Locker
+	sync.Mutex
 	started bool
 
 	admitter pluginapi.ResourcePluginServer
@@ -69,12 +72,18 @@ func (s *service) Stop() error {
 	if s.started {
 		s.started = false
 		s.server.Stop()
+
+		socketFile := path.Join(s.sockPath, "qrm_mb_plugin.sock")
+		if err := os.Remove(socketFile); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("remove %s failed with error: %v", socketFile, err)
+		}
 	}
+
 	return nil
 }
 
 // todo: use skeleton.NewRegistrationPluginWrapper to create service in line with others
-func NewPodAdmitService(qosConfig *generic.QoSConfiguration, domainManager *mbdomain.MBDomainManager, sockPath string) (skeleton.GenericPlugin, error) {
+func NewPodAdmitService(qosConfig *generic.QoSConfiguration, domainManager *mbdomain.MBDomainManager, sockDir string) (skeleton.GenericPlugin, error) {
 	admissionManager := &admitter{
 		qosConfig:     qosConfig,
 		domainManager: domainManager,
@@ -85,6 +94,7 @@ func NewPodAdmitService(qosConfig *generic.QoSConfiguration, domainManager *mbdo
 
 	return &service{
 		admitter: admissionManager,
-		sockPath: sockPath,
+		sockPath: path.Join(sockDir, "qrm_mb_plugin.sock"),
+		server:   server,
 	}, nil
 }

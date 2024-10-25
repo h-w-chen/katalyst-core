@@ -21,6 +21,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/kubewharf/katalyst-api/pkg/plugins/skeleton"
+
 	"github.com/kubewharf/katalyst-core/cmd/katalyst-agent/app/agent"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/allocator"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller"
@@ -42,11 +44,12 @@ type plugin struct {
 	dieTopology        *machine.DieTopology
 	incubationInterval time.Duration
 
-	mbController *controller.Controller
+	mbController    *controller.Controller
+	podAdmitService skeleton.GenericPlugin
 }
 
 func (p *plugin) Name() string {
-	return "mb_plugin"
+	return "qrm_mb_plugin"
 }
 
 func (p *plugin) Start() error {
@@ -82,11 +85,11 @@ func (p *plugin) Start() error {
 		return errors.Wrap(err, "mbm: failed to create mb controller")
 	}
 
-	podAdmitService, err := podadmit.NewPodAdmitService(p.qosConfig, domainManager, p.qrmPluginSocketDir)
+	p.podAdmitService, err = podadmit.NewPodAdmitService(p.qosConfig, domainManager, p.qrmPluginSocketDir)
 	if err != nil {
 		return errors.Wrap(err, "mbm: failed to create pod admit service")
 	}
-	if err := podAdmitService.Start(); err != nil {
+	if err := p.podAdmitService.Start(); err != nil {
 		return errors.Wrap(err, "mbm: failed to start pod admit service")
 	}
 
@@ -119,6 +122,9 @@ func createMBPlanAllocator() (allocator.PlanAllocator, error) {
 }
 
 func (p *plugin) Stop() error {
+	if p.podAdmitService != nil {
+		_ = p.podAdmitService.Stop()
+	}
 	return p.mbController.Stop()
 }
 
