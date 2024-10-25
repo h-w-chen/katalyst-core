@@ -55,7 +55,7 @@ func (p *plugin) Start() error {
 	general.InfofV(6, "mbm: numa-CCD-cpu topology: \n%s", p.dieTopology)
 
 	// todo: NOT to return error (to crash explicitly); consider downgrade service
-	if !c.dieTopology.FakeNUMAEnabled {
+	if !p.dieTopology.FakeNUMAEnabled {
 		return errors.New("mbm: not virtual numa; no need to dynamically manage the memory bandwidth")
 	}
 
