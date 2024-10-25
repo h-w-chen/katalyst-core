@@ -39,7 +39,7 @@ func Test_Pod_Admit_Service_Integration(t *testing.T) {
 
 	lis := bufconn.Listen(1024 * 1024)
 	s := grpc.NewServer()
-	manager := &manager{
+	manager := &admitter{
 		qosConfig:     generic.NewQoSConfiguration(),
 		domainManager: &mbdomain.MBDomainManager{},
 	}

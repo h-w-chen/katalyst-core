@@ -28,13 +28,13 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
 )
 
-type manager struct {
+type admitter struct {
 	pluginapi.UnimplementedResourcePluginServer
 	qosConfig     *generic.QoSConfiguration
 	domainManager *mbdomain.MBDomainManager
 }
 
-func (m manager) GetResourcePluginOptions(context.Context, *pluginapi.Empty) (*pluginapi.ResourcePluginOptions, error) {
+func (m admitter) GetResourcePluginOptions(context.Context, *pluginapi.Empty) (*pluginapi.ResourcePluginOptions, error) {
 	return &pluginapi.ResourcePluginOptions{
 		PreStartRequired:      false,
 		WithTopologyAlignment: true,
@@ -42,7 +42,7 @@ func (m manager) GetResourcePluginOptions(context.Context, *pluginapi.Empty) (*p
 	}, nil
 }
 
-func (m manager) AllocateForPod(ctx context.Context, request *pluginapi.PodResourceRequest) (*pluginapi.PodResourceAllocationResponse, error) {
+func (m admitter) AllocateForPod(ctx context.Context, request *pluginapi.PodResourceRequest) (*pluginapi.PodResourceAllocationResponse, error) {
 	qosLevel, err := m.qosConfig.GetQoSLevel(nil, request.Annotations)
 	if err != nil {
 		return nil, err
@@ -71,4 +71,4 @@ func (m manager) AllocateForPod(ctx context.Context, request *pluginapi.PodResou
 	return resp, nil
 }
 
-var _ pluginapi.ResourcePluginServer = (*manager)(nil)
+var _ pluginapi.ResourcePluginServer = (*admitter)(nil)
