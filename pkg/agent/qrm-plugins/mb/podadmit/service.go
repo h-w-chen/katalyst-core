@@ -25,13 +25,15 @@ import (
 	pluginapi "k8s.io/kubelet/pkg/apis/resourceplugin/v1alpha1"
 
 	"github.com/kubewharf/katalyst-api/pkg/plugins/skeleton"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/mbdomain"
+	"github.com/kubewharf/katalyst-core/pkg/config/generic"
 )
 
 type service struct {
 	sync.Locker
 	started bool
 
-	manager  pluginapi.ResourcePluginServer
+	admitter pluginapi.ResourcePluginServer
 	server   *grpc.Server
 	sockPath string
 }
@@ -71,12 +73,18 @@ func (s *service) Stop() error {
 	return nil
 }
 
-func NewPodAdmitService(manager pluginapi.ResourcePluginServer, sockPath string) (skeleton.GenericPlugin, error) {
+// todo: use skeleton.NewRegistrationPluginWrapper to create service in line with others
+func NewPodAdmitService(qosConfig *generic.QoSConfiguration, domainManager *mbdomain.MBDomainManager, sockPath string) (skeleton.GenericPlugin, error) {
+	admissionManager := &admitter{
+		qosConfig:     qosConfig,
+		domainManager: domainManager,
+	}
+
 	server := grpc.NewServer()
-	pluginapi.RegisterResourcePluginServer(server, manager)
+	pluginapi.RegisterResourcePluginServer(server, admissionManager)
 
 	return &service{
-		manager:  manager,
+		admitter: admissionManager,
 		sockPath: sockPath,
 	}, nil
 }

@@ -46,6 +46,11 @@ type Controller struct {
 	policy        policy.DomainMBPolicy
 }
 
+// ReqToAdjustMB requests controller to start a round of mb adjustment
+func (c *Controller) ReqToAdjustMB() {
+	panic("impl")
+}
+
 func (c *Controller) Run() {
 	general.Infof("mbm: main control loop Run started")
 

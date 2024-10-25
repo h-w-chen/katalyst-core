@@ -23,6 +23,7 @@ import (
 
 	apiconsts "github.com/kubewharf/katalyst-api/pkg/consts"
 
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/mbdomain"
 	"github.com/kubewharf/katalyst-core/pkg/config/generic"
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
@@ -32,6 +33,7 @@ type admitter struct {
 	pluginapi.UnimplementedResourcePluginServer
 	qosConfig     *generic.QoSConfiguration
 	domainManager *mbdomain.MBDomainManager
+	mbController  *controller.Controller
 }
 
 func (m admitter) GetResourcePluginOptions(context.Context, *pluginapi.Empty) (*pluginapi.ResourcePluginOptions, error) {
@@ -53,6 +55,8 @@ func (m admitter) AllocateForPod(ctx context.Context, request *pluginapi.PodReso
 			for _, node := range request.Hint.Nodes {
 				m.domainManager.PreemptNodes([]int{int(node)})
 			}
+			// requests to adjust mb ASAP for new preemption
+			m.mbController.ReqToAdjustMB()
 		}
 	}
 
