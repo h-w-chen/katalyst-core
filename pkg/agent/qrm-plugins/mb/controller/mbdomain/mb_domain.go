@@ -72,7 +72,11 @@ func (m *MBDomain) PreemptNodes(nodes []int) {
 	m.rwLock.Lock()
 	defer m.rwLock.Unlock()
 
-	m.PreemptyNodes.Insert(nodes...)
+	for _, node := range nodes {
+		if _, ok := m.NodeCCDs[node]; ok {
+			m.PreemptyNodes.Insert(node)
+		}
+	}
 }
 
 func (m *MBDomain) UnpreemptNodes(nodes []int) {
