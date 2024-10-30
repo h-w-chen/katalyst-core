@@ -16,15 +16,40 @@ limitations under the License.
 
 package l3pmc
 
-import "github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/writemb"
+import (
+	"fmt"
+	"time"
 
-type writeMBReader struct{}
+	// todo: this is internal repo - move code into out-of-tree qrm plugin of the internal adapter
+	amdutilpkg "code.byted.org/tce/amd-utils/pkg"
+	"code.byted.org/tce/amd-utils/pkg/msr"
 
-func (w writeMBReader) GetMB(ccd int) (int, error) {
-	//TODO implement me
-	panic("implement me by calling amd-utils lib")
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/writemb"
+)
+
+type writeMBReader struct {
+	ccdMonitors map[int]msr.Monitor
 }
 
-func NewWriteMBReader() (writemb.WriteMBReader, error) {
+func (w writeMBReader) GetMB(ccd int) (int, error) {
+	val, err := w.ccdMonitors[ccd].Get()
+	return int(val), err
+}
+
+func NewWriteMBReader(ccdCPUs map[int][]int) (writemb.WriteMBReader, error) {
+	op, _ := amdutilpkg.NewOperation()
+	ccdMonitors := make(map[int]msr.Monitor)
+	for ccd, cpus := range ccdCPUs {
+		if len(cpus) == 0 {
+			return nil, fmt.Errorf("invalid ccd-cpu topology, ccd %d has no cpu", ccd)
+		}
+
+		cpu := cpus[0]
+		monitor, _ := msr.NewL3PMCVictimMonitor(&op, uint32(cpu), amdutilpkg.L3PMCCTL_3, amdutilpkg.L3PMCCTR_3, time.Second*1)
+		// todo: ensure monitor is multi-goroutine safe (in amd-util repo)
+		// todo: put start in Start method enforcing Start/Stop semantic
+		_ = monitor.Start()
+		ccdMonitors[ccd] = monitor
+	}
 	return &writeMBReader{}, nil
 }
