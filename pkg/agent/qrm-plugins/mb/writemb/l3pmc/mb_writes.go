@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/pkg/errors"
+
 	// todo: this is internal repo - move code into out-of-tree qrm plugin of the internal adapter
 	amdutilpkg "code.byted.org/tce/amd-utils/pkg"
 	"code.byted.org/tce/amd-utils/pkg/msr"
@@ -44,12 +46,20 @@ func NewWriteMBReader(ccdCPUs map[int][]int) (writemb.WriteMBReader, error) {
 			return nil, fmt.Errorf("invalid ccd-cpu topology, ccd %d has no cpu", ccd)
 		}
 
+		// each ccd suffices to pick 1 cpu as readings from all its cpus are identical
 		cpu := cpus[0]
-		monitor, _ := msr.NewL3PMCVictimMonitor(&op, uint32(cpu), amdutilpkg.L3PMCCTL_3, amdutilpkg.L3PMCCTR_3, time.Second*1)
-		// todo: ensure monitor is multi-goroutine safe (in amd-util repo)
+		// we choose to use L3PMCCRX_5 here as L3PMCCRX_0 to L3PMCCRX_3 are reserved by others
+		monitor, err := msr.NewL3PMCVictimMonitor(&op, uint32(cpu), amdutilpkg.L3PMCCTL_5, amdutilpkg.L3PMCCTR_5, time.Second*1)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to create monitor of l3pmc victim")
+		}
 		// todo: put start in Start method enforcing Start/Stop semantic
-		_ = monitor.Start()
+		if err := monitor.Start(); err != nil {
+			return nil, errors.Wrap(err, "failed to start monitor of l3pmc victim")
+		}
 		ccdMonitors[ccd] = monitor
 	}
-	return &writeMBReader{}, nil
+	return &writeMBReader{
+		ccdMonitors: ccdMonitors,
+	}, nil
 }
