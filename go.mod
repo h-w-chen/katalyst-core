@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	bou.ke/monkey v1.0.2
-	code.byted.org/tce/amd-utils v0.1.1
+	code.byted.org/tce/amd-utils v0.1.3
 	github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d
 	github.com/cespare/xxhash v1.1.0
 	github.com/cilium/ebpf v0.7.0
