@@ -18,7 +18,7 @@ package podadmit
 
 import (
 	"context"
-
+	v1 "k8s.io/api/core/v1"
 	pluginapi "k8s.io/kubelet/pkg/apis/resourceplugin/v1alpha1"
 
 	apiconsts "github.com/kubewharf/katalyst-api/pkg/consts"
@@ -36,15 +36,22 @@ type admitter struct {
 	mbController  *controller.Controller
 }
 
-func (m admitter) GetResourcePluginOptions(context.Context, *pluginapi.Empty) (*pluginapi.ResourcePluginOptions, error) {
-	return &pluginapi.ResourcePluginOptions{
-		PreStartRequired:      false,
-		WithTopologyAlignment: true,
-		NeedReconcile:         false,
+func (m admitter) GetTopologyAwareResources(ctx context.Context, request *pluginapi.GetTopologyAwareResourcesRequest) (*pluginapi.GetTopologyAwareResourcesResponse, error) {
+	general.InfofV(6, "mbm: pod admit is enquired with topology aware resource")
+	return &pluginapi.GetTopologyAwareResourcesResponse{}, nil
+}
+
+func (m admitter) GetTopologyAwareAllocatableResources(ctx context.Context, request *pluginapi.GetTopologyAwareAllocatableResourcesRequest) (*pluginapi.GetTopologyAwareAllocatableResourcesResponse, error) {
+	general.InfofV(6, "mbm: pod admit is enquired with allocatable resources")
+	return &pluginapi.GetTopologyAwareAllocatableResourcesResponse{
+		AllocatableResources: map[string]*pluginapi.AllocatableTopologyAwareResource{
+			string(v1.ResourceMemory): {},
+		},
 	}, nil
 }
 
-func (m admitter) AllocateForPod(ctx context.Context, request *pluginapi.PodResourceRequest) (*pluginapi.PodResourceAllocationResponse, error) {
+func (m admitter) Allocate(ctx context.Context, request *pluginapi.ResourceRequest) (*pluginapi.ResourceAllocationResponse, error) {
+	general.InfofV(6, "mbm: resource allocate - pod admitting %s/%s, uid %s", request.PodNamespace, request.PodName, request.PodUid)
 	qosLevel, err := m.qosConfig.GetQoSLevel(nil, request.Annotations)
 	if err != nil {
 		return nil, err
@@ -55,24 +62,34 @@ func (m admitter) AllocateForPod(ctx context.Context, request *pluginapi.PodReso
 			for _, node := range request.Hint.Nodes {
 				m.domainManager.PreemptNodes([]int{int(node)})
 			}
+			general.InfofV(6, "mbm: identified socket pod %s/%s", request.PodNamespace, request.PodName)
 			// requests to adjust mb ASAP for new preemption
 			m.mbController.ReqToAdjustMB()
 		}
 	}
 
-	resp := &pluginapi.PodResourceAllocationResponse{
-		PodUid:           request.PodUid,
-		PodNamespace:     request.PodNamespace,
-		PodName:          request.PodName,
-		PodRole:          request.PodRole,
-		PodType:          request.PodType,
-		ResourceName:     "mb-pod-admit",
-		AllocationResult: nil,
-		Labels:           general.DeepCopyMap(request.Labels),
-		Annotations:      general.DeepCopyMap(request.Annotations),
+	resp := &pluginapi.ResourceAllocationResponse{
+		//PodUid:           request.PodUid,
+		//PodNamespace:     request.PodNamespace,
+		//PodName:          request.PodName,
+		//PodRole:          request.PodRole,
+		//PodType:          request.PodType,
+		//ResourceName:     "mb-pod-admit",
+		//AllocationResult: nil,
+		//Labels:           general.DeepCopyMap(request.Labels),
+		//Annotations:      general.DeepCopyMap(request.Annotations),
 	}
 
 	return resp, nil
+}
+
+func (m admitter) GetResourcePluginOptions(context.Context, *pluginapi.Empty) (*pluginapi.ResourcePluginOptions, error) {
+	general.InfofV(6, "mbm: pod admit is enquired with options")
+	return &pluginapi.ResourcePluginOptions{
+		PreStartRequired:      false,
+		WithTopologyAlignment: false,
+		NeedReconcile:         false,
+	}, nil
 }
 
 var _ pluginapi.ResourcePluginServer = (*admitter)(nil)

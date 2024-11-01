@@ -27,10 +27,17 @@ import (
 	"google.golang.org/grpc"
 	pluginapi "k8s.io/kubelet/pkg/apis/resourceplugin/v1alpha1"
 
+	"github.com/kubewharf/katalyst-api/pkg/plugins/registration"
+	watcherapi "k8s.io/kubelet/pkg/apis/pluginregistration/v1"
+	qrmpluginapi "k8s.io/kubelet/pkg/apis/resourceplugin/v1alpha1"
+
 	"github.com/kubewharf/katalyst-api/pkg/plugins/skeleton"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/mbdomain"
 	"github.com/kubewharf/katalyst-core/pkg/config/generic"
 )
+
+const mbResourcePluginSocketBaseName = "qrm_mb_plugin.sock"
 
 type service struct {
 	sync.Mutex
@@ -38,7 +45,9 @@ type service struct {
 
 	admitter pluginapi.ResourcePluginServer
 	server   *grpc.Server
-	sockPath string
+
+	// there are various places that kubelet may probe at for historical reason
+	sockPaths []string
 }
 
 func (s *service) Name() string {
@@ -53,14 +62,26 @@ func (s *service) Start() error {
 	}
 
 	s.started = true
-	socket, err := net.Listen("unix", s.sockPath)
-	if err != nil {
-		return errors.Wrap(err, "failed to start grpc server")
+	for _, sockPath := range s.sockPaths {
+		socket, err := net.Listen("unix", sockPath)
+		if err != nil {
+			return errors.Wrap(err, "failed to start grpc server")
+		}
+
+		go func() {
+			_ = s.server.Serve(socket)
+		}()
 	}
 
-	go func() {
-		_ = s.server.Serve(socket)
-	}()
+	return nil
+}
+
+func cleanupFiles(files []string) error {
+	for _, file := range files {
+		if err := os.Remove(file); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("remove %s failed with error: %v", file, err)
+		}
+	}
 
 	return nil
 }
@@ -73,9 +94,8 @@ func (s *service) Stop() error {
 		s.started = false
 		s.server.Stop()
 
-		socketFile := path.Join(s.sockPath, "qrm_mb_plugin.sock")
-		if err := os.Remove(socketFile); err != nil && !os.IsNotExist(err) {
-			return fmt.Errorf("remove %s failed with error: %v", socketFile, err)
+		if err := cleanupFiles(s.sockPaths); err != nil {
+			return errors.Wrap(err, "failed to stop pod admitter service")
 		}
 	}
 
@@ -83,18 +103,31 @@ func (s *service) Stop() error {
 }
 
 // todo: use skeleton.NewRegistrationPluginWrapper to create service in line with others
-func NewPodAdmitService(qosConfig *generic.QoSConfiguration, domainManager *mbdomain.MBDomainManager, sockDir string) (skeleton.GenericPlugin, error) {
+func NewPodAdmitService(qosConfig *generic.QoSConfiguration,
+	domainManager *mbdomain.MBDomainManager, mbController *controller.Controller, sockDirs []string,
+) (skeleton.GenericPlugin, error) {
 	admissionManager := &admitter{
-		qosConfig:     qosConfig,
-		domainManager: domainManager,
+		UnimplementedResourcePluginServer: pluginapi.UnimplementedResourcePluginServer{},
+		qosConfig:                         qosConfig,
+		domainManager:                     domainManager,
+		mbController:                      mbController,
 	}
 
 	server := grpc.NewServer()
 	pluginapi.RegisterResourcePluginServer(server, admissionManager)
 
+	// setup registration service for kubelet to probe
+	regSvc := registration.NewRegistrationHandler(watcherapi.ResourcePlugin, "memory", []string{qrmpluginapi.Version})
+	watcherapi.RegisterRegistrationServer(server, regSvc)
+
+	sockPaths := make([]string, len(sockDirs))
+	for i, dir := range sockDirs {
+		sockPaths[i] = path.Join(dir, mbResourcePluginSocketBaseName)
+	}
+
 	return &service{
-		admitter: admissionManager,
-		sockPath: path.Join(sockDir, "qrm_mb_plugin.sock"),
-		server:   server,
+		admitter:  admissionManager,
+		sockPaths: sockPaths,
+		server:    server,
 	}, nil
 }

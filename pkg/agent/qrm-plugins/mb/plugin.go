@@ -38,8 +38,8 @@ import (
 )
 
 type plugin struct {
-	qosConfig          *generic.QoSConfiguration
-	qrmPluginSocketDir string
+	qosConfig              *generic.QoSConfiguration
+	pluginRegistrationDirs []string
 
 	dieTopology        *machine.DieTopology
 	incubationInterval time.Duration
@@ -85,7 +85,7 @@ func (p *plugin) Start() error {
 		return errors.Wrap(err, "mbm: failed to create mb controller")
 	}
 
-	p.podAdmitService, err = podadmit.NewPodAdmitService(p.qosConfig, domainManager, p.qrmPluginSocketDir)
+	p.podAdmitService, err = podadmit.NewPodAdmitService(p.qosConfig, domainManager, p.mbController, p.pluginRegistrationDirs)
 	if err != nil {
 		return errors.Wrap(err, "mbm: failed to create pod admit service")
 	}
@@ -132,10 +132,10 @@ func NewComponent(agentCtx *agent.GenericContext, conf *config.Configuration,
 	_ interface{}, agentName string,
 ) (bool, agent.Component, error) {
 	plugin := &plugin{
-		qosConfig:          conf.QoSConfiguration,
-		qrmPluginSocketDir: conf.QRMPluginSocketDirs[0], // 1 socket file suffices
-		dieTopology:        agentCtx.DieTopology,
-		incubationInterval: conf.IncubationInterval,
+		qosConfig:              conf.QoSConfiguration,
+		pluginRegistrationDirs: conf.QRMPluginSocketDirs,
+		dieTopology:            agentCtx.DieTopology,
+		incubationInterval:     conf.IncubationInterval,
 	}
 
 	return true, &agent.PluginWrapper{GenericPlugin: plugin}, nil
