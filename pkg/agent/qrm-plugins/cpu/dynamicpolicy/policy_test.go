@@ -4226,7 +4226,7 @@ func TestAllocateByQoSAwareServerListAndWatchResp(t *testing.T) {
 						//		Annotations: map[string]string{
 						//			consts.PodAnnotationQoSLevelKey: consts.PodAnnotationQoSLevelReclaimedCores,
 						//		},
-						//		QoSGroup:        consts.PodAnnotationQoSLevelReclaimedCores,
+						//		QoSLevel:        consts.PodAnnotationQoSLevelReclaimedCores,
 						//		RequestQuantity: 2,
 						//	},
 						//},

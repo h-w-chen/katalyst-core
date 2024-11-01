@@ -39,7 +39,6 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/metaserver/agent/node"
 	"github.com/kubewharf/katalyst-core/pkg/metaserver/agent/pod"
 	"github.com/kubewharf/katalyst-core/pkg/metrics"
-	"github.com/kubewharf/katalyst-core/pkg/util/general"
 	"github.com/kubewharf/katalyst-core/pkg/util/machine"
 )
 
@@ -79,7 +78,6 @@ func NewMetaAgent(conf *config.Configuration, clientSet *client.GenericClientSet
 		return nil, err
 	}
 
-	general.InfofV(6, "mbm: NewMetaAgent getting machine info")
 	machineInfo, err := machine.GetKatalystMachineInfo(conf.BaseConfiguration.MachineInfoConfiguration)
 	if err != nil {
 		return nil, err
