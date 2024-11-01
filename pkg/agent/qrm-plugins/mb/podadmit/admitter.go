@@ -18,10 +18,12 @@ package podadmit
 
 import (
 	"context"
+	"fmt"
+
 	v1 "k8s.io/api/core/v1"
-	pluginapi "k8s.io/kubelet/pkg/apis/resourceplugin/v1alpha1"
 
 	apiconsts "github.com/kubewharf/katalyst-api/pkg/consts"
+	pluginapi "k8s.io/kubelet/pkg/apis/resourceplugin/v1alpha1"
 
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/mbdomain"
@@ -50,19 +52,26 @@ func (m admitter) GetTopologyAwareAllocatableResources(ctx context.Context, requ
 	}, nil
 }
 
-func (m admitter) Allocate(ctx context.Context, request *pluginapi.ResourceRequest) (*pluginapi.ResourceAllocationResponse, error) {
-	general.InfofV(6, "mbm: resource allocate - pod admitting %s/%s, uid %s", request.PodNamespace, request.PodName, request.PodUid)
-	qosLevel, err := m.qosConfig.GetQoSLevel(nil, request.Annotations)
+func (m admitter) Allocate(ctx context.Context, req *pluginapi.ResourceRequest) (*pluginapi.ResourceAllocationResponse, error) {
+	general.InfofV(6, "mbm: resource allocate - pod admitting %s/%s, uid %s", req.PodNamespace, req.PodName, req.PodUid)
+	qosLevel, err := m.qosConfig.GetQoSLevel(nil, req.Annotations)
 	if err != nil {
 		return nil, err
 	}
 
-	if qosLevel == apiconsts.PodAnnotationQoSLevelDedicatedCores {
-		if request.Hint != nil {
-			for _, node := range request.Hint.Nodes {
+	if req.ContainerType == pluginapi.ContainerType_SIDECAR {
+		// sidecar container admit after main container
+		general.InfofV(6, "mbm: resource allocate sidecar container - pod admitting %s/%s, uid %s", req.PodNamespace, req.PodName, req.PodUid)
+	} else if qosLevel == apiconsts.PodAnnotationQoSLevelDedicatedCores {
+		if req.Hint != nil {
+			if len(req.Hint.Nodes) == 0 {
+				return nil, fmt.Errorf("hint is empty")
+			}
+
+			for _, node := range req.Hint.Nodes {
 				m.domainManager.PreemptNodes([]int{int(node)})
 			}
-			general.InfofV(6, "mbm: identified socket pod %s/%s", request.PodNamespace, request.PodName)
+			general.InfofV(6, "mbm: identified socket pod %s/%s", req.PodNamespace, req.PodName)
 			// requests to adjust mb ASAP for new preemption
 			m.mbController.ReqToAdjustMB()
 		}
