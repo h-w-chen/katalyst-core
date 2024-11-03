@@ -27,6 +27,7 @@ import (
 
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/mbdomain"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
 	"github.com/kubewharf/katalyst-core/pkg/config/generic"
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
 )
@@ -36,6 +37,7 @@ type admitter struct {
 	qosConfig     *generic.QoSConfiguration
 	domainManager *mbdomain.MBDomainManager
 	mbController  *controller.Controller
+	taskManager   task.Manager
 }
 
 func (m admitter) GetTopologyAwareResources(ctx context.Context, request *pluginapi.GetTopologyAwareResourcesRequest) (*pluginapi.GetTopologyAwareResourcesResponse, error) {
@@ -68,10 +70,17 @@ func (m admitter) Allocate(ctx context.Context, req *pluginapi.ResourceRequest) 
 				return nil, fmt.Errorf("hint is empty")
 			}
 
+			// check numa nodes' in-use state; only preempt those not-in-use yet
+			inUses := m.taskManager.GetNumaNodesInUse()
 			for _, node := range req.Hint.Nodes {
+				if inUses.Has(int(node)) {
+					continue
+				}
 				m.domainManager.PreemptNodes([]int{int(node)})
 			}
 			general.InfofV(6, "mbm: identified socket pod %s/%s", req.PodNamespace, req.PodName)
+
+			// todo: only request if any node been set as pre-empty
 			// requests to adjust mb ASAP for new preemption
 			m.mbController.ReqToAdjustMB()
 		}

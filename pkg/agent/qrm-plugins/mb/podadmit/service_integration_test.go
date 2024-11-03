@@ -57,7 +57,7 @@ func Test_Pod_Admit_Service_Integration(t *testing.T) {
 	dummyQoSConfig := generic.NewQoSConfiguration()
 	dummyDomainManager := &mbdomain.MBDomainManager{}
 	stubController, _ := controller.New(nil, nil, dummyDomainManager, nil)
-	svc, err := NewPodAdmitService(dummyQoSConfig, dummyDomainManager, stubController, []string{"/tmp"})
+	svc, err := NewPodAdmitService(dummyQoSConfig, dummyDomainManager, stubController, nil, []string{"/tmp"})
 	if err != nil {
 		t.Errorf("test error : %v", err)
 		return
