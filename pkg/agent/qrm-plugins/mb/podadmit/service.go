@@ -35,6 +35,7 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/mbdomain"
 	"github.com/kubewharf/katalyst-core/pkg/config/generic"
+	"github.com/kubewharf/katalyst-core/pkg/util/general"
 )
 
 const mbResourcePluginSocketBaseName = "qrm_mb_plugin.sock"
@@ -60,6 +61,8 @@ func (s *service) Start() error {
 	if s.started {
 		return nil
 	}
+
+	_ = cleanupFiles(s.sockPaths)
 
 	s.started = true
 	for _, sockPath := range s.sockPaths {
@@ -91,6 +94,7 @@ func (s *service) Stop() error {
 	defer s.Unlock()
 
 	if s.started {
+		general.Infof("mbm: pod admitter service is stopping...")
 		s.started = false
 		s.server.Stop()
 

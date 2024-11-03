@@ -122,9 +122,14 @@ func createMBPlanAllocator() (allocator.PlanAllocator, error) {
 }
 
 func (p *plugin) Stop() error {
+	// todo: not sure why not being called on ctrl-C ???
+	general.Infof("mbm: mb plugin is stopping...")
 	if p.podAdmitService != nil {
-		_ = p.podAdmitService.Stop()
+		if err := p.podAdmitService.Stop(); err != nil {
+			general.Errorf("mbm: plugin failed to stop pod admitter service: %v", err)
+		}
 	}
+
 	return p.mbController.Stop()
 }
 
