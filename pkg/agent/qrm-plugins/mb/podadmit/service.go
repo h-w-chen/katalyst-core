@@ -34,6 +34,7 @@ import (
 	"github.com/kubewharf/katalyst-api/pkg/plugins/skeleton"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/mbdomain"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
 	"github.com/kubewharf/katalyst-core/pkg/config/generic"
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
 )
@@ -108,13 +109,15 @@ func (s *service) Stop() error {
 
 // todo: use skeleton.NewRegistrationPluginWrapper to create service in line with others
 func NewPodAdmitService(qosConfig *generic.QoSConfiguration,
-	domainManager *mbdomain.MBDomainManager, mbController *controller.Controller, sockDirs []string,
+	domainManager *mbdomain.MBDomainManager, mbController *controller.Controller, taskManager task.Manager,
+	sockDirs []string,
 ) (skeleton.GenericPlugin, error) {
 	admissionManager := &admitter{
 		UnimplementedResourcePluginServer: pluginapi.UnimplementedResourcePluginServer{},
 		qosConfig:                         qosConfig,
 		domainManager:                     domainManager,
 		mbController:                      mbController,
+		taskManager:                       taskManager,
 	}
 
 	server := grpc.NewServer()

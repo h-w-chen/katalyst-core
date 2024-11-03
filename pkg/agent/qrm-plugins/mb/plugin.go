@@ -31,6 +31,8 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/podadmit"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl/state"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
 	"github.com/kubewharf/katalyst-core/pkg/config"
 	"github.com/kubewharf/katalyst-core/pkg/config/generic"
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
@@ -65,7 +67,18 @@ func (p *plugin) Start() error {
 	domainManager := mbdomain.NewMBDomainManager(p.dieTopology, p.incubationInterval)
 
 	var err error
-	podMBMonitor, err := monitor.NewDefaultMBMonitor(p.dieTopology.DiesInNuma, p.dieTopology.CPUsInDie, domainManager)
+
+	dataKeeper, err := state.NewMBRawDataKeeper()
+	if err != nil {
+		return errors.Wrap(err, "failed to create raw data state keeper")
+	}
+
+	taskManager, err := task.New(p.dieTopology.DiesInNuma, p.dieTopology.CPUsInDie, dataKeeper, domainManager)
+	if err != nil {
+		return errors.Wrap(err, "failed to create task manager")
+	}
+
+	podMBMonitor, err := monitor.NewDefaultMBMonitor(p.dieTopology.CPUsInDie, dataKeeper, taskManager, domainManager)
 	if err != nil {
 		return errors.Wrap(err, "mbm: failed to create default mb monitor")
 	}
@@ -85,7 +98,7 @@ func (p *plugin) Start() error {
 		return errors.Wrap(err, "mbm: failed to create mb controller")
 	}
 
-	p.podAdmitService, err = podadmit.NewPodAdmitService(p.qosConfig, domainManager, p.mbController, p.pluginRegistrationDirs)
+	p.podAdmitService, err = podadmit.NewPodAdmitService(p.qosConfig, domainManager, p.mbController, taskManager, p.pluginRegistrationDirs)
 	if err != nil {
 		return errors.Wrap(err, "mbm: failed to create pod admit service")
 	}
