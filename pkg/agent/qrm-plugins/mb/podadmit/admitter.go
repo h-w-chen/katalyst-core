@@ -70,19 +70,25 @@ func (m admitter) Allocate(ctx context.Context, req *pluginapi.ResourceRequest) 
 				return nil, fmt.Errorf("hint is empty")
 			}
 
+			general.InfofV(6, "mbm: identified socket pod %s/%s", req.PodNamespace, req.PodName)
+
+			var nodesToPreempt []int
 			// check numa nodes' in-use state; only preempt those not-in-use yet
 			inUses := m.taskManager.GetNumaNodesInUse()
 			for _, node := range req.Hint.Nodes {
 				if inUses.Has(int(node)) {
 					continue
 				}
-				m.domainManager.PreemptNodes([]int{int(node)})
-			}
-			general.InfofV(6, "mbm: identified socket pod %s/%s", req.PodNamespace, req.PodName)
 
-			// todo: only request if any node been set as pre-empty
-			// requests to adjust mb ASAP for new preemption
-			m.mbController.ReqToAdjustMB()
+				nodesToPreempt = append(nodesToPreempt, int(node))
+			}
+
+			if len(nodesToPreempt) > 0 {
+				if m.domainManager.PreemptNodes(nodesToPreempt) {
+					// requests to adjust mb ASAP for new preemption if there are any changes
+					m.mbController.ReqToAdjustMB()
+				}
+			}
 		}
 	}
 
