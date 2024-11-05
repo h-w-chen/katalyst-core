@@ -14,6 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// todo: not to use this service at all - use existent memory resource plugin service and/or socket plugin
+// fine to have a memory resource plugin in testing purpose; however,
+// it would shadow the one that is provided by qrm dynamic memory plugin.
+// in prod, consider put it into qrm memory plugin and/or (extended) socket plugin.
+
 package podadmit
 
 import (
