@@ -34,6 +34,8 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
 )
 
+const podRoleSocketService = "socket-service"
+
 type admitter struct {
 	pluginapi.UnimplementedResourcePluginServer
 	qosConfig     *generic.QoSConfiguration
@@ -43,7 +45,7 @@ type admitter struct {
 }
 
 func (m admitter) GetTopologyAwareResources(ctx context.Context, req *pluginapi.GetTopologyAwareResourcesRequest) (*pluginapi.GetTopologyAwareResourcesResponse, error) {
-	general.InfofV(6, "mbm: pod admit is enquired with topology aware resource, pod uid %v, container %v", req.PodUid, req.ContainerName)
+	//general.InfofV(6, "mbm: pod admit is enquired with topology aware resource, pod uid %v, container %v", req.PodUid, req.ContainerName)
 	return &pluginapi.GetTopologyAwareResourcesResponse{
 		PodUid: req.PodUid,
 		ContainerTopologyAwareResources: &pluginapi.ContainerTopologyAwareResources{
@@ -59,7 +61,7 @@ func (m admitter) GetTopologyAwareResources(ctx context.Context, req *pluginapi.
 }
 
 func (m admitter) GetTopologyAwareAllocatableResources(ctx context.Context, request *pluginapi.GetTopologyAwareAllocatableResourcesRequest) (*pluginapi.GetTopologyAwareAllocatableResourcesResponse, error) {
-	general.InfofV(6, "mbm: pod admit is enquired with allocatable resources: %v", request.String())
+	//general.InfofV(6, "mbm: pod admit is enquired with allocatable resources: %v", request.String())
 	return &pluginapi.GetTopologyAwareAllocatableResourcesResponse{
 		AllocatableResources: map[string]*pluginapi.AllocatableTopologyAwareResource{
 			string(v1.ResourceMemory): {
@@ -70,11 +72,8 @@ func (m admitter) GetTopologyAwareAllocatableResources(ctx context.Context, requ
 	}, nil
 }
 
-// todo: find better way to check for offline shared_cores, e.g.
-// leveraging KatalystQoSLevelAnnotationKey     = "katalyst.kubewharf.io/qos_level"
-//            KatalystNumaBindingAnnotationKey  = "katalyst.kubewharf.io/numa_binding"
+// todo: find better way to check for offline(batch) shared_cores, e.g.
 func cloneAugmentedAnnotation(qosLevel string, anno map[string]string) map[string]string {
-	//	enhancementKVs := c.GetQoSEnhancementKVs(pod, expandedAnnotations, )
 	clone := general.DeepCopyMap(anno)
 	if qosLevel != apiconsts.PodAnnotationQoSLevelSharedCores {
 		return clone
@@ -87,10 +86,28 @@ func cloneAugmentedAnnotation(qosLevel string, anno map[string]string) map[strin
 			return clone
 		}
 		if pool := state.GetSpecifiedPoolName(qosLevel, flattenedEnhancements[apiconsts.PodAnnotationCPUEnhancementCPUSet]); pool == "batch" {
-			clone["rdt.resources.beta.kubernetes.io/pod"] = "shared-30"
+			clone["rdt.resources.beta.kubernetes.io/pod"] = "shared_30"
 		}
 	}
 	return clone
+}
+
+func isOfSocketPod(qosLevel string, podRole string) bool {
+	return qosLevel == apiconsts.PodAnnotationQoSLevelDedicatedCores && podRole == podRoleSocketService
+}
+
+func (m admitter) getNotInUseNodes(nodes []uint64) []int {
+	var notInUses []int
+	inUses := m.taskManager.GetNumaNodesInUse()
+	for _, node := range nodes {
+		if inUses.Has(int(node)) {
+			continue
+		}
+
+		notInUses = append(notInUses, int(node))
+	}
+
+	return notInUses
 }
 
 func (m admitter) Allocate(ctx context.Context, req *pluginapi.ResourceRequest) (*pluginapi.ResourceAllocationResponse, error) {
@@ -100,39 +117,41 @@ func (m admitter) Allocate(ctx context.Context, req *pluginapi.ResourceRequest) 
 		return nil, err
 	}
 
-	if req.ContainerType == pluginapi.ContainerType_SIDECAR {
-		// sidecar container admit after main container
-		general.InfofV(6, "mbm: resource allocate sidecar container - pod admitting %s/%s, uid %s", req.PodNamespace, req.PodName, req.PodUid)
-	} else if qosLevel == apiconsts.PodAnnotationQoSLevelDedicatedCores {
+	if isOfSocketPod(qosLevel, req.PodRole) {
+		general.InfofV(6, "mbm: identified socket pod %s/%s", req.PodNamespace, req.PodName)
+
 		if req.Hint != nil {
 			if len(req.Hint.Nodes) == 0 {
 				return nil, fmt.Errorf("hint is empty")
 			}
+		}
 
-			general.InfofV(6, "mbm: identified socket pod %s/%s", req.PodNamespace, req.PodName)
-
-			var nodesToPreempt []int
-			// check numa nodes' in-use state; only preempt those not-in-use yet
-			inUses := m.taskManager.GetNumaNodesInUse()
-			for _, node := range req.Hint.Nodes {
-				if inUses.Has(int(node)) {
-					continue
-				}
-
-				nodesToPreempt = append(nodesToPreempt, int(node))
-			}
-
-			if len(nodesToPreempt) > 0 {
-				if m.domainManager.PreemptNodes(nodesToPreempt) {
-					// requests to adjust mb ASAP for new preemption if there are any changes
-					m.mbController.ReqToAdjustMB()
-				}
+		// check numa nodes' in-use state; only preempt those not-in-use yet
+		nodesToPreempt := m.getNotInUseNodes(req.Hint.Nodes)
+		if len(nodesToPreempt) > 0 {
+			if m.domainManager.PreemptNodes(nodesToPreempt) {
+				// requests to adjust mb ASAP for new preemption if there are any changes
+				m.mbController.ReqToAdjustMB()
 			}
 		}
 	}
 
 	// 0 on error; no need to handle error explicitly
 	reqInt, _, _ := util.GetQuantityFromResourceReq(req)
+	allocateInfo := &pluginapi.ResourceAllocationInfo{
+		IsNodeResource:    false,
+		IsScalarResource:  true,
+		Annotations:       cloneAugmentedAnnotation(qosLevel, req.Annotations),
+		AllocatedQuantity: float64(reqInt),
+	}
+
+	if req.Hint != nil {
+		allocateInfo.ResourceHints = &pluginapi.ListOfTopologyHints{
+			Hints: []*pluginapi.TopologyHint{
+				req.Hint,
+			},
+		}
+	}
 
 	resp := &pluginapi.ResourceAllocationResponse{
 		PodUid:       req.PodUid,
@@ -143,17 +162,7 @@ func (m admitter) Allocate(ctx context.Context, req *pluginapi.ResourceRequest) 
 		ResourceName: "memory",
 		AllocationResult: &pluginapi.ResourceAllocation{
 			ResourceAllocation: map[string]*pluginapi.ResourceAllocationInfo{
-				"memory": {
-					IsNodeResource:    false,
-					IsScalarResource:  true,
-					Annotations:       cloneAugmentedAnnotation(qosLevel, req.Annotations),
-					AllocatedQuantity: float64(reqInt),
-					//ResourceHints: &pluginapi.ListOfTopologyHints{
-					//	Hints: []*pluginapi.TopologyHint{
-					//		req.Hint,
-					//	},
-					//},
-				},
+				"memory": allocateInfo,
 			},
 		},
 		Labels:      general.DeepCopyMap(req.Labels),
