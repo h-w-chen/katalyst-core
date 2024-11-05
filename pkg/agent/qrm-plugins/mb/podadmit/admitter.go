@@ -18,16 +18,18 @@ package podadmit
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-
 	v1 "k8s.io/api/core/v1"
 
 	apiconsts "github.com/kubewharf/katalyst-api/pkg/consts"
 	pluginapi "k8s.io/kubelet/pkg/apis/resourceplugin/v1alpha1"
 
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/cpu/dynamicpolicy/state"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/mbdomain"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/util"
 	"github.com/kubewharf/katalyst-core/pkg/config/generic"
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
 )
@@ -40,18 +42,55 @@ type admitter struct {
 	taskManager   task.Manager
 }
 
-func (m admitter) GetTopologyAwareResources(ctx context.Context, request *pluginapi.GetTopologyAwareResourcesRequest) (*pluginapi.GetTopologyAwareResourcesResponse, error) {
-	general.InfofV(6, "mbm: pod admit is enquired with topology aware resource")
-	return &pluginapi.GetTopologyAwareResourcesResponse{}, nil
+func (m admitter) GetTopologyAwareResources(ctx context.Context, req *pluginapi.GetTopologyAwareResourcesRequest) (*pluginapi.GetTopologyAwareResourcesResponse, error) {
+	general.InfofV(6, "mbm: pod admit is enquired with topology aware resource, pod uid %v, container %v", req.PodUid, req.ContainerName)
+	return &pluginapi.GetTopologyAwareResourcesResponse{
+		PodUid: req.PodUid,
+		ContainerTopologyAwareResources: &pluginapi.ContainerTopologyAwareResources{
+			ContainerName: req.ContainerName,
+			AllocatedResources: map[string]*pluginapi.TopologyAwareResource{
+				string(v1.ResourceMemory): {
+					IsNodeResource:   false,
+					IsScalarResource: true,
+				},
+			},
+		},
+	}, nil
 }
 
 func (m admitter) GetTopologyAwareAllocatableResources(ctx context.Context, request *pluginapi.GetTopologyAwareAllocatableResourcesRequest) (*pluginapi.GetTopologyAwareAllocatableResourcesResponse, error) {
-	general.InfofV(6, "mbm: pod admit is enquired with allocatable resources")
+	general.InfofV(6, "mbm: pod admit is enquired with allocatable resources: %v", request.String())
 	return &pluginapi.GetTopologyAwareAllocatableResourcesResponse{
 		AllocatableResources: map[string]*pluginapi.AllocatableTopologyAwareResource{
-			string(v1.ResourceMemory): {},
+			string(v1.ResourceMemory): {
+				IsNodeResource:   false,
+				IsScalarResource: true,
+			},
 		},
 	}, nil
+}
+
+// todo: find better way to check for offline shared_cores, e.g.
+// leveraging KatalystQoSLevelAnnotationKey     = "katalyst.kubewharf.io/qos_level"
+//            KatalystNumaBindingAnnotationKey  = "katalyst.kubewharf.io/numa_binding"
+func cloneAugmentedAnnotation(qosLevel string, anno map[string]string) map[string]string {
+	//	enhancementKVs := c.GetQoSEnhancementKVs(pod, expandedAnnotations, )
+	clone := general.DeepCopyMap(anno)
+	if qosLevel != apiconsts.PodAnnotationQoSLevelSharedCores {
+		return clone
+	}
+
+	if enhancementValue, ok := anno[apiconsts.PodAnnotationCPUEnhancementKey]; ok {
+		flattenedEnhancements := map[string]string{}
+		err := json.Unmarshal([]byte(enhancementValue), &flattenedEnhancements)
+		if err != nil {
+			return clone
+		}
+		if pool := state.GetSpecifiedPoolName(qosLevel, flattenedEnhancements[apiconsts.PodAnnotationCPUEnhancementCPUSet]); pool == "batch" {
+			clone["rdt.resources.beta.kubernetes.io/pod"] = "shared-30"
+		}
+	}
+	return clone
 }
 
 func (m admitter) Allocate(ctx context.Context, req *pluginapi.ResourceRequest) (*pluginapi.ResourceAllocationResponse, error) {
@@ -92,16 +131,33 @@ func (m admitter) Allocate(ctx context.Context, req *pluginapi.ResourceRequest) 
 		}
 	}
 
+	// 0 on error; no need to handle error explicitly
+	reqInt, _, _ := util.GetQuantityFromResourceReq(req)
+
 	resp := &pluginapi.ResourceAllocationResponse{
-		//PodUid:           request.PodUid,
-		//PodNamespace:     request.PodNamespace,
-		//PodName:          request.PodName,
-		//PodRole:          request.PodRole,
-		//PodType:          request.PodType,
-		//ResourceName:     "mb-pod-admit",
-		//AllocationResult: nil,
-		//Labels:           general.DeepCopyMap(request.Labels),
-		//Annotations:      general.DeepCopyMap(request.Annotations),
+		PodUid:       req.PodUid,
+		PodNamespace: req.PodNamespace,
+		PodName:      req.PodName,
+		PodRole:      req.PodRole,
+		PodType:      req.PodType,
+		ResourceName: "memory",
+		AllocationResult: &pluginapi.ResourceAllocation{
+			ResourceAllocation: map[string]*pluginapi.ResourceAllocationInfo{
+				"memory": {
+					IsNodeResource:    false,
+					IsScalarResource:  true,
+					Annotations:       cloneAugmentedAnnotation(qosLevel, req.Annotations),
+					AllocatedQuantity: float64(reqInt),
+					//ResourceHints: &pluginapi.ListOfTopologyHints{
+					//	Hints: []*pluginapi.TopologyHint{
+					//		req.Hint,
+					//	},
+					//},
+				},
+			},
+		},
+		Labels:      general.DeepCopyMap(req.Labels),
+		Annotations: cloneAugmentedAnnotation(qosLevel, req.Annotations),
 	}
 
 	return resp, nil
