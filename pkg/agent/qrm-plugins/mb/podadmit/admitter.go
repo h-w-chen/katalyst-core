@@ -18,14 +18,12 @@ package podadmit
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	v1 "k8s.io/api/core/v1"
 
 	apiconsts "github.com/kubewharf/katalyst-api/pkg/consts"
 	pluginapi "k8s.io/kubelet/pkg/apis/resourceplugin/v1alpha1"
 
-	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/cpu/dynamicpolicy/state"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/mbdomain"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
@@ -72,27 +70,33 @@ func (m admitter) GetTopologyAwareAllocatableResources(ctx context.Context, requ
 	}, nil
 }
 
-// todo: find better way to check for offline(batch) shared_cores, e.g.
-func cloneAugmentedAnnotation(qosLevel string, anno map[string]string) map[string]string {
-	clone := general.DeepCopyMap(anno)
-	if qosLevel != apiconsts.PodAnnotationQoSLevelSharedCores {
-		return clone
-	}
+//// todo: find better way to check for offline(batch) shared_cores, e.g.
+////       pod role == "flink"
+//func cloneAugmentedAnnotation(qosLevel string, anno map[string]string) map[string]string {
+//	clone := general.DeepCopyMap(anno)
+//	if qosLevel != apiconsts.PodAnnotationQoSLevelSharedCores {
+//		return clone
+//	}
+//
+//	if enhancementValue, ok := anno[apiconsts.PodAnnotationCPUEnhancementKey]; ok {
+//		flattenedEnhancements := map[string]string{}
+//		err := json.Unmarshal([]byte(enhancementValue), &flattenedEnhancements)
+//		if err != nil {
+//			return clone
+//		}
+//		if pool := state.GetSpecifiedPoolName(qosLevel, flattenedEnhancements[apiconsts.PodAnnotationCPUEnhancementCPUSet]); pool == "batch" {
+//			clone["rdt.resources.beta.kubernetes.io/pod"] = "shared_30"
+//		}
+//	}
+//	return clone
+//}
 
-	if enhancementValue, ok := anno[apiconsts.PodAnnotationCPUEnhancementKey]; ok {
-		flattenedEnhancements := map[string]string{}
-		err := json.Unmarshal([]byte(enhancementValue), &flattenedEnhancements)
-		if err != nil {
-			return clone
-		}
-		if pool := state.GetSpecifiedPoolName(qosLevel, flattenedEnhancements[apiconsts.PodAnnotationCPUEnhancementCPUSet]); pool == "batch" {
-			clone["rdt.resources.beta.kubernetes.io/pod"] = "shared_30"
-		}
-	}
-	return clone
+func isBatchPod(qosLevel string, podRole string) bool {
+	// todo: add more batch roles
+	return qosLevel == apiconsts.PodAnnotationQoSLevelSharedCores && podRole == "flink"
 }
 
-func isOfSocketPod(qosLevel string, podRole string) bool {
+func isSocketPod(qosLevel string, podRole string) bool {
 	return qosLevel == apiconsts.PodAnnotationQoSLevelDedicatedCores && podRole == podRoleSocketService
 }
 
@@ -117,7 +121,7 @@ func (m admitter) Allocate(ctx context.Context, req *pluginapi.ResourceRequest) 
 		return nil, err
 	}
 
-	if isOfSocketPod(qosLevel, req.PodRole) {
+	if isSocketPod(qosLevel, req.PodRole) {
 		general.InfofV(6, "mbm: identified socket pod %s/%s", req.PodNamespace, req.PodName)
 
 		if req.Hint != nil {
@@ -141,7 +145,6 @@ func (m admitter) Allocate(ctx context.Context, req *pluginapi.ResourceRequest) 
 	allocateInfo := &pluginapi.ResourceAllocationInfo{
 		IsNodeResource:    false,
 		IsScalarResource:  true,
-		Annotations:       cloneAugmentedAnnotation(qosLevel, req.Annotations),
 		AllocatedQuantity: float64(reqInt),
 	}
 
@@ -166,7 +169,11 @@ func (m admitter) Allocate(ctx context.Context, req *pluginapi.ResourceRequest) 
 			},
 		},
 		Labels:      general.DeepCopyMap(req.Labels),
-		Annotations: cloneAugmentedAnnotation(qosLevel, req.Annotations),
+		Annotations: general.DeepCopyMap(req.Annotations),
+	}
+
+	if isBatchPod(qosLevel, req.PodRole) {
+		resp.Annotations["rdt.resources.beta.kubernetes.io/pod"] = "shared_30"
 	}
 
 	return resp, nil
