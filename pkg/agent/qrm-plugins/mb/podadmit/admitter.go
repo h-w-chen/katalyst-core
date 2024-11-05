@@ -122,7 +122,7 @@ func (m admitter) Allocate(ctx context.Context, req *pluginapi.ResourceRequest) 
 	}
 
 	if isSocketPod(qosLevel, req.PodRole) {
-		general.InfofV(6, "mbm: identified socket pod %s/%s", req.PodNamespace, req.PodName)
+		general.InfofV(6, "mbm: resource allocate - identified socket pod %s/%s", req.PodNamespace, req.PodName)
 
 		if req.Hint != nil {
 			if len(req.Hint.Nodes) == 0 {
@@ -173,6 +173,10 @@ func (m admitter) Allocate(ctx context.Context, req *pluginapi.ResourceRequest) 
 	}
 
 	if isBatchPod(qosLevel, req.PodRole) {
+		general.InfofV(6, "mbm: resource allocate - pod admitting %s/%s, shared_30", req.PodNamespace, req.PodName)
+		if resp.Annotations == nil {
+			resp.Annotations = make(map[string]string)
+		}
 		resp.Annotations["rdt.resources.beta.kubernetes.io/pod"] = "shared_30"
 	}
 
