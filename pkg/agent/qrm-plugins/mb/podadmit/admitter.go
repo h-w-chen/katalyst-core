@@ -42,7 +42,7 @@ type admitter struct {
 	taskManager   task.Manager
 }
 
-func (m admitter) GetTopologyAwareResources(ctx context.Context, req *pluginapi.GetTopologyAwareResourcesRequest) (*pluginapi.GetTopologyAwareResourcesResponse, error) {
+func (m *admitter) GetTopologyAwareResources(ctx context.Context, req *pluginapi.GetTopologyAwareResourcesRequest) (*pluginapi.GetTopologyAwareResourcesResponse, error) {
 	//general.InfofV(6, "mbm: pod admit is enquired with topology aware resource, pod uid %v, container %v", req.PodUid, req.ContainerName)
 	return &pluginapi.GetTopologyAwareResourcesResponse{
 		PodUid: req.PodUid,
@@ -58,7 +58,7 @@ func (m admitter) GetTopologyAwareResources(ctx context.Context, req *pluginapi.
 	}, nil
 }
 
-func (m admitter) GetTopologyAwareAllocatableResources(ctx context.Context, request *pluginapi.GetTopologyAwareAllocatableResourcesRequest) (*pluginapi.GetTopologyAwareAllocatableResourcesResponse, error) {
+func (m *admitter) GetTopologyAwareAllocatableResources(ctx context.Context, request *pluginapi.GetTopologyAwareAllocatableResourcesRequest) (*pluginapi.GetTopologyAwareAllocatableResourcesResponse, error) {
 	//general.InfofV(6, "mbm: pod admit is enquired with allocatable resources: %v", request.String())
 	return &pluginapi.GetTopologyAwareAllocatableResourcesResponse{
 		AllocatableResources: map[string]*pluginapi.AllocatableTopologyAwareResource{
@@ -68,6 +68,11 @@ func (m admitter) GetTopologyAwareAllocatableResources(ctx context.Context, requ
 			},
 		},
 	}, nil
+}
+
+func (m *admitter) RemovePod(ctx context.Context, req *pluginapi.RemovePodRequest) (*pluginapi.RemovePodResponse, error) {
+	general.InfofV(6, "mbm: resource RemovePod - pod uid %s", req.PodUid)
+	return &pluginapi.RemovePodResponse{}, nil
 }
 
 // todo: generalize to check for any shared_xx
@@ -100,7 +105,7 @@ func isSocketPod(qosLevel string, annotations map[string]string) bool {
 	return false
 }
 
-func (m admitter) getNotInUseNodes(nodes []uint64) []int {
+func (m *admitter) getNotInUseNodes(nodes []uint64) []int {
 	var notInUses []int
 	inUses := m.taskManager.GetNumaNodesInUse()
 	for _, node := range nodes {
@@ -114,7 +119,7 @@ func (m admitter) getNotInUseNodes(nodes []uint64) []int {
 	return notInUses
 }
 
-func (m admitter) Allocate(ctx context.Context, req *pluginapi.ResourceRequest) (*pluginapi.ResourceAllocationResponse, error) {
+func (m *admitter) Allocate(ctx context.Context, req *pluginapi.ResourceRequest) (*pluginapi.ResourceAllocationResponse, error) {
 	general.InfofV(6, "mbm: resource allocate - pod admitting %s/%s, uid %s", req.PodNamespace, req.PodName, req.PodUid)
 	qosLevel, err := m.qosConfig.GetQoSLevel(nil, req.Annotations)
 	if err != nil {
@@ -184,7 +189,7 @@ func (m admitter) Allocate(ctx context.Context, req *pluginapi.ResourceRequest) 
 	return resp, nil
 }
 
-func (m admitter) GetResourcePluginOptions(context.Context, *pluginapi.Empty) (*pluginapi.ResourcePluginOptions, error) {
+func (m *admitter) GetResourcePluginOptions(context.Context, *pluginapi.Empty) (*pluginapi.ResourcePluginOptions, error) {
 	general.InfofV(6, "mbm: pod admit is enquired with options")
 	return &pluginapi.ResourcePluginOptions{
 		PreStartRequired:      false,
