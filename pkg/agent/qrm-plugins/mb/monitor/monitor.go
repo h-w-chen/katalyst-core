@@ -150,7 +150,7 @@ func (m mbMonitor) getWritesMBs(ccdQoSGroup map[int][]task.QoSGroup) (map[task.Q
 			return nil, err
 		}
 		// theoretically there may have more than one qos ctrl group binding to a specific ccd
-		// for now it is fine to duplicate mb usages among them (as in POC shared_30 groups are exclusive)
+		// for now it is fine to duplicate mb usages among them (as in POC shared-30 groups are exclusive)
 		// todo: figure out proper distributions of mb among qos ctrl groups binding to given ccd
 		for _, qos := range groups {
 			if _, ok := result[qos]; !ok {

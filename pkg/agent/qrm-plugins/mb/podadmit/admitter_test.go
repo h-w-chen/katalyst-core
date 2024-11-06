@@ -54,7 +54,7 @@ func Test_isBatchPod(t *testing.T) {
 		want bool
 	}{
 		{
-			name: "happy path of shared_30",
+			name: "happy path of shared-30",
 			args: args{
 				qosLevel: "shared_cores",
 				anno:     map[string]string{"katalyst.kubewharf.io/cpu_enhancement": `{"cpuset_pool": "shared-30"}`},
