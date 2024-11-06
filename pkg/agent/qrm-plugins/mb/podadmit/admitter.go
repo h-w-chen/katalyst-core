@@ -18,12 +18,14 @@ package podadmit
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	v1 "k8s.io/api/core/v1"
 
 	apiconsts "github.com/kubewharf/katalyst-api/pkg/consts"
 	pluginapi "k8s.io/kubelet/pkg/apis/resourceplugin/v1alpha1"
 
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/cpu/dynamicpolicy/state"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/mbdomain"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
@@ -31,8 +33,6 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/config/generic"
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
 )
-
-const podRoleSocketService = "socket-service"
 
 type admitter struct {
 	pluginapi.UnimplementedResourcePluginServer
@@ -70,34 +70,34 @@ func (m admitter) GetTopologyAwareAllocatableResources(ctx context.Context, requ
 	}, nil
 }
 
-//// todo: find better way to check for offline(batch) shared_cores, e.g.
-////       pod role == "flink"
-//func cloneAugmentedAnnotation(qosLevel string, anno map[string]string) map[string]string {
-//	clone := general.DeepCopyMap(anno)
-//	if qosLevel != apiconsts.PodAnnotationQoSLevelSharedCores {
-//		return clone
-//	}
-//
-//	if enhancementValue, ok := anno[apiconsts.PodAnnotationCPUEnhancementKey]; ok {
-//		flattenedEnhancements := map[string]string{}
-//		err := json.Unmarshal([]byte(enhancementValue), &flattenedEnhancements)
-//		if err != nil {
-//			return clone
-//		}
-//		if pool := state.GetSpecifiedPoolName(qosLevel, flattenedEnhancements[apiconsts.PodAnnotationCPUEnhancementCPUSet]); pool == "batch" {
-//			clone["rdt.resources.beta.kubernetes.io/pod"] = "shared-30"
-//		}
-//	}
-//	return clone
-//}
+// todo: generalize to check for any shared_xx
+func isBatchPod(qosLevel string, anno map[string]string) bool {
+	if qosLevel != apiconsts.PodAnnotationQoSLevelSharedCores {
+		return false
+	}
 
-func isBatchPod(qosLevel string, podRole string) bool {
-	// todo: add more batch roles
-	return qosLevel == apiconsts.PodAnnotationQoSLevelSharedCores && podRole == "flink"
+	// shared_xx 优先级是跟 pool name对齐
+	if enhancementValue, ok := anno[apiconsts.PodAnnotationCPUEnhancementKey]; ok {
+		flattenedEnhancements := map[string]string{}
+		err := json.Unmarshal([]byte(enhancementValue), &flattenedEnhancements)
+		if err != nil {
+			return false
+		}
+
+		if pool := state.GetSpecifiedPoolName(qosLevel, flattenedEnhancements[apiconsts.PodAnnotationCPUEnhancementCPUSet]); pool == "shared-30" {
+			return true
+		}
+	}
+
+	return false
 }
 
-func isSocketPod(qosLevel string, podRole string) bool {
-	return qosLevel == apiconsts.PodAnnotationQoSLevelDedicatedCores && podRole == podRoleSocketService
+func isSocketPod(qosLevel string, annotations map[string]string) bool {
+	if v, ok := annotations["instance-model"]; ok {
+		return qosLevel == apiconsts.PodAnnotationQoSLevelDedicatedCores && len(v) > 0
+	}
+
+	return false
 }
 
 func (m admitter) getNotInUseNodes(nodes []uint64) []int {
@@ -121,7 +121,7 @@ func (m admitter) Allocate(ctx context.Context, req *pluginapi.ResourceRequest) 
 		return nil, err
 	}
 
-	if isSocketPod(qosLevel, req.PodRole) {
+	if isSocketPod(qosLevel, req.Annotations) {
 		general.InfofV(6, "mbm: resource allocate - identified socket pod %s/%s", req.PodNamespace, req.PodName)
 
 		if req.Hint != nil {
@@ -172,7 +172,7 @@ func (m admitter) Allocate(ctx context.Context, req *pluginapi.ResourceRequest) 
 		Annotations: general.DeepCopyMap(req.Annotations),
 	}
 
-	if isBatchPod(qosLevel, req.PodRole) {
+	if isBatchPod(qosLevel, req.Annotations) {
 		general.InfofV(6, "mbm: resource allocate - pod admitting %s/%s, shared_30", req.PodNamespace, req.PodName)
 		if resp.Annotations == nil {
 			resp.Annotations = make(map[string]string)
