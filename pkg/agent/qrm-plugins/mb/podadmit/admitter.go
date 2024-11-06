@@ -85,7 +85,7 @@ func (m admitter) GetTopologyAwareAllocatableResources(ctx context.Context, requ
 //			return clone
 //		}
 //		if pool := state.GetSpecifiedPoolName(qosLevel, flattenedEnhancements[apiconsts.PodAnnotationCPUEnhancementCPUSet]); pool == "batch" {
-//			clone["rdt.resources.beta.kubernetes.io/pod"] = "shared_30"
+//			clone["rdt.resources.beta.kubernetes.io/pod"] = "shared-30"
 //		}
 //	}
 //	return clone
