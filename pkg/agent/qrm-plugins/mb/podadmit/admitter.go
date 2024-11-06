@@ -146,6 +146,7 @@ func (m admitter) Allocate(ctx context.Context, req *pluginapi.ResourceRequest) 
 		IsNodeResource:    false,
 		IsScalarResource:  true,
 		AllocatedQuantity: float64(reqInt),
+		Annotations:       general.DeepCopyMap(req.Annotations),
 	}
 
 	if req.Hint != nil {
@@ -154,6 +155,14 @@ func (m admitter) Allocate(ctx context.Context, req *pluginapi.ResourceRequest) 
 				req.Hint,
 			},
 		}
+	}
+
+	if isBatchPod(qosLevel, req.Annotations) {
+		general.InfofV(6, "mbm: resource allocate - pod admitting %s/%s, shared-30", req.PodNamespace, req.PodName)
+		if allocateInfo.Annotations == nil {
+			allocateInfo.Annotations = make(map[string]string)
+		}
+		allocateInfo.Annotations["rdt.resources.beta.kubernetes.io/pod"] = "shared-30"
 	}
 
 	resp := &pluginapi.ResourceAllocationResponse{
@@ -170,14 +179,6 @@ func (m admitter) Allocate(ctx context.Context, req *pluginapi.ResourceRequest) 
 		},
 		Labels:      general.DeepCopyMap(req.Labels),
 		Annotations: general.DeepCopyMap(req.Annotations),
-	}
-
-	if isBatchPod(qosLevel, req.Annotations) {
-		general.InfofV(6, "mbm: resource allocate - pod admitting %s/%s, shared_30", req.PodNamespace, req.PodName)
-		if resp.Annotations == nil {
-			resp.Annotations = make(map[string]string)
-		}
-		resp.Annotations["rdt.resources.beta.kubernetes.io/pod"] = "shared_30"
 	}
 
 	return resp, nil
