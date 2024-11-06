@@ -120,9 +120,7 @@ func NewPodAdmitService(qosConfig *generic.QoSConfiguration,
 	admissionManager := &admitter{
 		UnimplementedResourcePluginServer: pluginapi.UnimplementedResourcePluginServer{},
 		qosConfig:                         qosConfig,
-		domainManager:                     domainManager,
-		mbController:                      mbController,
-		taskManager:                       taskManager,
+		nodePreempter:                     NewNodePreempter(domainManager, mbController, taskManager),
 	}
 
 	server := grpc.NewServer()

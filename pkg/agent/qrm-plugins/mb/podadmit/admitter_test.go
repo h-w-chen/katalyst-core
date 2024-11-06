@@ -73,7 +73,7 @@ func Test_isBatchPod(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			assert.Equalf(t, tt.want, isBatchPod(tt.args.qosLevel, tt.args.anno), "isBatchPod(%v, %v)", tt.args.qosLevel, tt.args.anno)
+			assert.Equalf(t, tt.want, IsBatchPod(tt.args.qosLevel, tt.args.anno), "IsBatchPod(%v, %v)", tt.args.qosLevel, tt.args.anno)
 		})
 	}
 }

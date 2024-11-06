@@ -98,6 +98,7 @@ func (p *plugin) Start() error {
 		return errors.Wrap(err, "mbm: failed to create mb controller")
 	}
 
+	// todo: disable the competing (shadowing) memory plugin; instead to cooperate into the built-in dynamic memory plugin:
 	p.podAdmitService, err = podadmit.NewPodAdmitService(p.qosConfig, domainManager, p.mbController, taskManager, p.pluginRegistrationDirs)
 	if err != nil {
 		return errors.Wrap(err, "mbm: failed to create pod admit service")

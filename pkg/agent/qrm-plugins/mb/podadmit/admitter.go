@@ -19,16 +19,13 @@ package podadmit
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
-
-	apiconsts "github.com/kubewharf/katalyst-api/pkg/consts"
 	pluginapi "k8s.io/kubelet/pkg/apis/resourceplugin/v1alpha1"
 
+	apiconsts "github.com/kubewharf/katalyst-api/pkg/consts"
+
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/cpu/dynamicpolicy/state"
-	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller"
-	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/mbdomain"
-	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/util"
 	"github.com/kubewharf/katalyst-core/pkg/config/generic"
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
@@ -36,10 +33,12 @@ import (
 
 type admitter struct {
 	pluginapi.UnimplementedResourcePluginServer
-	qosConfig     *generic.QoSConfiguration
-	domainManager *mbdomain.MBDomainManager
-	mbController  *controller.Controller
-	taskManager   task.Manager
+	qosConfig *generic.QoSConfiguration
+	//domainManager *mbdomain.MBDomainManager
+	//mbController  *controller.Controller
+	//taskManager   task.Manager
+
+	nodePreempter *NodePreempter
 }
 
 func (m *admitter) GetTopologyAwareResources(ctx context.Context, req *pluginapi.GetTopologyAwareResourcesRequest) (*pluginapi.GetTopologyAwareResourcesResponse, error) {
@@ -76,7 +75,7 @@ func (m *admitter) RemovePod(ctx context.Context, req *pluginapi.RemovePodReques
 }
 
 // todo: generalize to check for any shared_xx
-func isBatchPod(qosLevel string, anno map[string]string) bool {
+func IsBatchPod(qosLevel string, anno map[string]string) bool {
 	if qosLevel != apiconsts.PodAnnotationQoSLevelSharedCores {
 		return false
 	}
@@ -105,19 +104,40 @@ func isSocketPod(qosLevel string, annotations map[string]string) bool {
 	return false
 }
 
-func (m *admitter) getNotInUseNodes(nodes []uint64) []int {
-	var notInUses []int
-	inUses := m.taskManager.GetNumaNodesInUse()
-	for _, node := range nodes {
-		if inUses.Has(int(node)) {
-			continue
-		}
+//func (m *admitter) getNotInUseNodes(nodes []uint64) []int {
+//	var notInUses []int
+//	inUses := m.taskManager.GetNumaNodesInUse()
+//	for _, node := range nodes {
+//		if inUses.Has(int(node)) {
+//			continue
+//		}
+//
+//		notInUses = append(notInUses, int(node))
+//	}
+//
+//	return notInUses
+//}
 
-		notInUses = append(notInUses, int(node))
-	}
-
-	return notInUses
-}
+//func (m *admitter) PreemptNodes(req *pluginapi.ResourceRequest) error {
+//	general.InfofV(6, "mbm: preempt nodes for pod %s/%s", req.PodNamespace, req.PodName)
+//
+//	if req.Hint != nil {
+//		if len(req.Hint.Nodes) == 0 {
+//			return fmt.Errorf("hint is empty")
+//		}
+//	}
+//
+//	// check numa nodes' in-use state; only preempt those not-in-use yet
+//	nodesToPreempt := m.getNotInUseNodes(req.Hint.Nodes)
+//	if len(nodesToPreempt) > 0 {
+//		if m.domainManager.PreemptNodes(nodesToPreempt) {
+//			// requests to adjust mb ASAP for new preemption if there are any changes
+//			m.mbController.ReqToAdjustMB()
+//		}
+//	}
+//
+//	return nil
+//}
 
 func (m *admitter) Allocate(ctx context.Context, req *pluginapi.ResourceRequest) (*pluginapi.ResourceAllocationResponse, error) {
 	general.InfofV(6, "mbm: resource allocate - pod admitting %s/%s, uid %s", req.PodNamespace, req.PodName, req.PodUid)
@@ -129,19 +149,8 @@ func (m *admitter) Allocate(ctx context.Context, req *pluginapi.ResourceRequest)
 	if isSocketPod(qosLevel, req.Annotations) {
 		general.InfofV(6, "mbm: resource allocate - identified socket pod %s/%s", req.PodNamespace, req.PodName)
 
-		if req.Hint != nil {
-			if len(req.Hint.Nodes) == 0 {
-				return nil, fmt.Errorf("hint is empty")
-			}
-		}
-
-		// check numa nodes' in-use state; only preempt those not-in-use yet
-		nodesToPreempt := m.getNotInUseNodes(req.Hint.Nodes)
-		if len(nodesToPreempt) > 0 {
-			if m.domainManager.PreemptNodes(nodesToPreempt) {
-				// requests to adjust mb ASAP for new preemption if there are any changes
-				m.mbController.ReqToAdjustMB()
-			}
+		if err := m.nodePreempter.PreemptNodes(req); err != nil {
+			return nil, errors.Wrap(err, "failed to preempt socket pod request")
 		}
 	}
 
@@ -162,7 +171,7 @@ func (m *admitter) Allocate(ctx context.Context, req *pluginapi.ResourceRequest)
 		}
 	}
 
-	if isBatchPod(qosLevel, req.Annotations) {
+	if IsBatchPod(qosLevel, req.Annotations) {
 		general.InfofV(6, "mbm: resource allocate - pod admitting %s/%s, shared-30", req.PodNamespace, req.PodName)
 		if allocateInfo.Annotations == nil {
 			allocateInfo.Annotations = make(map[string]string)
