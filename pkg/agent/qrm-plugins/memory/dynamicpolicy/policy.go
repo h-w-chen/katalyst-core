@@ -828,6 +828,8 @@ func (p *DynamicPolicy) Allocate(ctx context.Context,
 		return nil, err
 	}
 
+	general.InfofV(6, "mbm: resource allocate - pod admitting %s/%s: step 0.5, qos %v, anno %v", req.PodNamespace, req.PodName, qosLevel, req.Annotations)
+
 	reqInt, _, err := util.GetQuantityFromResourceReq(req)
 	if err != nil {
 		return nil, fmt.Errorf("getReqQuantityFromResourceReq failed with error: %v", err)
@@ -980,6 +982,7 @@ func (p *DynamicPolicy) Allocate(ctx context.Context,
 
 	allocResp, err := p.allocationHandlers[qosLevel](ctx, req)
 	if err != nil {
+		general.InfofV(6, "mbm: resource allocate - pod admitting %s/%s: step 3.5, qos %v, anno %v", req.PodNamespace, req.PodName, qosLevel, req.Annotations)
 		if podadmit.IsBatchPod(qosLevel, req.Annotations) {
 			general.InfofV(6, "mbm: resource allocate - pod admitting %s/%s, shared-30", req.PodNamespace, req.PodName)
 			allocInfo := allocResp.AllocationResult.ResourceAllocation[string(v1.ResourceMemory)]
