@@ -891,6 +891,9 @@ func (p *DynamicPolicy) Allocate(ctx context.Context,
 		}
 	}
 
+	// todo: remove below line
+	general.InfofV(6, "mbm: resource allocate - pod %s/%s: step 2", req.PodNamespace, req.PodName)
+
 	p.Lock()
 	defer func() {
 		// calls sys-advisor to inform the latest container
@@ -968,6 +971,9 @@ func (p *DynamicPolicy) Allocate(ctx context.Context,
 		}, nil
 	}
 
+	// todo: remove below line
+	general.InfofV(6, "mbm: resource allocate - pod %s/%s: step 3", req.PodNamespace, req.PodName)
+
 	if p.allocationHandlers[qosLevel] == nil {
 		return nil, fmt.Errorf("katalyst QoS level: %s is not supported yet", qosLevel)
 	}
@@ -977,6 +983,8 @@ func (p *DynamicPolicy) Allocate(ctx context.Context,
 		if podadmit.IsBatchPod(qosLevel, req.Annotations) {
 			general.InfofV(6, "mbm: resource allocate - pod admitting %s/%s, shared-30", req.PodNamespace, req.PodName)
 			allocInfo := allocResp.AllocationResult.ResourceAllocation[string(v1.ResourceMemory)]
+			// todo: remove below line
+			general.InfofV(6, "mbm: resource allocate - pod %s/%s: step 4", req.PodNamespace, req.PodName)
 			if allocInfo != nil {
 				if allocInfo.Annotations == nil {
 					allocInfo.Annotations = make(map[string]string)
@@ -985,6 +993,9 @@ func (p *DynamicPolicy) Allocate(ctx context.Context,
 			}
 		}
 	}
+
+	// todo: remove below line
+	general.InfofV(6, "mbm: resource allocate - pod %s/%s: step 5", req.PodNamespace, req.PodName)
 
 	return allocResp, err
 }
