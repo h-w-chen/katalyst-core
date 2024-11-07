@@ -202,7 +202,12 @@ func NewComponent(agentCtx *agent.GenericContext, conf *config.Configuration,
 	MBController = plugin.mbController
 	TaskManager = taskManager
 	MBDomainManager = domainManager
-	PodSubgrouper = podadmit.NewPodGrouper(map[string]string{"batch": "shared-30"}, "shared-50")
+
+	defaultSubgroup, ok := conf.CPUSetPoolToSharedSubgroup["share"]
+	if !ok {
+		defaultSubgroup = "shared-50"
+	}
+	PodSubgrouper = podadmit.NewPodGrouper(conf.CPUSetPoolToSharedSubgroup, defaultSubgroup)
 
 	return true, &agent.PluginWrapper{GenericPlugin: plugin}, nil
 }
