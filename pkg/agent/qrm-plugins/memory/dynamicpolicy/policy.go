@@ -883,7 +883,9 @@ func (p *DynamicPolicy) Allocate(ctx context.Context,
 		}, nil
 	}
 
-	if mb.PodSubgrouper.IsSocketPod(qosLevel, req.Annotations) {
+	// if the pod in request is a socket type, certain amount of MB should be preempted for reservation of its bootstrap
+	//	if mb.PodSubgrouper.IsSocketPod(qosLevel, req.Annotations) {
+	if mb.PodSubgrouper.IsShared30(qosLevel, req.Annotations) {
 		general.InfofV(6, "mbm: resource allocate - identified socket pod %s/%s", req.PodNamespace, req.PodName)
 
 		if err := p.nodePreempter.PreemptNodes(req); err != nil {

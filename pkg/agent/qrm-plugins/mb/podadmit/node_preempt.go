@@ -34,6 +34,10 @@ func (n *NodePreempter) getNotInUseNodes(nodes []uint64) []int {
 func (n *NodePreempter) PreemptNodes(req *pluginapi.ResourceRequest) error {
 	general.InfofV(6, "mbm: preempt nodes for pod %s/%s", req.PodNamespace, req.PodName)
 
+	// todo: hard-coded test path; need to remove
+	n.domainManager.PreemptNodes([]int{4, 5, 6})
+	n.mbController.ReqToAdjustMB()
+
 	if req.Hint != nil {
 		if len(req.Hint.Nodes) == 0 {
 			return fmt.Errorf("hint is empty")
