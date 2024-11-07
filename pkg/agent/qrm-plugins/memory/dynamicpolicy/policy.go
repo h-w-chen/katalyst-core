@@ -981,6 +981,7 @@ func (p *DynamicPolicy) Allocate(ctx context.Context,
 	}
 
 	allocResp, err := p.allocationHandlers[qosLevel](ctx, req)
+	general.InfofV(6, "mbm: resource allocate - pod admitting %s/%s: step 3.1, qos %v, anno %v, err %v", req.PodNamespace, req.PodName, qosLevel, req.Annotations, err)
 	if err != nil {
 		general.InfofV(6, "mbm: resource allocate - pod admitting %s/%s: step 3.5, qos %v, anno %v", req.PodNamespace, req.PodName, qosLevel, req.Annotations)
 		if podadmit.IsBatchPod(qosLevel, req.Annotations) {
