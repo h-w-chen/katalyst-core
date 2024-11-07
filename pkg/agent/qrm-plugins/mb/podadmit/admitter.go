@@ -18,6 +18,7 @@ package podadmit
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	pluginapi "k8s.io/kubelet/pkg/apis/resourceplugin/v1alpha1"
@@ -72,6 +73,25 @@ func (m *admitter) RemovePod(ctx context.Context, req *pluginapi.RemovePodReques
 	return &pluginapi.RemovePodResponse{}, nil
 }
 
+func identifyCPUSetPool(annoInReq map[string]string) string {
+	if pool, ok := annoInReq[apiconsts.PodAnnotationCPUEnhancementCPUSet]; ok {
+		return pool
+	}
+
+	// fall back to composite inflattened one
+	enhancementValue, ok := annoInReq[apiconsts.PodAnnotationCPUEnhancementKey]
+	if !ok {
+		return ""
+	}
+
+	flattenedEnhancements := map[string]string{}
+	err := json.Unmarshal([]byte(enhancementValue), &flattenedEnhancements)
+	if err != nil {
+		return ""
+	}
+	return identifyCPUSetPool(flattenedEnhancements)
+}
+
 // todo: generalize to check for any shared_xx
 func IsBatchPod(qosLevel string, anno map[string]string) bool {
 	if qosLevel != apiconsts.PodAnnotationQoSLevelSharedCores {
@@ -79,22 +99,8 @@ func IsBatchPod(qosLevel string, anno map[string]string) bool {
 	}
 
 	// shared_xx 优先级是跟 pool name对齐
-	//if enhancementValue, ok := anno[apiconsts.PodAnnotationCPUEnhancementKey]; ok {
-	//	flattenedEnhancements := map[string]string{}
-	//	err := json.Unmarshal([]byte(enhancementValue), &flattenedEnhancements)
-	//	if err != nil {
-	//		return false
-	//	}
-	//
-	//	if pool := state.GetSpecifiedPoolName(qosLevel, flattenedEnhancements[apiconsts.PodAnnotationCPUEnhancementCPUSet]); pool == "shared-30" {
-	//		return true
-	//	}
-	//}
-	if pool, ok := anno[apiconsts.PodAnnotationCPUEnhancementCPUSet]; ok {
-		return pool == "shared-30"
-	}
-
-	return false
+	pool := identifyCPUSetPool(anno)
+	return pool == "shared-30"
 }
 
 func IsSocketPod(qosLevel string, annotations map[string]string) bool {
