@@ -883,7 +883,7 @@ func (p *DynamicPolicy) Allocate(ctx context.Context,
 		}, nil
 	}
 
-	if podadmit.IsSocketPod(qosLevel, req.Annotations) {
+	if mb.PodSubgrouper.IsSocketPod(qosLevel, req.Annotations) {
 		general.InfofV(6, "mbm: resource allocate - identified socket pod %s/%s", req.PodNamespace, req.PodName)
 
 		if err := p.nodePreempter.PreemptNodes(req); err != nil {
@@ -940,7 +940,7 @@ func (p *DynamicPolicy) Allocate(ctx context.Context,
 
 		// todo: use more generic approach to resctrl FS layout management
 		// this behavior is required by kubelet to create share_xx resctrl layout
-		if podadmit.IsBatchPod(qosLevel, req.Annotations) {
+		if mb.PodSubgrouper.IsShared30(qosLevel, req.Annotations) {
 			if allocInfo.Annotations == nil {
 				allocInfo.Annotations = make(map[string]string)
 			}
@@ -973,7 +973,7 @@ func (p *DynamicPolicy) Allocate(ctx context.Context,
 
 	allocResp, err := p.allocationHandlers[qosLevel](ctx, req)
 	if err == nil {
-		if podadmit.IsBatchPod(qosLevel, req.Annotations) {
+		if mb.PodSubgrouper.IsShared30(qosLevel, req.Annotations) {
 			general.InfofV(6, "mbm: resource allocate - pod admitting %s/%s, shared-30", req.PodNamespace, req.PodName)
 			allocInfo := allocResp.AllocationResult.ResourceAllocation[string(v1.ResourceMemory)]
 			if allocInfo != nil {

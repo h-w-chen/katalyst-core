@@ -98,7 +98,7 @@ func (q QoS) ToCtrlGroup() (QoSGroup, error) {
 		return "", fmt.Errorf("unrecognized qos level %s", q.Level)
 	}
 
-	return QoSGroup(fmt.Sprintf("shared_%02d", q.SubLevel)), nil
+	return QoSGroup(fmt.Sprintf("shared-%02d", q.SubLevel)), nil
 }
 
 func parseSharedSubGroup(ctrlGroup string) (int, error) {

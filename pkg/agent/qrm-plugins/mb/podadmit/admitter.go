@@ -18,12 +18,10 @@ package podadmit
 
 import (
 	"context"
-	"encoding/json"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
-	pluginapi "k8s.io/kubelet/pkg/apis/resourceplugin/v1alpha1"
 
-	apiconsts "github.com/kubewharf/katalyst-api/pkg/consts"
+	pluginapi "k8s.io/kubelet/pkg/apis/resourceplugin/v1alpha1"
 
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/util"
 	"github.com/kubewharf/katalyst-core/pkg/config/generic"
@@ -38,6 +36,7 @@ type admitter struct {
 	//taskManager   task.Manager
 
 	nodePreempter *NodePreempter
+	podGrouper    *PodGrouper
 }
 
 func (m *admitter) GetTopologyAwareResources(ctx context.Context, req *pluginapi.GetTopologyAwareResourcesRequest) (*pluginapi.GetTopologyAwareResourcesResponse, error) {
@@ -73,43 +72,24 @@ func (m *admitter) RemovePod(ctx context.Context, req *pluginapi.RemovePodReques
 	return &pluginapi.RemovePodResponse{}, nil
 }
 
-func identifyCPUSetPool(annoInReq map[string]string) string {
-	if pool, ok := annoInReq[apiconsts.PodAnnotationCPUEnhancementCPUSet]; ok {
-		return pool
-	}
-
-	// fall back to composite inflattened one
-	enhancementValue, ok := annoInReq[apiconsts.PodAnnotationCPUEnhancementKey]
-	if !ok {
-		return ""
-	}
-
-	flattenedEnhancements := map[string]string{}
-	err := json.Unmarshal([]byte(enhancementValue), &flattenedEnhancements)
-	if err != nil {
-		return ""
-	}
-	return identifyCPUSetPool(flattenedEnhancements)
-}
-
-// todo: generalize to check for any shared_xx
-func IsBatchPod(qosLevel string, anno map[string]string) bool {
-	if qosLevel != apiconsts.PodAnnotationQoSLevelSharedCores {
-		return false
-	}
-
-	// shared_xx 优先级是跟 pool name对齐
-	pool := identifyCPUSetPool(anno)
-	return pool == "shared-30"
-}
-
-func IsSocketPod(qosLevel string, annotations map[string]string) bool {
-	if v, ok := annotations["instance-model"]; ok {
-		return qosLevel == apiconsts.PodAnnotationQoSLevelDedicatedCores && len(v) > 0
-	}
-
-	return false
-}
+//// todo: generalize to check for any shared_xx
+//func IsBatchPod(qosLevel string, anno map[string]string) bool {
+//	if qosLevel != apiconsts.PodAnnotationQoSLevelSharedCores {
+//		return false
+//	}
+//
+//	// shared_xx 优先级是跟 pool name对齐
+//	pool := identifyCPUSetPool(anno)
+//	return pool == "shared-30"
+//}
+//
+//func IsSocketPod(qosLevel string, annotations map[string]string) bool {
+//	if v, ok := annotations["instance-model"]; ok {
+//		return qosLevel == apiconsts.PodAnnotationQoSLevelDedicatedCores && len(v) > 0
+//	}
+//
+//	return false
+//}
 
 //func (m *admitter) getNotInUseNodes(nodes []uint64) []int {
 //	var notInUses []int
@@ -153,7 +133,7 @@ func (m *admitter) Allocate(ctx context.Context, req *pluginapi.ResourceRequest)
 		return nil, err
 	}
 
-	if IsSocketPod(qosLevel, req.Annotations) {
+	if m.podGrouper.IsSocketPod(qosLevel, req.Annotations) {
 		general.InfofV(6, "mbm: resource allocate - identified socket pod %s/%s", req.PodNamespace, req.PodName)
 
 		if err := m.nodePreempter.PreemptNodes(req); err != nil {
@@ -178,7 +158,7 @@ func (m *admitter) Allocate(ctx context.Context, req *pluginapi.ResourceRequest)
 		}
 	}
 
-	if IsBatchPod(qosLevel, req.Annotations) {
+	if m.podGrouper.IsShared30(qosLevel, req.Annotations) {
 		general.InfofV(6, "mbm: resource allocate - pod admitting %s/%s, shared-30", req.PodNamespace, req.PodName)
 		if allocateInfo.Annotations == nil {
 			allocateInfo.Annotations = make(map[string]string)

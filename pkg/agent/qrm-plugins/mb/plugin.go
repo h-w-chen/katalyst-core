@@ -17,6 +17,7 @@ limitations under the License.
 package mb
 
 import (
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/podadmit"
 	"time"
 
 	"github.com/pkg/errors"
@@ -40,9 +41,10 @@ import (
 
 // todo: not to use global vars
 var (
-	TaskManager task.Manager
+	TaskManager     task.Manager
 	MBDomainManager *mbdomain.MBDomainManager
-	MBController *controller.Controller
+	MBController    *controller.Controller
+	PodSubgrouper   *podadmit.PodGrouper
 )
 
 type plugin struct {
@@ -112,7 +114,7 @@ func (p *plugin) Start() error {
 	//if err := p.podAdmitService.Start(); err != nil {
 	//	return errors.Wrap(err, "mbm: failed to start pod admit service")
 	//}
-	
+
 	go func() {
 		defer func() {
 			err := recover()
@@ -200,6 +202,7 @@ func NewComponent(agentCtx *agent.GenericContext, conf *config.Configuration,
 	MBController = plugin.mbController
 	TaskManager = taskManager
 	MBDomainManager = domainManager
+	PodSubgrouper = podadmit.NewPodGrouper(map[string]string{"batch": "shared-30"}, "shared-50")
 
 	return true, &agent.PluginWrapper{GenericPlugin: plugin}, nil
 }

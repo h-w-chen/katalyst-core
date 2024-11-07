@@ -114,13 +114,17 @@ func (s *service) Stop() error {
 
 // todo: use skeleton.NewRegistrationPluginWrapper to create service in line with others
 func NewPodAdmitService(qosConfig *generic.QoSConfiguration,
-	domainManager *mbdomain.MBDomainManager, mbController *controller.Controller, taskManager task.Manager,
+	podSubgrouper *PodGrouper,
+	domainManager *mbdomain.MBDomainManager,
+	mbController *controller.Controller,
+	taskManager task.Manager,
 	sockDirs []string,
 ) (skeleton.GenericPlugin, error) {
 	admissionManager := &admitter{
 		UnimplementedResourcePluginServer: pluginapi.UnimplementedResourcePluginServer{},
 		qosConfig:                         qosConfig,
 		nodePreempter:                     NewNodePreempter(domainManager, mbController, taskManager),
+		podGrouper:                        podSubgrouper,
 	}
 
 	server := grpc.NewServer()
