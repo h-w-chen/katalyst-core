@@ -18,14 +18,12 @@ package podadmit
 
 import (
 	"context"
-	"encoding/json"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	pluginapi "k8s.io/kubelet/pkg/apis/resourceplugin/v1alpha1"
 
 	apiconsts "github.com/kubewharf/katalyst-api/pkg/consts"
 
-	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/cpu/dynamicpolicy/state"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/util"
 	"github.com/kubewharf/katalyst-core/pkg/config/generic"
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
@@ -81,16 +79,19 @@ func IsBatchPod(qosLevel string, anno map[string]string) bool {
 	}
 
 	// shared_xx 优先级是跟 pool name对齐
-	if enhancementValue, ok := anno[apiconsts.PodAnnotationCPUEnhancementKey]; ok {
-		flattenedEnhancements := map[string]string{}
-		err := json.Unmarshal([]byte(enhancementValue), &flattenedEnhancements)
-		if err != nil {
-			return false
-		}
-
-		if pool := state.GetSpecifiedPoolName(qosLevel, flattenedEnhancements[apiconsts.PodAnnotationCPUEnhancementCPUSet]); pool == "shared-30" {
-			return true
-		}
+	//if enhancementValue, ok := anno[apiconsts.PodAnnotationCPUEnhancementKey]; ok {
+	//	flattenedEnhancements := map[string]string{}
+	//	err := json.Unmarshal([]byte(enhancementValue), &flattenedEnhancements)
+	//	if err != nil {
+	//		return false
+	//	}
+	//
+	//	if pool := state.GetSpecifiedPoolName(qosLevel, flattenedEnhancements[apiconsts.PodAnnotationCPUEnhancementCPUSet]); pool == "shared-30" {
+	//		return true
+	//	}
+	//}
+	if pool, ok := anno[apiconsts.PodAnnotationCPUEnhancementCPUSet]; ok {
+		return pool == "shared-30"
 	}
 
 	return false

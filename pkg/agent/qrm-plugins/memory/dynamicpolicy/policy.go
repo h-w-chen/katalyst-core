@@ -812,6 +812,8 @@ func (p *DynamicPolicy) Allocate(ctx context.Context,
 		return nil, fmt.Errorf("Allocate got nil req")
 	}
 
+	general.InfofV(6, "mbm: resource allocate - pod %s/%s", req.PodNamespace, req.PodName)
+
 	// identify if the pod is a debug pod,
 	// if so, apply specific strategy to it.
 	// since GetKatalystQoSLevelFromResourceReq function will filter annotations,
@@ -825,6 +827,8 @@ func (p *DynamicPolicy) Allocate(ctx context.Context,
 		general.Errorf("%s", err.Error())
 		return nil, err
 	}
+
+	general.InfofV(6, "mbm: resource allocate - pod admitting %s/%s: step 0.5, qos %v, anno %v", req.PodNamespace, req.PodName, qosLevel, req.Annotations)
 
 	reqInt, _, err := util.GetQuantityFromResourceReq(req)
 	if err != nil {
@@ -888,6 +892,9 @@ func (p *DynamicPolicy) Allocate(ctx context.Context,
 			general.Errorf("mbm: failed to preempt numa nodes for Socket pod %s/%s", req.PodNamespace, req.PodName)
 		}
 	}
+
+	// todo: remove below line
+	general.InfofV(6, "mbm: resource allocate - pod %s/%s: step 2", req.PodNamespace, req.PodName)
 
 	p.Lock()
 	defer func() {
@@ -966,10 +973,33 @@ func (p *DynamicPolicy) Allocate(ctx context.Context,
 		}, nil
 	}
 
+	// todo: remove below line
+	general.InfofV(6, "mbm: resource allocate - pod %s/%s: step 3", req.PodNamespace, req.PodName)
+
 	if p.allocationHandlers[qosLevel] == nil {
 		return nil, fmt.Errorf("katalyst QoS level: %s is not supported yet", qosLevel)
 	}
-	return p.allocationHandlers[qosLevel](ctx, req)
+
+	allocResp, err := p.allocationHandlers[qosLevel](ctx, req)
+	if err == nil {
+		if podadmit.IsBatchPod(qosLevel, req.Annotations) {
+			general.InfofV(6, "mbm: resource allocate - pod admitting %s/%s, shared-30", req.PodNamespace, req.PodName)
+			allocInfo := allocResp.AllocationResult.ResourceAllocation[string(v1.ResourceMemory)]
+			// todo: remove below line
+			general.InfofV(6, "mbm: resource allocate - pod %s/%s: step 4", req.PodNamespace, req.PodName)
+			if allocInfo != nil {
+				if allocInfo.Annotations == nil {
+					allocInfo.Annotations = make(map[string]string)
+				}
+				allocInfo.Annotations["rdt.resources.beta.kubernetes.io/pod"] = "shared-30"
+			}
+		}
+	}
+
+	// todo: remove below line
+	general.InfofV(6, "mbm: resource allocate - pod %s/%s: step 5", req.PodNamespace, req.PodName)
+
+	return allocResp, err
 }
 
 // AllocateForPod is called during pod admit so that the resource
