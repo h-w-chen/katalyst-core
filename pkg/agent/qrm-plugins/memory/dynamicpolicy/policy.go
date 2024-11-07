@@ -812,6 +812,8 @@ func (p *DynamicPolicy) Allocate(ctx context.Context,
 		return nil, fmt.Errorf("Allocate got nil req")
 	}
 
+	general.InfofV(6, "mbm: resource allocate - pod %s/%s", req.PodNamespace, req.PodName)
+
 	// identify if the pod is a debug pod,
 	// if so, apply specific strategy to it.
 	// since GetKatalystQoSLevelFromResourceReq function will filter annotations,
@@ -969,7 +971,22 @@ func (p *DynamicPolicy) Allocate(ctx context.Context,
 	if p.allocationHandlers[qosLevel] == nil {
 		return nil, fmt.Errorf("katalyst QoS level: %s is not supported yet", qosLevel)
 	}
-	return p.allocationHandlers[qosLevel](ctx, req)
+
+	allocResp, err := p.allocationHandlers[qosLevel](ctx, req)
+	if err != nil {
+		if podadmit.IsBatchPod(qosLevel, req.Annotations) {
+			general.InfofV(6, "mbm: resource allocate - pod admitting %s/%s, shared-30", req.PodNamespace, req.PodName)
+			allocInfo := allocResp.AllocationResult.ResourceAllocation[string(v1.ResourceMemory)]
+			if allocInfo != nil {
+				if allocInfo.Annotations == nil {
+					allocInfo.Annotations = make(map[string]string)
+				}
+				allocInfo.Annotations["rdt.resources.beta.kubernetes.io/pod"] = "shared-30"
+			}
+		}
+	}
+
+	return allocResp, err
 }
 
 // AllocateForPod is called during pod admit so that the resource
