@@ -37,7 +37,7 @@ func Test_isOfSocketPod(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			assert.Equalf(t, tt.want, isSocketPod(tt.args.qosLevel, tt.args.anno), "isOfSocketPod(%v)", tt.args)
+			assert.Equalf(t, tt.want, IsSocketPod(tt.args.qosLevel, tt.args.anno), "isOfSocketPod(%v)", tt.args)
 		})
 	}
 }

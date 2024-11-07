@@ -96,7 +96,7 @@ func IsBatchPod(qosLevel string, anno map[string]string) bool {
 	return false
 }
 
-func isSocketPod(qosLevel string, annotations map[string]string) bool {
+func IsSocketPod(qosLevel string, annotations map[string]string) bool {
 	if v, ok := annotations["instance-model"]; ok {
 		return qosLevel == apiconsts.PodAnnotationQoSLevelDedicatedCores && len(v) > 0
 	}
@@ -146,7 +146,7 @@ func (m *admitter) Allocate(ctx context.Context, req *pluginapi.ResourceRequest)
 		return nil, err
 	}
 
-	if isSocketPod(qosLevel, req.Annotations) {
+	if IsSocketPod(qosLevel, req.Annotations) {
 		general.InfofV(6, "mbm: resource allocate - identified socket pod %s/%s", req.PodNamespace, req.PodName)
 
 		if err := m.nodePreempter.PreemptNodes(req); err != nil {

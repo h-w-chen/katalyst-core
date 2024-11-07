@@ -29,7 +29,6 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/mbdomain"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
-	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/podadmit"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl/state"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
@@ -37,6 +36,13 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/config/generic"
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
 	"github.com/kubewharf/katalyst-core/pkg/util/machine"
+)
+
+// todo: not to use global vars
+var (
+	TaskManager task.Manager
+	MBDomainManager *mbdomain.MBDomainManager
+	MBController *controller.Controller
 )
 
 type plugin struct {
@@ -64,49 +70,49 @@ func (p *plugin) Start() error {
 		return errors.New("mbm: not virtual numa; no need to dynamically manage the memory bandwidth")
 	}
 
-	domainManager := mbdomain.NewMBDomainManager(p.dieTopology, p.incubationInterval)
+	//domainManager := mbdomain.NewMBDomainManager(p.dieTopology, p.incubationInterval)
+	//
+	//var err error
+	//
+	//dataKeeper, err := state.NewMBRawDataKeeper()
+	//if err != nil {
+	//	return errors.Wrap(err, "failed to create raw data state keeper")
+	//}
+	//
+	//taskManager, err := task.New(p.dieTopology.DiesInNuma, p.dieTopology.CPUsInDie, dataKeeper, domainManager)
+	//if err != nil {
+	//	return errors.Wrap(err, "failed to create task manager")
+	//}
+	//
+	//podMBMonitor, err := monitor.NewDefaultMBMonitor(p.dieTopology.CPUsInDie, dataKeeper, taskManager, domainManager)
+	//if err != nil {
+	//	return errors.Wrap(err, "mbm: failed to create default mb monitor")
+	//}
+	//
+	//mbPlanAllocator, err := createMBPlanAllocator()
+	//if err != nil {
+	//	return errors.Wrap(err, "mbm: failed to create mb plan allocator")
+	//}
+	//
+	//domainPolicy, err := policy.NewDefaultDomainMBPolicy(p.incubationInterval)
+	//if err != nil {
+	//	return errors.Wrap(err, "mbm: failed to create domain manager")
+	//}
+	//
+	//p.mbController, err = controller.New(podMBMonitor, mbPlanAllocator, domainManager, domainPolicy)
+	//if err != nil {
+	//	return errors.Wrap(err, "mbm: failed to create mb controller")
+	//}
 
-	var err error
-
-	dataKeeper, err := state.NewMBRawDataKeeper()
-	if err != nil {
-		return errors.Wrap(err, "failed to create raw data state keeper")
-	}
-
-	taskManager, err := task.New(p.dieTopology.DiesInNuma, p.dieTopology.CPUsInDie, dataKeeper, domainManager)
-	if err != nil {
-		return errors.Wrap(err, "failed to create task manager")
-	}
-
-	podMBMonitor, err := monitor.NewDefaultMBMonitor(p.dieTopology.CPUsInDie, dataKeeper, taskManager, domainManager)
-	if err != nil {
-		return errors.Wrap(err, "mbm: failed to create default mb monitor")
-	}
-
-	mbPlanAllocator, err := createMBPlanAllocator()
-	if err != nil {
-		return errors.Wrap(err, "mbm: failed to create mb plan allocator")
-	}
-
-	domainPolicy, err := policy.NewDefaultDomainMBPolicy(p.incubationInterval)
-	if err != nil {
-		return errors.Wrap(err, "mbm: failed to create domain manager")
-	}
-
-	p.mbController, err = controller.New(podMBMonitor, mbPlanAllocator, domainManager, domainPolicy)
-	if err != nil {
-		return errors.Wrap(err, "mbm: failed to create mb controller")
-	}
-
-	// todo: disable the competing (shadowing) memory plugin; instead to cooperate into the built-in dynamic memory plugin:
-	p.podAdmitService, err = podadmit.NewPodAdmitService(p.qosConfig, domainManager, p.mbController, taskManager, p.pluginRegistrationDirs)
-	if err != nil {
-		return errors.Wrap(err, "mbm: failed to create pod admit service")
-	}
-	if err := p.podAdmitService.Start(); err != nil {
-		return errors.Wrap(err, "mbm: failed to start pod admit service")
-	}
-
+	//// todo: disable the competing (shadowing) memory plugin; instead to cooperate into the built-in dynamic memory plugin:
+	//p.podAdmitService, err = podadmit.NewPodAdmitService(p.qosConfig, domainManager, p.mbController, taskManager, p.pluginRegistrationDirs)
+	//if err != nil {
+	//	return errors.Wrap(err, "mbm: failed to create pod admit service")
+	//}
+	//if err := p.podAdmitService.Start(); err != nil {
+	//	return errors.Wrap(err, "mbm: failed to start pod admit service")
+	//}
+	
 	go func() {
 		defer func() {
 			err := recover()
@@ -156,6 +162,44 @@ func NewComponent(agentCtx *agent.GenericContext, conf *config.Configuration,
 		dieTopology:            agentCtx.DieTopology,
 		incubationInterval:     conf.IncubationInterval,
 	}
+
+	domainManager := mbdomain.NewMBDomainManager(plugin.dieTopology, plugin.incubationInterval)
+
+	var err error
+
+	dataKeeper, err := state.NewMBRawDataKeeper()
+	if err != nil {
+		return false, nil, errors.Wrap(err, "failed to create raw data state keeper")
+	}
+
+	taskManager, err := task.New(plugin.dieTopology.DiesInNuma, plugin.dieTopology.CPUsInDie, dataKeeper, domainManager)
+	if err != nil {
+		return false, nil, errors.Wrap(err, "failed to create task manager")
+	}
+
+	podMBMonitor, err := monitor.NewDefaultMBMonitor(plugin.dieTopology.CPUsInDie, dataKeeper, taskManager, domainManager)
+	if err != nil {
+		return false, nil, errors.Wrap(err, "mbm: failed to create default mb monitor")
+	}
+
+	mbPlanAllocator, err := createMBPlanAllocator()
+	if err != nil {
+		return false, nil, errors.Wrap(err, "mbm: failed to create mb plan allocator")
+	}
+
+	domainPolicy, err := policy.NewDefaultDomainMBPolicy(plugin.incubationInterval)
+	if err != nil {
+		return false, nil, errors.Wrap(err, "mbm: failed to create domain manager")
+	}
+
+	plugin.mbController, err = controller.New(podMBMonitor, mbPlanAllocator, domainManager, domainPolicy)
+	if err != nil {
+		return false, nil, errors.Wrap(err, "mbm: failed to create mb controller")
+	}
+
+	MBController = plugin.mbController
+	TaskManager = taskManager
+	MBDomainManager = domainManager
 
 	return true, &agent.PluginWrapper{GenericPlugin: plugin}, nil
 }

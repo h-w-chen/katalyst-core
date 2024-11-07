@@ -37,6 +37,8 @@ import (
 	"github.com/kubewharf/katalyst-core/cmd/katalyst-agent/app/agent/qrm"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/advisorsvc"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/commonstate"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/podadmit"
 	memconsts "github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/memory/consts"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/memory/dynamicpolicy/memoryadvisor"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/memory/dynamicpolicy/oom"
@@ -160,6 +162,9 @@ type DynamicPolicy struct {
 
 	enableEvictingLogCache  bool
 	logCacheEvictionManager logcache.Manager
+
+	// mbm purposed node preempter for Socket pods
+	nodePreempter *podadmit.NodePreempter
 }
 
 func NewDynamicPolicy(agentCtx *agent.GenericContext, conf *config.Configuration,
@@ -280,6 +285,9 @@ func (p *DynamicPolicy) registerControlKnobHandlerCheckRules() {
 
 func (p *DynamicPolicy) Start() (err error) {
 	general.Infof("called")
+
+	general.InfofV(6, "mbm: creating node preempter inside of dynamic policy")
+	p.nodePreempter = podadmit.NewNodePreempter(mb.MBDomainManager, mb.MBController, mb.TaskManager)
 
 	p.Lock()
 	defer func() {
@@ -873,6 +881,14 @@ func (p *DynamicPolicy) Allocate(ctx context.Context,
 		}, nil
 	}
 
+	if podadmit.IsSocketPod(qosLevel, req.Annotations) {
+		general.InfofV(6, "mbm: resource allocate - identified socket pod %s/%s", req.PodNamespace, req.PodName)
+
+		if err := p.nodePreempter.PreemptNodes(req); err != nil {
+			general.Errorf("mbm: failed to preempt numa nodes for Socket pod %s/%s", req.PodNamespace, req.PodName)
+		}
+	}
+
 	p.Lock()
 	defer func() {
 		// calls sys-advisor to inform the latest container
@@ -911,6 +927,25 @@ func (p *DynamicPolicy) Allocate(ctx context.Context,
 			"containerName", req.ContainerName,
 			"memoryReq(bytes)", reqInt,
 			"currentResult(bytes)", allocationInfo.AggregatedQuantity)
+
+		allocInfo := &pluginapi.ResourceAllocationInfo{
+			OciPropertyName:   util.OCIPropertyNameCPUSetMems,
+			IsNodeResource:    false,
+			IsScalarResource:  true,
+			AllocatedQuantity: float64(allocationInfo.AggregatedQuantity),
+			AllocationResult:  allocationInfo.NumaAllocationResult.String(),
+		}
+
+		// todo: use more generic approach to resctrl FS layout management
+		// this behavior is required by kubelet to create share_xx resctrl layout
+		if podadmit.IsBatchPod(qosLevel, req.Annotations) {
+			general.InfofV(6, "mbm: resource allocate - pod admitting %s/%s, shared-30", req.PodNamespace, req.PodName)
+			if allocInfo.Annotations == nil {
+				allocInfo.Annotations = make(map[string]string)
+			}
+			allocInfo.Annotations["rdt.resources.beta.kubernetes.io/pod"] = "shared-30"
+		}
+
 		return &pluginapi.ResourceAllocationResponse{
 			PodUid:         req.PodUid,
 			PodNamespace:   req.PodNamespace,
@@ -923,13 +958,7 @@ func (p *DynamicPolicy) Allocate(ctx context.Context,
 			ResourceName:   string(v1.ResourceMemory),
 			AllocationResult: &pluginapi.ResourceAllocation{
 				ResourceAllocation: map[string]*pluginapi.ResourceAllocationInfo{
-					string(v1.ResourceMemory): {
-						OciPropertyName:   util.OCIPropertyNameCPUSetMems,
-						IsNodeResource:    false,
-						IsScalarResource:  true,
-						AllocatedQuantity: float64(allocationInfo.AggregatedQuantity),
-						AllocationResult:  allocationInfo.NumaAllocationResult.String(),
-					},
+					string(v1.ResourceMemory): allocInfo,
 				},
 			},
 			Labels:      general.DeepCopyMap(req.Labels),
