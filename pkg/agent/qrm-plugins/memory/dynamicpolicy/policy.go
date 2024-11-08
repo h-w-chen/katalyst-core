@@ -810,6 +810,18 @@ func (p *DynamicPolicy) Allocate(ctx context.Context,
 	// assuming no error safely
 	qosLevel, _ := util.GetKatalystQoSLevelFromResourceReq(p.qosConfig, req, p.podAnnotationKeptKeys, p.podLabelKeptKeys)
 	general.InfofV(6, "mbm: resource allocate - pod %s/%s,  qos %v, anno %v", req.PodNamespace, req.PodName, qosLevel, req.Annotations)
+
+	// todo: remove hacky test code below
+	allocInfo := resp.AllocationResult.ResourceAllocation[string(v1.ResourceMemory)]
+	if allocInfo != nil {
+		if allocInfo.Annotations == nil {
+			allocInfo.Annotations = make(map[string]string)
+		}
+		allocInfo.Annotations["rdt.resources.beta.kubernetes.io/pod"] = "shared-30"
+	}
+	mb.NodePreempter.DomainManager.PreemptNodes([]int{4, 5, 6})
+	mb.NodePreempter.MbController.ReqToAdjustMB()
+
 	if mb.PodSubgrouper.IsSocketPod(qosLevel, req.Annotations) {
 		general.InfofV(6, "mbm: resource allocate - identified socket pod %s/%s", req.PodNamespace, req.PodName)
 		if err := mb.NodePreempter.PreemptNodes(req); err != nil {

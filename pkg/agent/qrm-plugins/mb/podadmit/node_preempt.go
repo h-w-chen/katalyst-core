@@ -13,8 +13,8 @@ import (
 
 // NodePreempter preempts specified numa nodes (and all their CCDs) before there is load (e.g. socket pod) occupying them
 type NodePreempter struct {
-	domainManager *mbdomain.MBDomainManager
-	mbController  *controller.Controller
+	DomainManager *mbdomain.MBDomainManager
+	MbController  *controller.Controller
 	taskManager   task.Manager
 }
 
@@ -44,9 +44,9 @@ func (n *NodePreempter) PreemptNodes(req *pluginapi.ResourceRequest) error {
 	// check numa nodes' in-use state; only preempt those not-in-use yet
 	nodesToPreempt := n.getNotInUseNodes(req.Hint.Nodes)
 	if len(nodesToPreempt) > 0 {
-		if n.domainManager.PreemptNodes(nodesToPreempt) {
+		if n.DomainManager.PreemptNodes(nodesToPreempt) {
 			// requests to adjust mb ASAP for new preemption if there are any changes
-			n.mbController.ReqToAdjustMB()
+			n.MbController.ReqToAdjustMB()
 		}
 	}
 
@@ -55,8 +55,8 @@ func (n *NodePreempter) PreemptNodes(req *pluginapi.ResourceRequest) error {
 
 func NewNodePreempter(domainManager *mbdomain.MBDomainManager, mbController *controller.Controller, taskManager task.Manager) *NodePreempter {
 	return &NodePreempter{
-		domainManager: domainManager,
-		mbController:  mbController,
+		DomainManager: domainManager,
+		MbController:  mbController,
 		taskManager:   taskManager,
 	}
 }
