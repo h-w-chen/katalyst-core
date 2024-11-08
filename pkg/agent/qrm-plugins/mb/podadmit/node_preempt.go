@@ -11,6 +11,7 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
 )
 
+// NodePreempter preempts specified numa nodes (and all their CCDs) before there is load (e.g. socket pod) occupying them
 type NodePreempter struct {
 	domainManager *mbdomain.MBDomainManager
 	mbController  *controller.Controller

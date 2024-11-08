@@ -8,12 +8,13 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
 )
 
+const socketPodInstanceModelKey = "instance-model"
+
+// PodGrouper determines QoS related properties of the pod in admitting request
 type PodGrouper struct {
 	poolToSharedSubgroup  map[string]string
 	defaultSharedSubgroup string
 }
-
-const socketPodInstanceModelKey = "instance-model"
 
 func (p *PodGrouper) IsSocketPod(qosLevel string, annotations map[string]string) bool {
 	if v, ok := annotations[socketPodInstanceModelKey]; ok {

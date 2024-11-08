@@ -38,7 +38,6 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/advisorsvc"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/commonstate"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb"
-	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/podadmit"
 	memconsts "github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/memory/consts"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/memory/dynamicpolicy/memoryadvisor"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/memory/dynamicpolicy/oom"
@@ -162,9 +161,6 @@ type DynamicPolicy struct {
 
 	enableEvictingLogCache  bool
 	logCacheEvictionManager logcache.Manager
-
-	// mbm purposed node preempter for Socket pods
-	nodePreempter *podadmit.NodePreempter
 }
 
 func NewDynamicPolicy(agentCtx *agent.GenericContext, conf *config.Configuration,
@@ -285,9 +281,6 @@ func (p *DynamicPolicy) registerControlKnobHandlerCheckRules() {
 
 func (p *DynamicPolicy) Start() (err error) {
 	general.Infof("called")
-
-	general.InfofV(6, "mbm: creating node preempter inside of dynamic policy")
-	p.nodePreempter = podadmit.NewNodePreempter(mb.MBDomainManager, mb.MBController, mb.TaskManager)
 
 	p.Lock()
 	defer func() {
@@ -808,6 +801,37 @@ func (p *DynamicPolicy) GetResourcePluginOptions(context.Context,
 func (p *DynamicPolicy) Allocate(ctx context.Context,
 	req *pluginapi.ResourceRequest,
 ) (resp *pluginapi.ResourceAllocationResponse, respErr error) {
+	resp, err := p.allocate(ctx, req)
+	if err != nil {
+		return resp, err
+	}
+
+	// post-process handling to augment with MB related features (socket pod preemption on admission etc)
+	// assuming no error safely
+	qosLevel, _ := util.GetKatalystQoSLevelFromResourceReq(p.qosConfig, req, p.podAnnotationKeptKeys, p.podLabelKeptKeys)
+	general.InfofV(6, "mbm: resource allocate - pod %s/%s,  qos %v, anno %v", req.PodNamespace, req.PodName, qosLevel, req.Annotations)
+	if mb.PodSubgrouper.IsSocketPod(qosLevel, req.Annotations) {
+		general.InfofV(6, "mbm: resource allocate - identified socket pod %s/%s", req.PodNamespace, req.PodName)
+		if err := mb.NodePreempter.PreemptNodes(req); err != nil {
+			general.Errorf("mbm: failed to preempt numa nodes for Socket pod %s/%s", req.PodNamespace, req.PodName)
+		}
+	} else if mb.PodSubgrouper.IsShared30(qosLevel, req.Annotations) {
+		general.InfofV(6, "mbm: resource allocate - pod admitting %s/%s, shared-30", req.PodNamespace, req.PodName)
+		allocInfo := resp.AllocationResult.ResourceAllocation[string(v1.ResourceMemory)]
+		if allocInfo != nil {
+			if allocInfo.Annotations == nil {
+				allocInfo.Annotations = make(map[string]string)
+			}
+			allocInfo.Annotations["rdt.resources.beta.kubernetes.io/pod"] = "shared-30"
+		}
+	}
+
+	return resp, err
+}
+
+func (p *DynamicPolicy) allocate(ctx context.Context,
+	req *pluginapi.ResourceRequest,
+) (resp *pluginapi.ResourceAllocationResponse, respErr error) {
 	if req == nil {
 		return nil, fmt.Errorf("Allocate got nil req")
 	}
@@ -825,8 +849,6 @@ func (p *DynamicPolicy) Allocate(ctx context.Context,
 		general.Errorf("%s", err.Error())
 		return nil, err
 	}
-
-	general.InfofV(6, "mbm: resource allocate - pod %s/%s,  qos %v, anno %v", req.PodNamespace, req.PodName, qosLevel, req.Annotations)
 
 	reqInt, _, err := util.GetQuantityFromResourceReq(req)
 	if err != nil {
@@ -883,14 +905,6 @@ func (p *DynamicPolicy) Allocate(ctx context.Context,
 		}, nil
 	}
 
-	if mb.PodSubgrouper.IsSocketPod(qosLevel, req.Annotations) {
-		general.InfofV(6, "mbm: resource allocate - identified socket pod %s/%s", req.PodNamespace, req.PodName)
-
-		if err := p.nodePreempter.PreemptNodes(req); err != nil {
-			general.Errorf("mbm: failed to preempt numa nodes for Socket pod %s/%s", req.PodNamespace, req.PodName)
-		}
-	}
-
 	p.Lock()
 	defer func() {
 		// calls sys-advisor to inform the latest container
@@ -929,24 +943,6 @@ func (p *DynamicPolicy) Allocate(ctx context.Context,
 			"containerName", req.ContainerName,
 			"memoryReq(bytes)", reqInt,
 			"currentResult(bytes)", allocationInfo.AggregatedQuantity)
-
-		allocInfo := &pluginapi.ResourceAllocationInfo{
-			OciPropertyName:   util.OCIPropertyNameCPUSetMems,
-			IsNodeResource:    false,
-			IsScalarResource:  true,
-			AllocatedQuantity: float64(allocationInfo.AggregatedQuantity),
-			AllocationResult:  allocationInfo.NumaAllocationResult.String(),
-		}
-
-		// todo: use more generic approach to resctrl FS layout management
-		// this behavior is required by kubelet to create share_xx resctrl layout
-		if mb.PodSubgrouper.IsShared30(qosLevel, req.Annotations) {
-			if allocInfo.Annotations == nil {
-				allocInfo.Annotations = make(map[string]string)
-			}
-			allocInfo.Annotations["rdt.resources.beta.kubernetes.io/pod"] = "shared-30"
-		}
-
 		return &pluginapi.ResourceAllocationResponse{
 			PodUid:         req.PodUid,
 			PodNamespace:   req.PodNamespace,
@@ -959,7 +955,13 @@ func (p *DynamicPolicy) Allocate(ctx context.Context,
 			ResourceName:   string(v1.ResourceMemory),
 			AllocationResult: &pluginapi.ResourceAllocation{
 				ResourceAllocation: map[string]*pluginapi.ResourceAllocationInfo{
-					string(v1.ResourceMemory): allocInfo,
+					string(v1.ResourceMemory): {
+						OciPropertyName:   util.OCIPropertyNameCPUSetMems,
+						IsNodeResource:    false,
+						IsScalarResource:  true,
+						AllocatedQuantity: float64(allocationInfo.AggregatedQuantity),
+						AllocationResult:  allocationInfo.NumaAllocationResult.String(),
+					},
 				},
 			},
 			Labels:      general.DeepCopyMap(req.Labels),
@@ -970,22 +972,7 @@ func (p *DynamicPolicy) Allocate(ctx context.Context,
 	if p.allocationHandlers[qosLevel] == nil {
 		return nil, fmt.Errorf("katalyst QoS level: %s is not supported yet", qosLevel)
 	}
-
-	allocResp, err := p.allocationHandlers[qosLevel](ctx, req)
-	if err == nil {
-		if mb.PodSubgrouper.IsShared30(qosLevel, req.Annotations) {
-			general.InfofV(6, "mbm: resource allocate - pod admitting %s/%s, shared-30", req.PodNamespace, req.PodName)
-			allocInfo := allocResp.AllocationResult.ResourceAllocation[string(v1.ResourceMemory)]
-			if allocInfo != nil {
-				if allocInfo.Annotations == nil {
-					allocInfo.Annotations = make(map[string]string)
-				}
-				allocInfo.Annotations["rdt.resources.beta.kubernetes.io/pod"] = "shared-30"
-			}
-		}
-	}
-
-	return allocResp, err
+	return p.allocationHandlers[qosLevel](ctx, req)
 }
 
 // AllocateForPod is called during pod admit so that the resource
