@@ -22,8 +22,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kubewharf/katalyst-api/pkg/plugins/skeleton"
-
 	"github.com/kubewharf/katalyst-core/cmd/katalyst-agent/app/agent"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/allocator"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller"
@@ -54,8 +52,7 @@ type plugin struct {
 	dieTopology        *machine.DieTopology
 	incubationInterval time.Duration
 
-	mbController    *controller.Controller
-	podAdmitService skeleton.GenericPlugin
+	mbController *controller.Controller
 }
 
 func (p *plugin) Name() string {
@@ -71,49 +68,6 @@ func (p *plugin) Start() error {
 	if !p.dieTopology.FakeNUMAEnabled {
 		return errors.New("mbm: not virtual numa; no need to dynamically manage the memory bandwidth")
 	}
-
-	//domainManager := mbdomain.NewMBDomainManager(p.dieTopology, p.incubationInterval)
-	//
-	//var err error
-	//
-	//dataKeeper, err := state.NewMBRawDataKeeper()
-	//if err != nil {
-	//	return errors.Wrap(err, "failed to create raw data state keeper")
-	//}
-	//
-	//taskManager, err := task.New(p.dieTopology.DiesInNuma, p.dieTopology.CPUsInDie, dataKeeper, domainManager)
-	//if err != nil {
-	//	return errors.Wrap(err, "failed to create task manager")
-	//}
-	//
-	//podMBMonitor, err := monitor.NewDefaultMBMonitor(p.dieTopology.CPUsInDie, dataKeeper, taskManager, domainManager)
-	//if err != nil {
-	//	return errors.Wrap(err, "mbm: failed to create default mb monitor")
-	//}
-	//
-	//mbPlanAllocator, err := createMBPlanAllocator()
-	//if err != nil {
-	//	return errors.Wrap(err, "mbm: failed to create mb plan allocator")
-	//}
-	//
-	//domainPolicy, err := policy.NewDefaultDomainMBPolicy(p.incubationInterval)
-	//if err != nil {
-	//	return errors.Wrap(err, "mbm: failed to create domain manager")
-	//}
-	//
-	//p.mbController, err = controller.New(podMBMonitor, mbPlanAllocator, domainManager, domainPolicy)
-	//if err != nil {
-	//	return errors.Wrap(err, "mbm: failed to create mb controller")
-	//}
-
-	//// todo: disable the competing (shadowing) memory plugin; instead to cooperate into the built-in dynamic memory plugin:
-	//p.podAdmitService, err = podadmit.NewPodAdmitService(p.qosConfig, domainManager, p.mbController, taskManager, p.pluginRegistrationDirs)
-	//if err != nil {
-	//	return errors.Wrap(err, "mbm: failed to create pod admit service")
-	//}
-	//if err := p.podAdmitService.Start(); err != nil {
-	//	return errors.Wrap(err, "mbm: failed to start pod admit service")
-	//}
 
 	go func() {
 		defer func() {
@@ -144,14 +98,7 @@ func createMBPlanAllocator() (allocator.PlanAllocator, error) {
 }
 
 func (p *plugin) Stop() error {
-	// todo: not sure why not being called on ctrl-C ???
 	general.Infof("mbm: mb plugin is stopping...")
-	if p.podAdmitService != nil {
-		if err := p.podAdmitService.Stop(); err != nil {
-			general.Errorf("mbm: plugin failed to stop pod admitter service: %v", err)
-		}
-	}
-
 	return p.mbController.Stop()
 }
 
