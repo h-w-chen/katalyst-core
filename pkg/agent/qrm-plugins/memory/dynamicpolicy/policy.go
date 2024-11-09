@@ -801,6 +801,8 @@ func (p *DynamicPolicy) GetResourcePluginOptions(context.Context,
 func (p *DynamicPolicy) Allocate(ctx context.Context,
 	req *pluginapi.ResourceRequest,
 ) (resp *pluginapi.ResourceAllocationResponse, respErr error) {
+	general.InfofV(6, "mbm: resource allocate at entrance - pod %s/%s,  anno %v", req.PodNamespace, req.PodName, req.Annotations)
+
 	resp, err := p.allocate(ctx, req)
 	if err != nil {
 		return resp, err
