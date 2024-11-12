@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"sync"
 	"time"
+
+	"github.com/kubewharf/katalyst-core/pkg/util/syntax"
 )
 
 // MetricData represents the standard response data for metric getter functions
@@ -39,16 +41,17 @@ type MetricData struct {
 type MetricStore struct {
 	mutex sync.RWMutex
 
-	nodeMetricMap             map[string]MetricData                               // map[metricName]data
-	numaMetricMap             map[int]map[string]MetricData                       // map[numaID]map[metricName]data
-	deviceMetricMap           map[string]map[string]MetricData                    // map[deviceName]map[metricName]data
-	networkMetricMap          map[string]map[string]MetricData                    // map[networkName]map[metricName]data
-	cpuMetricMap              map[int]map[string]MetricData                       // map[cpuID]map[metricName]data
-	podContainerMetricMap     map[string]map[string]map[string]MetricData         // map[podUID]map[containerName]map[metricName]data
-	podContainerNumaMetricMap map[string]map[string]map[int]map[string]MetricData // map[podUID]map[containerName]map[numaID]map[metricName]data
-	podVolumeMetricMap        map[string]map[string]map[string]MetricData         // map[podUID]map[volumeName]map[metricName]data
-	cgroupMetricMap           map[string]map[string]MetricData                    // map[cgroupPath]map[metricName]value
-	cgroupNumaMetricMap       map[string]map[int]map[string]MetricData            // map[cgroupPath]map[numaNode]map[metricName]value
+	nodeMetricMap             map[string]MetricData                                  // map[metricName]data
+	numaMetricMap             map[int]map[string]MetricData                          // map[numaID]map[metricName]data
+	deviceMetricMap           map[string]map[string]MetricData                       // map[deviceName]map[metricName]data
+	networkMetricMap          map[string]map[string]MetricData                       // map[networkName]map[metricName]data
+	cpuMetricMap              map[int]map[string]MetricData                          // map[cpuID]map[metricName]data
+	podContainerMetricMap     map[string]map[string]map[string]MetricData            // map[podUID]map[containerName]map[metricName]data
+	podContainerNumaMetricMap map[string]map[string]map[string]map[string]MetricData // map[podUID]map[containerName]map[numaNode]map[metricName]data
+	podVolumeMetricMap        map[string]map[string]map[string]MetricData            // map[podUID]map[volumeName]map[metricName]data
+	cgroupMetricMap           map[string]map[string]MetricData                       // map[cgroupPath]map[metricName]value
+	cgroupNumaMetricMap       map[string]map[int]map[string]MetricData               // map[cgroupPath]map[numaNode]map[metricName]value
+	stringIndexedMetricMap    map[string]interface{}
 }
 
 func NewMetricStore() *MetricStore {
@@ -63,7 +66,20 @@ func NewMetricStore() *MetricStore {
 		podVolumeMetricMap:        make(map[string]map[string]map[string]MetricData),
 		cgroupMetricMap:           make(map[string]map[string]MetricData),
 		cgroupNumaMetricMap:       make(map[string]map[int]map[string]MetricData),
+		stringIndexedMetricMap:    make(map[string]interface{}),
 	}
+}
+
+func (c *MetricStore) GetByStringIndex(metricName string) interface{} {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	return syntax.DeepCopy(c.stringIndexedMetricMap[metricName])
+}
+
+func (c *MetricStore) SetByStringIndex(metricName string, metricMap interface{}) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	c.stringIndexedMetricMap[metricName] = metricMap
 }
 
 func (c *MetricStore) SetNodeMetric(metricName string, data MetricData) {
