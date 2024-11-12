@@ -91,7 +91,6 @@ func (m mbMonitor) GetMBQoSGroups() (map[task.QoSGroup]*MBQoSGroup, error) {
 }
 
 func getGroupCCDMBs(rGroupCCDMB, wGroupCCDMB map[task.QoSGroup]map[int]int) map[task.QoSGroup]map[int]*MBData {
-	// precondition: rGroupCCDMB, wGroupCCDMB have identical keys of qos group
 	groupCCDMBs := make(map[task.QoSGroup]map[int]*MBData)
 	for qos, ccdMB := range rGroupCCDMB {
 		groupCCDMBs[qos] = make(map[int]*MBData)
@@ -101,6 +100,12 @@ func getGroupCCDMBs(rGroupCCDMB, wGroupCCDMB map[task.QoSGroup]map[int]int) map[
 	}
 	for qos, ccdMB := range wGroupCCDMB {
 		for ccd, mb := range ccdMB {
+			if _, ok := groupCCDMBs[qos]; !ok {
+				groupCCDMBs[qos] = make(map[int]*MBData)
+			}
+			if _, ok := groupCCDMBs[qos][ccd]; !ok {
+				groupCCDMBs[qos][ccd] = &MBData{}
+			}
 			groupCCDMBs[qos][ccd].WritesMB = mb
 		}
 	}
