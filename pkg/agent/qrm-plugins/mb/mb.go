@@ -24,7 +24,7 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/mbdomain"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy"
-	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor/metricstore"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/podadmit"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl/state"
@@ -76,10 +76,12 @@ func NewComponent(agentCtx *agent.GenericContext, conf *config.Configuration,
 		return false, nil, errors.Wrap(err, "failed to create task manager")
 	}
 
-	podMBMonitor, err := monitor.NewDefaultMBMonitor(plugin.dieTopology.CPUsInDie, dataKeeper, taskManager, domainManager)
-	if err != nil {
-		return false, nil, errors.Wrap(err, "mbm: failed to create default mb monitor")
-	}
+	mbMonitor := metricstore.NewMBReader(agentCtx.MetricsFetcher)
+
+	//podMBMonitor, err := monitor.NewDefaultMBMonitor(plugin.dieTopology.CPUsInDie, dataKeeper, taskManager, domainManager)
+	//if err != nil {
+	//	return false, nil, errors.Wrap(err, "mbm: failed to create default mb monitor")
+	//}
 
 	mbPlanAllocator, err := createMBPlanAllocator()
 	if err != nil {
@@ -91,7 +93,7 @@ func NewComponent(agentCtx *agent.GenericContext, conf *config.Configuration,
 		return false, nil, errors.Wrap(err, "mbm: failed to create domain manager")
 	}
 
-	plugin.mbController, err = controller.New(podMBMonitor, mbPlanAllocator, domainManager, domainPolicy)
+	plugin.mbController, err = controller.New(mbMonitor, mbPlanAllocator, domainManager, domainPolicy)
 	if err != nil {
 		return false, nil, errors.Wrap(err, "mbm: failed to create mb controller")
 	}

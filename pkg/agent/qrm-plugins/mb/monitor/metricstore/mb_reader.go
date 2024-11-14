@@ -24,11 +24,12 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
 	"github.com/kubewharf/katalyst-core/pkg/consts"
+	"github.com/kubewharf/katalyst-core/pkg/metaserver/agent/metric/types"
 	"github.com/kubewharf/katalyst-core/pkg/util/metric"
 )
 
 type mbReader struct {
-	metricStore *metric.MetricStore
+	metricsFetcher types.MetricsFetcher
 }
 
 func toMBQoSGroup(ccdMetricData map[int]metric.MetricData) *monitor.MBQoSGroup {
@@ -55,7 +56,7 @@ func toMBQoSGroup(ccdMetricData map[int]metric.MetricData) *monitor.MBQoSGroup {
 }
 
 func (m *mbReader) GetMBQoSGroups() (map[task.QoSGroup]*monitor.MBQoSGroup, error) {
-	mbBlob := m.metricStore.GetByStringIndex(consts.MetricTotalMemBandwidthQoSGroup)
+	mbBlob := m.metricsFetcher.GetByStringIndex(consts.MetricTotalMemBandwidthQoSGroup)
 
 	var qosCCDMB map[string]map[int]metric.MetricData
 	qosCCDMB, ok := mbBlob.(map[string]map[int]metric.MetricData)
@@ -70,8 +71,8 @@ func (m *mbReader) GetMBQoSGroups() (map[task.QoSGroup]*monitor.MBQoSGroup, erro
 	return result, nil
 }
 
-func NewMBReader(metricStore *metric.MetricStore) monitor.MBMonitor {
+func NewMBReader(metricsFetcher types.MetricsFetcher) monitor.MBMonitor {
 	return &mbReader{
-		metricStore: metricStore,
+		metricsFetcher: metricsFetcher,
 	}
 }
