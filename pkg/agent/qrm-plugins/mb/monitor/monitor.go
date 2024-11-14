@@ -19,6 +19,8 @@ package monitor
 import (
 	"fmt"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -28,6 +30,17 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/task"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/writemb"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/writemb/l3pmc"
+)
+
+var (
+	// todo: use a better mechanism to pass needed data than exposing global var
+	// global var used by resctrl mb provisioner for creation of domain manager
+	IncubationInterval time.Duration
+)
+
+var (
+	onceDefaultMBMonitorInit sync.Once
+	defaultMBMonitor         MBMonitor
 )
 
 type MBMonitor interface {
@@ -43,6 +56,14 @@ func newMBMonitor(taskManager task.Manager, rmbReader task.TaskMBReader, wmbRead
 }
 
 func NewDefaultMBMonitor(dieCPUs map[int][]int, dataKeeper state.MBRawDataKeeper, taskManager task.Manager, domainManager *mbdomain.MBDomainManager) (MBMonitor, error) {
+	var err error
+	onceDefaultMBMonitorInit.Do(func() {
+		defaultMBMonitor, err = newDefaultMBMonitor(dieCPUs, dataKeeper, taskManager, domainManager)
+	})
+	return defaultMBMonitor, err
+}
+
+func newDefaultMBMonitor(dieCPUs map[int][]int, dataKeeper state.MBRawDataKeeper, taskManager task.Manager, domainManager *mbdomain.MBDomainManager) (MBMonitor, error) {
 	taskMBReader, err := task.CreateTaskMBReader(dataKeeper)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create task mb reader")
