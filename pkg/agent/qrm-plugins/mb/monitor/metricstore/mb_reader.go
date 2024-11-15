@@ -42,8 +42,7 @@ func toMBQoSGroup(ccdMetricData map[int]metric.MetricData) *monitor.MBQoSGroup {
 	for ccd, metric := range ccdMetricData {
 		CCDs.Insert(ccd)
 		CCDMBs[ccd] = &monitor.MBData{
-			ReadsMB:  int(metric.Value),
-			WritesMB: 0, // todo: fix to have r/w metrics in metric store
+			TotalMB: int(metric.Value),
 		}
 	}
 

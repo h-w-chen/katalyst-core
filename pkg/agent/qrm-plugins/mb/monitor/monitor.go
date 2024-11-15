@@ -199,7 +199,7 @@ func DisplayMBSummary(qosCCDMB map[task.QoSGroup]*MBQoSGroup) string {
 	for qos, ccdmb := range qosCCDMB {
 		sb.WriteString(fmt.Sprintf("--QoS: %s\n", qos))
 		for ccd, mb := range ccdmb.CCDMB {
-			sb.WriteString(fmt.Sprintf("      ccd %d: r %d, w %d\n", ccd, mb.ReadsMB, mb.WritesMB))
+			sb.WriteString(fmt.Sprintf("      ccd %d: r %d, w %d, total %d\n", ccd, mb.ReadsMB, mb.WritesMB, mb.TotalMB))
 		}
 	}
 	return sb.String()

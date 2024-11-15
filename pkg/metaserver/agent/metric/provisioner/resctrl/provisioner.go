@@ -87,10 +87,12 @@ func (r *resctrlMetricsProvisioner) sample(ctx context.Context) {
 		return
 	}
 
-	r.processMBSummry(qosCCDMB)
+	general.InfofV(6, "mbm: mb usage summary: %v", monitor.DisplayMBSummary(qosCCDMB))
+	r.processTotalMB(qosCCDMB)
+	// todo: save read/write MB metrics
 }
 
-func (r *resctrlMetricsProvisioner) processMBSummry(qosCCDMB map[task.QoSGroup]*monitor.MBQoSGroup) {
+func (r *resctrlMetricsProvisioner) processTotalMB(qosCCDMB map[task.QoSGroup]*monitor.MBQoSGroup) {
 	if qosCCDMB == nil {
 		return
 	}
@@ -104,7 +106,7 @@ func (r *resctrlMetricsProvisioner) processMBSummry(qosCCDMB map[task.QoSGroup]*
 
 		for ccd, mb := range data.CCDMB {
 			newMetricBlob[string(qosGroup)][ccd] = utilmetric.MetricData{
-				Value: float64(mb.WritesMB + mb.ReadsMB),
+				Value: float64(mb.ReadsMB + mb.WritesMB),
 				Time:  &updateTime,
 			}
 		}
