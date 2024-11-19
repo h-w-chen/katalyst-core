@@ -19,6 +19,7 @@ package metric
 import (
 	"context"
 	"fmt"
+	"github.com/kubewharf/katalyst-core/pkg/util/general"
 	"math/rand"
 	"sync"
 	"time"
@@ -278,12 +279,18 @@ func NewMetricsFetcher(baseConf *global.BaseConfiguration, metricConf *metaserve
 	intervals := make(map[string]time.Duration)
 	provisioners := make(map[string]types.MetricsProvisioner)
 	registeredProvisioners := getProvisioners()
+
+	// todo: ???
+	general.Infof("mbm: intervals settings %v", metricConf.ProvisionerIntervals)
+
 	for _, name := range metricConf.MetricProvisions {
 		if f, ok := registeredProvisioners[name]; ok {
 			intervals[name] = metricConf.DefaultInterval
 			if interval, exist := metricConf.ProvisionerIntervals[name]; exist {
 				intervals[name] = interval
 			}
+			// todo: ???
+			general.Infof("mbm: provisioner %s, interval %v", name, intervals[name])
 			provisioners[name] = f(baseConf, metricConf, emitter, podFetcher, metricStore)
 		}
 	}
@@ -369,6 +376,9 @@ func (f *MetricsFetcherImpl) RegisterExternalMetric(externalMetricFunc func(stor
 }
 
 func (f *MetricsFetcherImpl) Run(ctx context.Context) {
+	// todo: ???
+	general.Infof("mbm: fetcher intervals settings %v", f.intervals)
+
 	// make sure all provisioners have started at least once,
 	// and then allow each provisioner to collect metrics with
 	// its specified period.
@@ -412,6 +422,10 @@ func (f *MetricsFetcherImpl) run(ctx context.Context) {
 	for name := range f.provisioners {
 		p := f.provisioners[name]
 		t := f.intervals[name]
+		
+		// todo: ???
+		general.Infof("mbm: provision %s, interval %v", name, t)
+
 		go wait.Until(func() {
 			p.Run(ctx)
 			if f.metricsNotifierManager != nil {

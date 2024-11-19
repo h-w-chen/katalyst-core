@@ -18,6 +18,7 @@ package metricstore
 
 import (
 	"fmt"
+	"github.com/kubewharf/katalyst-core/pkg/util/general"
 
 	"k8s.io/apimachinery/pkg/util/sets"
 
@@ -56,11 +57,12 @@ func toMBQoSGroup(ccdMetricData map[int]metric.MetricData) *monitor.MBQoSGroup {
 
 func (m *mbReader) GetMBQoSGroups() (map[task.QoSGroup]*monitor.MBQoSGroup, error) {
 	mbBlob := m.metricsFetcher.GetByStringIndex(consts.MetricTotalMemBandwidthQoSGroup)
+	general.InfofV(6, "mbm: metric store blob: %v", mbBlob)
 
 	var qosCCDMB map[string]map[int]metric.MetricData
 	qosCCDMB, ok := mbBlob.(map[string]map[int]metric.MetricData)
 	if !ok {
-		return nil, fmt.Errorf("unexpected metric blob by key %s", consts.MetricTotalMemBandwidthQoSGroup)
+		return nil, fmt.Errorf("unexpected metric blob by key %s: %T", consts.MetricTotalMemBandwidthQoSGroup, qosCCDMB)
 	}
 
 	result := make(map[task.QoSGroup]*monitor.MBQoSGroup)
