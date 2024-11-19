@@ -49,7 +49,7 @@ func toMBQoSGroup(ccdMetricData map[int]metric.MetricData) *monitor.MBQoSGroup {
 
 	result := monitor.MBQoSGroup{
 		CCDs:  CCDs,
-		CCDMB: nil,
+		CCDMB: CCDMBs,
 	}
 
 	return &result
