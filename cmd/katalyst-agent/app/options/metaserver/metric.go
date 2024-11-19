@@ -17,6 +17,7 @@ limitations under the License.
 package metaserver
 
 import (
+	"github.com/kubewharf/katalyst-core/pkg/util/general"
 	"time"
 
 	cliflag "k8s.io/component-base/cli/flag"
@@ -92,6 +93,8 @@ func (o *MetricFetcherOptions) ApplyTo(c *metaserver.MetricConfiguration) error 
 
 	c.DefaultInterval = o.DefaultInterval
 	c.ProvisionerIntervals = make(map[string]time.Duration)
+	// todo: ???
+	general.Infof("mbm: arg intervals %v", o.ProvisionerIntervalSecs)
 	for name, secs := range o.ProvisionerIntervalSecs {
 		c.ProvisionerIntervals[name] = time.Second * time.Duration(secs)
 	}
