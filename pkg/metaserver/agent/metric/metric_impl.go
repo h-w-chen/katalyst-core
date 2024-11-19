@@ -422,6 +422,10 @@ func (f *MetricsFetcherImpl) run(ctx context.Context) {
 	for name := range f.provisioners {
 		p := f.provisioners[name]
 		t := f.intervals[name]
+		
+		// todo: ???
+		general.Infof("mbm: provision %s, interval %v", name, t)
+
 		go wait.Until(func() {
 			p.Run(ctx)
 			if f.metricsNotifierManager != nil {
