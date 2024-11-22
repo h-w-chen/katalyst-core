@@ -107,16 +107,18 @@ func (p *powerAwareAdvisor) Run(ctx context.Context) {
 	defer p.cleanup()
 	defer p.powerCapper.Reset()
 
+	general.Infof("pap: advisor periodical processing ...")
 	wait.Until(func() { p.run(ctx) }, intervalSpecFetch, ctx.Done())
 
 	general.Infof("pap: advisor Run exited")
 }
 
 func (p *powerAwareAdvisor) cleanup() {
+	general.InfofV(6, "pap: advisor cleaning up...")
 	p.powerReader.Cleanup()
-	if err := p.podEvictor.Stop(); err != nil {
-		general.Errorf("pap: failed to stop power pod evictor: %v", err)
-	}
+	//	if err := p.podEvictor.Stop(); err != nil {
+	//		general.Errorf("pap: failed to stop power pod evictor: %v", err)
+	//	}
 	if err := p.powerCapper.Stop(); err != nil {
 		general.Errorf("pap: failed to stop power capper: %v", err)
 	}
