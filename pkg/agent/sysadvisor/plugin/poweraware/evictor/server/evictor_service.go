@@ -124,19 +124,22 @@ func (p *powerPressureEvictServer) Start() error {
 func (p *powerPressureEvictServer) Stop() error {
 	general.InfofV(6, "pap: evict service is stopping...")
 	general.InfofV(6, "pap: evict service Stop stack trace: %s", string(debug.Stack()))
-	//	p.mutex.Lock()
-	//	defer p.mutex.Unlock()
+	////	p.mutex.Lock()
+	////	defer p.mutex.Unlock()
+	//
+	//if !p.started {
+	//	general.InfofV(6, "pap: power pressure eviction server already stopped")
+	//	return nil
+	//}
+	//
+	//p.started = false
+	//general.InfofV(6, "pap: trying to stop inner grpc evict service")
+	//err := p.service.Stop()
+	//general.InfofV(6, "pap: evict service stopped")
+	//return err
 
-	if !p.started {
-		general.InfofV(6, "pap: power pressure eviction server already stopped")
-		return nil
-	}
-
-	p.started = false
-	general.InfofV(6, "pap: trying to stop inner grpc evict service")
-	err := p.service.Stop()
 	general.InfofV(6, "pap: evict service stopped")
-	return err
+	return nil
 }
 
 func (p *powerPressureEvictServer) GetToken(ctx context.Context, empty *pluginapi.Empty) (*pluginapi.GetTokenResponse, error) {
