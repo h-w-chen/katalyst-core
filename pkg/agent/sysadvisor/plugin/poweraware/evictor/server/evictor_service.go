@@ -123,7 +123,7 @@ func (p *powerPressureEvictServer) Start() error {
 
 func (p *powerPressureEvictServer) Stop() error {
 	general.InfofV(6, "pap: evict service is stopping...")
-	debug.PrintStack()
+	general.InfofV(6, "pap: evict service Stop stack trace: %s", string(debug.Stack()))
 	//	p.mutex.Lock()
 	//	defer p.mutex.Unlock()
 
