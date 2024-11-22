@@ -61,8 +61,9 @@ func (p *powerPressureEvictServer) reset(ctx context.Context) {
 // Evict method puts request to evict pods in the pool; it will be sent out to plugin client via the eviction protocol
 // the real eviction will be done by the (remote) eviction manager where the plugin client is registered with
 func (p *powerPressureEvictServer) Evict(ctx context.Context, pods []*v1.Pod) error {
-	general.InfofV(6, "pap: request to evict %d BE pods", len(pods))
+	general.InfofV(6, "pap: entrance: request to evict %d BE pods", len(pods))
 	p.mutex.Lock()
+	general.InfofV(6, "pap: after lock: request to evict %d BE pods", len(pods))
 	defer p.mutex.Unlock()
 
 	if !p.started {
@@ -101,8 +102,8 @@ func (p *powerPressureEvictServer) Name() string {
 func (p *powerPressureEvictServer) Start() error {
 	general.InfofV(6, "pap: evict service is starting...")
 
-	p.mutex.Lock()
-	defer p.mutex.Unlock()
+	//	p.mutex.Lock()
+	//	defer p.mutex.Unlock()
 
 	if p.started {
 		general.InfofV(6, "pap: power pressure eviction server already started")
@@ -119,8 +120,8 @@ func (p *powerPressureEvictServer) Start() error {
 }
 
 func (p *powerPressureEvictServer) Stop() error {
-	p.mutex.Lock()
-	defer p.mutex.Unlock()
+	//	p.mutex.Lock()
+	//	defer p.mutex.Unlock()
 
 	if !p.started {
 		general.InfofV(6, "pap: power pressure eviction server already stopped")
@@ -156,8 +157,8 @@ func (p *powerPressureEvictServer) GetEvictPods(ctx context.Context, request *pl
 		}
 	}
 
-	p.mutex.RLock()
-	defer p.mutex.RUnlock()
+	//	p.mutex.RLock()
+	//	defer p.mutex.RUnlock()
 
 	evictPods := make([]*pluginapi.EvictPod, 0)
 
