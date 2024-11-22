@@ -116,10 +116,12 @@ func (p *powerPressureEvictServer) Start() error {
 
 	general.InfofV(6, "pap: evict service started and is listening...")
 	p.started = true
+	general.InfofV(6, "pap: evict service started")
 	return nil
 }
 
 func (p *powerPressureEvictServer) Stop() error {
+	general.InfofV(6, "pap: evict service is stopping...")
 	//	p.mutex.Lock()
 	//	defer p.mutex.Unlock()
 
@@ -129,7 +131,9 @@ func (p *powerPressureEvictServer) Stop() error {
 	}
 
 	p.started = false
-	return p.service.Stop()
+	err := p.service.Stop()
+	general.InfofV(6, "pap: evict service stopped")
+	return err
 }
 
 func (p *powerPressureEvictServer) GetToken(ctx context.Context, empty *pluginapi.Empty) (*pluginapi.GetTokenResponse, error) {
