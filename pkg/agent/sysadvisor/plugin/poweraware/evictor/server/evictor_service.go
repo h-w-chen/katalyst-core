@@ -66,12 +66,14 @@ func (p *powerPressureEvictServer) Evict(ctx context.Context, pods []*v1.Pod) er
 	defer p.mutex.Unlock()
 
 	if !p.started {
+		general.InfofV(6, "pap: evict failed as service not started")
 		return errPowerPressureEvictionPluginUnavailable
 	}
 
 	// discard pending requests not handled yet; we will provide a new sleet of evict requests anyway
 	p.reset(ctx)
 
+	general.InfofV(6, "pap: request to evict BE pods ...")
 	for _, pod := range pods {
 		if err := p.evictPod(ctx, pod); err != nil {
 			return errors.Wrap(err, "failed to put evict pods to the service pool")
