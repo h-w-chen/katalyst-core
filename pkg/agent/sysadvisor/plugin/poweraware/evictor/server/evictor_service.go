@@ -61,6 +61,7 @@ func (p *powerPressureEvictServer) reset(ctx context.Context) {
 // Evict method puts request to evict pods in the pool; it will be sent out to plugin client via the eviction protocol
 // the real eviction will be done by the (remote) eviction manager where the plugin client is registered with
 func (p *powerPressureEvictServer) Evict(ctx context.Context, pods []*v1.Pod) error {
+	general.InfofV(6, "pap: request to evict %d BE pods", len(pods))
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 
@@ -77,6 +78,7 @@ func (p *powerPressureEvictServer) Evict(ctx context.Context, pods []*v1.Pod) er
 		}
 	}
 
+	general.InfofV(6, "pap: remembered to evict %d BE pods", len(pods))
 	return nil
 }
 
@@ -85,6 +87,7 @@ func (p *powerPressureEvictServer) evictPod(ctx context.Context, pod *v1.Pod) er
 		return errors.New("unexpected nil pod")
 	}
 
+	general.InfofV(6, "pap: request to evict pod %s/%s", pod.Namespace, pod.Name)
 	p.evicts[pod.GetUID()] = pod
 	return nil
 }
@@ -94,6 +97,8 @@ func (p *powerPressureEvictServer) Name() string {
 }
 
 func (p *powerPressureEvictServer) Start() error {
+	general.InfofV(6, "pap: evict service is starting...")
+
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 
@@ -105,6 +110,8 @@ func (p *powerPressureEvictServer) Start() error {
 	if err := p.service.Start(); err != nil {
 		return errors.Wrap(err, "failed to start power pressure eviction plugin server")
 	}
+
+	general.InfofV(6, "pap: evict service started and is listening...")
 	p.started = true
 	return nil
 }
