@@ -18,6 +18,7 @@ package server
 
 import (
 	"context"
+	"runtime/debug"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -122,6 +123,7 @@ func (p *powerPressureEvictServer) Start() error {
 
 func (p *powerPressureEvictServer) Stop() error {
 	general.InfofV(6, "pap: evict service is stopping...")
+	debug.PrintStack()
 	//	p.mutex.Lock()
 	//	defer p.mutex.Unlock()
 
@@ -131,6 +133,7 @@ func (p *powerPressureEvictServer) Stop() error {
 	}
 
 	p.started = false
+	general.InfofV(6, "pap: trying to stop inner grpc evict service")
 	err := p.service.Stop()
 	general.InfofV(6, "pap: evict service stopped")
 	return err
