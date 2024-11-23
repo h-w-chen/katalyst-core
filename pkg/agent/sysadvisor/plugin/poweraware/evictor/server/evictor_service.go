@@ -18,7 +18,6 @@ package server
 
 import (
 	"context"
-	"runtime/debug"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -45,6 +44,7 @@ var errPowerPressureEvictionPluginUnavailable = errors.New("power pressure evict
 
 type powerPressureEvictServer struct {
 	mutex   sync.RWMutex
+	toExit  bool
 	started bool
 	evicts  map[types.UID]*v1.Pod
 	service *skeleton.PluginRegistrationWrapper
@@ -103,8 +103,8 @@ func (p *powerPressureEvictServer) Name() string {
 func (p *powerPressureEvictServer) Start() error {
 	general.InfofV(6, "pap: evict service is starting...")
 
-	//	p.mutex.Lock()
-	//	defer p.mutex.Unlock()
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
 
 	if p.started {
 		general.InfofV(6, "pap: power pressure eviction server already started")
@@ -122,23 +122,8 @@ func (p *powerPressureEvictServer) Start() error {
 }
 
 func (p *powerPressureEvictServer) Stop() error {
-	general.InfofV(6, "pap: evict service is stopping...")
-	general.InfofV(6, "pap: evict service Stop stack trace: %s", string(debug.Stack()))
-	////	p.mutex.Lock()
-	////	defer p.mutex.Unlock()
-	//
-	//if !p.started {
-	//	general.InfofV(6, "pap: power pressure eviction server already stopped")
-	//	return nil
-	//}
-	//
-	//p.started = false
-	//general.InfofV(6, "pap: trying to stop inner grpc evict service")
-	//err := p.service.Stop()
-	//general.InfofV(6, "pap: evict service stopped")
-	//return err
-
-	general.InfofV(6, "pap: evict service stopped")
+	// since there is no resource other than the underlying PluginRegistrationWrapper-guarded grpc service,
+	// which will be cleanup by PluginRegistrationWrapper itself, it has nothing to clean up here
 	return nil
 }
 
@@ -167,8 +152,8 @@ func (p *powerPressureEvictServer) GetEvictPods(ctx context.Context, request *pl
 		}
 	}
 
-	//	p.mutex.RLock()
-	//	defer p.mutex.RUnlock()
+	p.mutex.RLock()
+	defer p.mutex.RUnlock()
 
 	evictPods := make([]*pluginapi.EvictPod, 0)
 
