@@ -152,6 +152,11 @@ func (p *powerAwareAdvisor) run(ctx context.Context) {
 		return
 	}
 
+	// todo: for tmp hack only - when the upstream malachite realtime power is malfunctioning
+	if currentWatts <= 0 {
+		currentWatts = 678
+	}
+
 	klog.V(6).Infof("pap: current power usage: %d watts", currentWatts)
 
 	// report metrics: current power reading, desired power value
