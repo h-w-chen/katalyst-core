@@ -199,15 +199,18 @@ func SetSockMemLimit(conf *coreconfig.Configuration,
 			general.Errorf("get nil pod from metaServer")
 			continue
 		}
+		general.InfofV(6, "step 3: pod %s/%s", pod.Namespace, pod.Name)
 		for _, containerStatus := range pod.Status.ContainerStatuses {
 			podUID, containerID := string(pod.UID), native.TrimContainerIDPrefix(containerStatus.ContainerID)
 
+			general.InfofV(6, "step 3: loop: ppp pod %s/%s %v", pod.Namespace, pod.Name, containerID)
 			memLimit, err := helper.GetPodMetric(metaServer.MetricsFetcher, emitter, pod, coreconsts.MetricMemLimitContainer, -1)
 			if err != nil {
 				errList = append(errList, err)
 				general.Infof("memory limit not found:%v..\n", podUID)
 				continue
 			}
+			general.InfofV(6, "step 3: loop: ppp pod %s/%s %v: limit %v", pod.Namespace, pod.Name, containerID, memLimit)
 
 			memTCPLimit, err := helper.GetPodMetric(metaServer.MetricsFetcher, emitter, pod, coreconsts.MetricMemTCPLimitContainer, -1)
 			if err != nil {
