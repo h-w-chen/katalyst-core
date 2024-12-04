@@ -967,6 +967,8 @@ func (m *MalachiteMetricsProvisioner) processContainerMemoryData(podUID, contain
 		mem := cgStats.V1.Memory
 		updateTime := time.Unix(cgStats.V1.Memory.UpdateTime, 0)
 
+		general.InfofV(6, "SetSockMemLimit: set V1: pod uid %v", podUID)
+
 		m.metricStore.SetContainerMetric(podUID, containerName, consts.MetricMemLimitContainer,
 			utilmetric.MetricData{Value: float64(mem.MemoryLimitInBytes), Time: &updateTime})
 		m.metricStore.SetContainerMetric(podUID, containerName, consts.MetricMemTCPLimitContainer,
@@ -1004,6 +1006,8 @@ func (m *MalachiteMetricsProvisioner) processContainerMemoryData(podUID, contain
 		m.metricStore.SetContainerMetric(podUID, containerName, consts.MetricMemUpdateTimeContainer,
 			utilmetric.MetricData{Value: float64(mem.UpdateTime), Time: &updateTime})
 	} else if cgStats.CgroupType == "V2" && cgStats.V2 != nil {
+		general.InfofV(6, "SetSockMemLimit: set V2: pod uid %v", podUID)
+
 		mem := cgStats.V2.Memory
 		updateTime := time.Unix(cgStats.V2.Memory.UpdateTime, 0)
 
