@@ -64,6 +64,8 @@ type NotifiedResponse struct {
 }
 
 type MetricsReader interface {
+	// GetByStringIndex get metrics by specified key that is hard to categorize as node/numa/pod/container
+	GetByStringIndex(metricName string) interface{}
 	// GetNodeMetric get metric of node.
 	GetNodeMetric(metricName string) (metric.MetricData, error)
 	// GetNumaMetric get metric of numa.
@@ -75,12 +77,15 @@ type MetricsReader interface {
 	// GetContainerMetric get metric of container.
 	GetContainerMetric(podUID, containerName, metricName string) (metric.MetricData, error)
 	// GetContainerNumaMetric get metric of container per numa.
-	GetContainerNumaMetric(podUID, containerName, numaNode, metricName string) (metric.MetricData, error)
+	GetContainerNumaMetric(podUID, containerName string, numaNode int, metricName string) (metric.MetricData, error)
+	// GetContainerNumaMetrics get metrics of container for all numas
+	GetContainerNumaMetrics(podUID, containerName, metricName string) (map[int]metric.MetricData, error)
+
 	// GetPodVolumeMetric get metric of pod volume.
 	GetPodVolumeMetric(podUID, volumeName, metricName string) (metric.MetricData, error)
 
 	// AggregatePodNumaMetric handles numa-level metric for all pods
-	AggregatePodNumaMetric(podList []*v1.Pod, numaNode, metricName string, agg metric.Aggregator, filter metric.ContainerMetricFilter) metric.MetricData
+	AggregatePodNumaMetric(podList []*v1.Pod, numaNode int, metricName string, agg metric.Aggregator, filter metric.ContainerMetricFilter) metric.MetricData
 	// AggregatePodMetric handles metric for all pods
 	AggregatePodMetric(podList []*v1.Pod, metricName string, agg metric.Aggregator, filter metric.ContainerMetricFilter) metric.MetricData
 	// AggregateCoreMetric handles metric for all cores
