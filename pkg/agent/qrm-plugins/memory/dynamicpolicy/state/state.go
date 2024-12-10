@@ -19,13 +19,13 @@ package state
 import (
 	"encoding/json"
 	"fmt"
+	"sync"
 
 	info "github.com/google/cadvisor/info/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/klog/v2"
 	pluginapi "k8s.io/kubelet/pkg/apis/resourceplugin/v1alpha1"
 
-	"github.com/kubewharf/katalyst-api/pkg/consts"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/commonstate"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/util"
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
@@ -33,15 +33,8 @@ import (
 )
 
 type AllocationInfo struct {
-	PodUid               string         `json:"pod_uid,omitempty"`
-	PodNamespace         string         `json:"pod_namespace,omitempty"`
-	PodName              string         `json:"pod_name,omitempty"`
-	ContainerName        string         `json:"container_name,omitempty"`
-	ContainerType        string         `json:"container_type,omitempty"`
-	ContainerIndex       uint64         `json:"container_index,omitempty"`
-	RampUp               bool           `json:"ramp_up,omitempty"`
-	PodRole              string         `json:"pod_role,omitempty"`
-	PodType              string         `json:"pod_type,omitempty"`
+	commonstate.AllocationMeta `json:",inline"`
+
 	AggregatedQuantity   uint64         `json:"aggregated_quantity"`
 	NumaAllocationResult machine.CPUSet `json:"numa_allocation_result,omitempty"`
 
@@ -50,9 +43,6 @@ type AllocationInfo struct {
 
 	// keyed by control knob names referred in memoryadvisor package
 	ExtraControlKnobInfo map[string]commonstate.ControlKnobInfo `json:"extra_control_knob_info"`
-	Labels               map[string]string                      `json:"labels"`
-	Annotations          map[string]string                      `json:"annotations"`
-	QoSLevel             string                                 `json:"qosLevel"`
 }
 
 type (
@@ -95,20 +85,9 @@ func (ai *AllocationInfo) Clone() *AllocationInfo {
 	}
 
 	clone := &AllocationInfo{
-		PodUid:               ai.PodUid,
-		PodNamespace:         ai.PodNamespace,
-		PodName:              ai.PodName,
-		ContainerName:        ai.ContainerName,
-		ContainerType:        ai.ContainerType,
-		ContainerIndex:       ai.ContainerIndex,
-		RampUp:               ai.RampUp,
-		PodRole:              ai.PodRole,
-		PodType:              ai.PodType,
+		AllocationMeta:       *ai.AllocationMeta.Clone(),
 		AggregatedQuantity:   ai.AggregatedQuantity,
 		NumaAllocationResult: ai.NumaAllocationResult.Clone(),
-		QoSLevel:             ai.QoSLevel,
-		Labels:               general.DeepCopyMap(ai.Labels),
-		Annotations:          general.DeepCopyMap(ai.Annotations),
 	}
 
 	if ai.TopologyAwareAllocations != nil {
@@ -128,22 +107,6 @@ func (ai *AllocationInfo) Clone() *AllocationInfo {
 	}
 
 	return clone
-}
-
-// CheckNumaBinding returns true if the AllocationInfo is for pod with numa-binding enhancement
-func (ai *AllocationInfo) CheckNumaBinding() bool {
-	return ai.Annotations[consts.PodAnnotationMemoryEnhancementNumaBinding] ==
-		consts.PodAnnotationMemoryEnhancementNumaBindingEnable
-}
-
-// CheckMainContainer returns true if the AllocationInfo is for main container
-func (ai *AllocationInfo) CheckMainContainer() bool {
-	return ai.ContainerType == pluginapi.ContainerType_MAIN.String()
-}
-
-// CheckSideCar returns true if the AllocationInfo is for side-car container
-func (ai *AllocationInfo) CheckSideCar() bool {
-	return ai.ContainerType == pluginapi.ContainerType_SIDECAR.String()
 }
 
 // GetResourceAllocation transforms resource allocation information into *pluginapi.ResourceAllocation
@@ -267,15 +230,33 @@ func (ns *NUMANodeState) Clone() *NUMANodeState {
 	}
 }
 
-// HasNUMABindingPods returns true if any AllocationInfo in this NUMANodeState is for numa-binding
-func (ns *NUMANodeState) HasNUMABindingPods() bool {
+// HasSharedOrDedicatedNUMABindingPods returns true if any AllocationInfo in this NUMANodeState is for shared or dedicated numa-binding
+func (ns *NUMANodeState) HasSharedOrDedicatedNUMABindingPods() bool {
 	if ns == nil {
 		return false
 	}
 
 	for _, containerEntries := range ns.PodEntries {
 		for _, allocationInfo := range containerEntries {
-			if allocationInfo != nil && allocationInfo.CheckNumaBinding() {
+			if allocationInfo != nil && allocationInfo.CheckSharedOrDedicatedNUMABinding() {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// HasDedicatedNUMABindingAndNUMAExclusivePods returns true if any AllocationInfo in this NUMANodeState is for dedicated with numa-binding and
+// numa-exclusive
+func (ns *NUMANodeState) HasDedicatedNUMABindingAndNUMAExclusivePods() bool {
+	if ns == nil {
+		return false
+	}
+
+	for _, containerEntries := range ns.PodEntries {
+		for _, allocationInfo := range containerEntries {
+			if allocationInfo != nil && allocationInfo.CheckDedicatedNUMABinding() &&
+				allocationInfo.CheckNumaExclusive() {
 				return true
 			}
 		}
@@ -328,12 +309,24 @@ func (nm NUMANodeMap) BytesPerNUMA() (uint64, error) {
 	return 0, fmt.Errorf("getBytesPerNUMAFromMachineState doesn't get valid numaState")
 }
 
-// GetNUMANodesWithoutNUMABindingPods returns a set of numa nodes; for
-// those numa nodes, they all don't contain numa-binding pods
-func (nm NUMANodeMap) GetNUMANodesWithoutNUMABindingPods() machine.CPUSet {
+// GetNUMANodesWithoutSharedOrDedicatedNUMABindingPods returns a set of numa nodes; for
+// those numa nodes, they all don't contain shared or dedicated numa-binding pods
+func (nm NUMANodeMap) GetNUMANodesWithoutSharedOrDedicatedNUMABindingPods() machine.CPUSet {
 	res := machine.NewCPUSet()
 	for numaId, numaNodeState := range nm {
-		if numaNodeState != nil && !numaNodeState.HasNUMABindingPods() {
+		if numaNodeState != nil && !numaNodeState.HasSharedOrDedicatedNUMABindingPods() {
+			res = res.Union(machine.NewCPUSet(numaId))
+		}
+	}
+	return res
+}
+
+// GetNUMANodesWithoutDedicatedNUMABindingAndNUMAExclusivePods returns a set of numa nodes; for
+// those numa nodes, they all don't contain dedicated with numa-binding and numa-exclusive pods
+func (nm NUMANodeMap) GetNUMANodesWithoutDedicatedNUMABindingAndNUMAExclusivePods() machine.CPUSet {
+	res := machine.NewCPUSet()
+	for numaId, numaNodeState := range nm {
+		if numaNodeState != nil && !numaNodeState.HasDedicatedNUMABindingAndNUMAExclusivePods() {
 			res = res.Union(machine.NewCPUSet(numaId))
 		}
 	}
@@ -391,4 +384,54 @@ type ReadonlyState interface {
 type State interface {
 	writer
 	ReadonlyState
+}
+
+var (
+	readonlyStateLock sync.RWMutex
+	readonlyState     ReadonlyState
+)
+
+// GetReadonlyState retrieves the readonlyState in a thread-safe manner.
+// Returns an error if readonlyState is not set.
+func GetReadonlyState() (ReadonlyState, error) {
+	readonlyStateLock.RLock()
+	defer readonlyStateLock.RUnlock()
+
+	if readonlyState == nil {
+		return nil, fmt.Errorf("readonlyState isn't setted")
+	}
+	return readonlyState, nil
+}
+
+// SetReadonlyState updates the readonlyState in a thread-safe manner.
+func SetReadonlyState(state ReadonlyState) {
+	readonlyStateLock.Lock()
+	defer readonlyStateLock.Unlock()
+
+	readonlyState = state
+}
+
+var (
+	readWriteStateLock sync.RWMutex
+	readWriteState     State
+)
+
+// GetReadWriteState retrieves the readWriteState in a thread-safe manner.
+// Returns an error if readWriteState is not set.
+func GetReadWriteState() (State, error) {
+	readWriteStateLock.RLock()
+	defer readWriteStateLock.RUnlock()
+
+	if readWriteState == nil {
+		return nil, fmt.Errorf("readWriteState isn't set")
+	}
+	return readWriteState, nil
+}
+
+// SetReadWriteState updates the readWriteState in a thread-safe manner.
+func SetReadWriteState(state State) {
+	readWriteStateLock.Lock()
+	defer readWriteStateLock.Unlock()
+
+	readWriteState = state
 }
