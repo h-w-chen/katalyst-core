@@ -33,6 +33,7 @@ type PowerReconciler interface {
 	// Reconcile returns true if CPU frequency capping is involved
 	// this return is important as the cpu freq capping should be released when the alert is gone
 	Reconcile(ctx context.Context, desired *spec.PowerSpec, actual int) (bool, error)
+	DVFSReset()
 }
 
 type powerReconciler struct {
@@ -43,6 +44,10 @@ type powerReconciler struct {
 	capper   capper.PowerCapper
 	strategy strategy.PowerActionStrategy
 	emitter  metrics.MetricEmitter
+}
+
+func (p *powerReconciler) DVFSReset() {
+	p.strategy.DVFSReset()
 }
 
 func (p *powerReconciler) emitOpCode(action action.PowerAction, mode string) {
@@ -101,7 +106,7 @@ func newReconciler(dryRun bool, emitter metrics.MetricEmitter, evictor evictor.P
 		priorAction: action.PowerAction{},
 		evictor:     evictor,
 		capper:      capper,
-		strategy:    strategy.NewRuleBasedPowerStrategy(),
+		strategy:    strategy.NewEvictFirstStrategy(evictor),
 		emitter:     emitter,
 	}
 }

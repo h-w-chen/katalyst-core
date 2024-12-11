@@ -28,6 +28,7 @@ import (
 const defaultDecayB = math.E / 2
 
 type PowerActionStrategy interface {
+	DVFSReset()
 	RecommendAction(currentWatt int,
 		desiredWatt int,
 		alert spec.PowerAlert,
@@ -39,6 +40,8 @@ type PowerActionStrategy interface {
 type ruleBasedPowerStrategy struct {
 	coefficient exponentialDecay
 }
+
+func (p ruleBasedPowerStrategy) DVFSReset() {}
 
 func (p ruleBasedPowerStrategy) RecommendAction(actualWatt int,
 	desiredWatt int,
@@ -95,11 +98,13 @@ type exponentialDecay struct {
 func (d exponentialDecay) calcExcessiveInPercent(target, curr int, ttl time.Duration) int {
 	// exponential decaying formula: a*b^(-t)
 	a := 100 - target*100/curr
-	decay := math.Pow(d.b, float64(-int(ttl.Minutes())/10))
+	t := int(ttl.Minutes())
+	if t < 0 {
+		t = 0
+	}
+	decay := math.Pow(d.b, float64(-t/10))
 	return int(float64(a) * decay)
 }
-
-var _ PowerActionStrategy = &ruleBasedPowerStrategy{}
 
 func NewRuleBasedPowerStrategy() PowerActionStrategy {
 	return ruleBasedPowerStrategy{coefficient: exponentialDecay{b: defaultDecayB}}

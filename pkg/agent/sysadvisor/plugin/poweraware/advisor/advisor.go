@@ -136,6 +136,7 @@ func (p *powerAwareAdvisor) run(ctx context.Context) {
 		if p.inFreqCap {
 			p.inFreqCap = false
 			p.powerCapper.Reset()
+			p.reconciler.DVFSReset()
 		}
 		return
 	}
