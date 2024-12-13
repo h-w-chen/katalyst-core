@@ -96,7 +96,7 @@ func (e *evictFirstStrategy) allowVoluntaryFreqCap() bool {
 	// todo: consider cpu frequency
 	if e.metricsReader != nil {
 		if cpuUsage, err := e.metricsReader.GetNodeMetric(consts.MetricCPUUsageRatio); err == nil {
-			general.InfofV(6, "pap: cpu usage %d", cpuUsage.Value)
+			general.InfofV(6, "pap: cpu usage %v", cpuUsage.Value)
 			if cpuUsage.Value <= voluntaryDVFSCPUUsageThreshold {
 				return false
 			}
@@ -117,6 +117,7 @@ func (e *evictFirstStrategy) recommendOpForAlertP0(ttl time.Duration) spec.Inter
 		return spec.InternalOpFreqCap
 	}
 
+	general.InfofV(6, "pap: no suitable action can be chosen at this moment")
 	return spec.InternalOpNoop
 }
 
