@@ -96,6 +96,7 @@ func (e *evictFirstStrategy) allowVoluntaryFreqCap() bool {
 	// todo: consider cpu frequency
 	if e.metricsReader != nil {
 		if cpuUsage, err := e.metricsReader.GetNodeMetric(consts.MetricCPUUsageRatio); err == nil {
+			general.InfofV(6, "pap: cpu usage %d", cpuUsage.Value)
 			if cpuUsage.Value <= voluntaryDVFSCPUUsageThreshold {
 				return false
 			}
@@ -108,6 +109,7 @@ func (e *evictFirstStrategy) allowVoluntaryFreqCap() bool {
 func (e *evictFirstStrategy) recommendOpForAlertP0(ttl time.Duration) spec.InternalOp {
 	// always prefer eviction over dvfs if possible
 	if e.evictableProber.HasEvictablePods() {
+		general.InfofV(6, "pap: voluntary dvfs as best-effort")
 		return spec.InternalOpEvict
 	}
 
@@ -183,6 +185,7 @@ func (e *evictFirstStrategy) RecommendAction(actualWatt int, desiredWatt int, al
 }
 
 func NewEvictFirstStrategy(prober EvictableProber, metricsReader metrictypes.MetricsReader) PowerActionStrategy {
+	general.Infof("pap: using EvictFirst strategy")
 	return &evictFirstStrategy{
 		coefficient:     exponentialDecay{b: defaultDecayB},
 		evictableProber: prober,
