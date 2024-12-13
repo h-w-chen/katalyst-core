@@ -18,6 +18,7 @@ package advisor
 
 import (
 	"context"
+	metrictypes "github.com/kubewharf/katalyst-core/pkg/metaserver/agent/metric/types"
 	"time"
 
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/advisor/action"
@@ -100,13 +101,13 @@ func (p *powerReconciler) Reconcile(ctx context.Context, desired *spec.PowerSpec
 	}
 }
 
-func newReconciler(dryRun bool, emitter metrics.MetricEmitter, evictor evictor.PercentageEvictor, capper capper.PowerCapper) PowerReconciler {
+func newReconciler(dryRun bool, metricsReader metrictypes.MetricsReader, emitter metrics.MetricEmitter, evictor evictor.PercentageEvictor, capper capper.PowerCapper) PowerReconciler {
 	return &powerReconciler{
 		dryRun:      dryRun,
 		priorAction: action.PowerAction{},
 		evictor:     evictor,
 		capper:      capper,
-		strategy:    strategy.NewEvictFirstStrategy(evictor),
+		strategy:    strategy.NewEvictFirstStrategy(evictor, metricsReader),
 		emitter:     emitter,
 	}
 }
