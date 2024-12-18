@@ -105,6 +105,8 @@ func (p *powerAwareAdvisor) Run(ctx context.Context) {
 		return
 	}
 
+	general.Infof("pap: advisor main body started")
+
 	defer p.cleanup()
 	defer p.powerCapper.Reset()
 

@@ -79,9 +79,9 @@ func (p *powerCapService) Start() error {
 		p.grpcServer.Run()
 	}
 
-	// to reset power capping to prevent accumulative effect
-	// being outside the previous locking block to avoid deadlock
-	p.Reset()
+	//// to reset power capping to prevent accumulative effect
+	//// being outside the previous locking block to avoid deadlock
+	//p.Reset()
 	return nil
 }
 
