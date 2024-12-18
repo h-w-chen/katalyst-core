@@ -1,3 +1,5 @@
+//go:build !linux
+
 /*
 Copyright 2022 The Katalyst Authors.
 
@@ -14,25 +16,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package commonstate
+package fragmem
 
 import (
-	"encoding/json"
-	"io/ioutil"
+	coreconfig "github.com/kubewharf/katalyst-core/pkg/config"
+	dynamicconfig "github.com/kubewharf/katalyst-core/pkg/config/agent/dynamic"
+	"github.com/kubewharf/katalyst-core/pkg/metaserver"
+	"github.com/kubewharf/katalyst-core/pkg/metrics"
 )
 
-func LoadExtraControlKnobConfigs(extraControlKnobConfigAbsPath string) (ExtraControlKnobConfigs, error) {
-	configBytes, err := ioutil.ReadFile(extraControlKnobConfigAbsPath)
-	if err != nil {
-		return nil, err
-	}
-
-	extraControlKnobConfigs := make(ExtraControlKnobConfigs)
-
-	err = json.Unmarshal(configBytes, &extraControlKnobConfigs)
-	if err != nil {
-		return nil, err
-	}
-
-	return extraControlKnobConfigs, nil
+func SetMemCompact(conf *coreconfig.Configuration,
+	_ interface{}, _ *dynamicconfig.DynamicAgentConfiguration,
+	emitter metrics.MetricEmitter, metaServer *metaserver.MetaServer) {
 }

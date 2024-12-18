@@ -81,6 +81,13 @@ func Test_noneExistMetricsProvisioner(t *testing.T) {
 				DiskType:          "NVME",
 				WBTValue:          3234,
 			},
+			{
+				PrimaryDeviceID:   8,
+				SecondaryDeviceID: 48,
+				DeviceName:        "vdf",
+				DiskType:          "VIRTIO",
+				WBTValue:          75234,
+			},
 		},
 	}
 	fakeSystemNet := &malachitetypes.SystemNetworkData{
@@ -115,7 +122,8 @@ func Test_noneExistMetricsProvisioner(t *testing.T) {
 	implement.(*MalachiteMetricsProvisioner).processSystemComputeData(fakeSystemCompute)
 	implement.(*MalachiteMetricsProvisioner).processSystemMemoryData(fakeSystemMemory)
 	implement.(*MalachiteMetricsProvisioner).processSystemIOData(fakeSystemIO)
-	implement.(*MalachiteMetricsProvisioner).processSystemNumaData(fakeSystemMemory)
+	implement.(*MalachiteMetricsProvisioner).processSystemNumaData(fakeSystemMemory, fakeSystemCompute)
+	implement.(*MalachiteMetricsProvisioner).processSystemExtFragData(fakeSystemMemory)
 	implement.(*MalachiteMetricsProvisioner).processSystemCPUComputeData(fakeSystemCompute)
 	implement.(*MalachiteMetricsProvisioner).processSystemNetData(fakeSystemNet)
 
@@ -171,7 +179,7 @@ func Test_noneExistMetricsProvisioner(t *testing.T) {
 		return
 	}
 
-	_, err = store.GetContainerNumaMetric("pod-not-exist", "container-not-exist", "", "test-not-exist")
+	_, err = store.GetContainerNumaMetric("pod-not-exist", "container-not-exist", -1, "test-not-exist")
 	if err == nil {
 		t.Errorf("GetContainerNuma() error = %v, wantErr not nil", err)
 		return

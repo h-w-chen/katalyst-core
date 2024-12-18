@@ -37,10 +37,12 @@ import (
 	"github.com/kubewharf/katalyst-core/cmd/katalyst-agent/app/agent/qrm"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/advisorsvc"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/commonstate"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb"
 	memconsts "github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/memory/consts"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/memory/dynamicpolicy/memoryadvisor"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/memory/dynamicpolicy/oom"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/memory/dynamicpolicy/state"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/memory/handlers/fragmem"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/memory/handlers/logcache"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/memory/handlers/sockmem"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/util"
@@ -89,23 +91,6 @@ const (
 	movePagesWorkLimit    = 2
 )
 
-var (
-	readonlyStateLock sync.RWMutex
-	readonlyState     state.ReadonlyState
-)
-
-// GetReadonlyState returns state.ReadonlyState to provides a way
-// to obtain the running states of the plugin
-func GetReadonlyState() (state.ReadonlyState, error) {
-	readonlyStateLock.RLock()
-	defer readonlyStateLock.RUnlock()
-
-	if readonlyState == nil {
-		return nil, fmt.Errorf("readonlyState isn't setted")
-	}
-	return readonlyState, nil
-}
-
 type DynamicPolicy struct {
 	sync.RWMutex
 
@@ -149,6 +134,7 @@ type DynamicPolicy struct {
 
 	enableSettingMemoryMigrate bool
 	enableSettingSockMem       bool
+	enableSettingFragMem       bool
 	enableMemoryAdvisor        bool
 	memoryAdvisorSocketAbsPath string
 	memoryPluginSocketAbsPath  string
@@ -160,6 +146,8 @@ type DynamicPolicy struct {
 
 	enableEvictingLogCache  bool
 	logCacheEvictionManager logcache.Manager
+
+	enableNonBindingShareCoresMemoryResourceCheck bool
 }
 
 func NewDynamicPolicy(agentCtx *agent.GenericContext, conf *config.Configuration,
@@ -189,9 +177,8 @@ func NewDynamicPolicy(agentCtx *agent.GenericContext, conf *config.Configuration
 		general.Infof("empty ExtraControlKnobConfigFile, initialize empty extraControlKnobConfigs")
 	}
 
-	readonlyStateLock.Lock()
-	readonlyState = stateImpl
-	readonlyStateLock.Unlock()
+	state.SetReadonlyState(stateImpl)
+	state.SetReadWriteState(stateImpl)
 
 	wrappedEmitter := agentCtx.EmitterPool.GetDefaultMetricsEmitter().WithTags(agentName, metrics.MetricTag{
 		Key: util.QRMPluginPolicyTagName,
@@ -217,6 +204,7 @@ func NewDynamicPolicy(agentCtx *agent.GenericContext, conf *config.Configuration
 		defaultAsyncLimitedWorkers: asyncworker.NewAsyncLimitedWorkers(memoryPluginAsyncWorkersName, defaultAsyncWorkLimit, wrappedEmitter),
 		enableSettingMemoryMigrate: conf.EnableSettingMemoryMigrate,
 		enableSettingSockMem:       conf.EnableSettingSockMem,
+		enableSettingFragMem:       conf.EnableSettingFragMem,
 		enableMemoryAdvisor:        conf.EnableMemoryAdvisor,
 		memoryAdvisorSocketAbsPath: conf.MemoryAdvisorSocketAbsPath,
 		memoryPluginSocketAbsPath:  conf.MemoryPluginSocketAbsPath,
@@ -224,18 +212,21 @@ func NewDynamicPolicy(agentCtx *agent.GenericContext, conf *config.Configuration
 		enableOOMPriority:          conf.EnableOOMPriority,
 		oomPriorityMapPinnedPath:   conf.OOMPriorityPinnedMapAbsPath,
 		enableEvictingLogCache:     conf.EnableEvictingLogCache,
+		enableNonBindingShareCoresMemoryResourceCheck: conf.EnableNonBindingShareCoresMemoryResourceCheck,
 	}
 
 	policyImplement.allocationHandlers = map[string]util.AllocationHandler{
 		apiconsts.PodAnnotationQoSLevelSharedCores:    policyImplement.sharedCoresAllocationHandler,
 		apiconsts.PodAnnotationQoSLevelDedicatedCores: policyImplement.dedicatedCoresAllocationHandler,
 		apiconsts.PodAnnotationQoSLevelReclaimedCores: policyImplement.reclaimedCoresAllocationHandler,
+		apiconsts.PodAnnotationQoSLevelSystemCores:    policyImplement.systemCoresAllocationHandler,
 	}
 
 	policyImplement.hintHandlers = map[string]util.HintHandler{
 		apiconsts.PodAnnotationQoSLevelSharedCores:    policyImplement.sharedCoresHintHandler,
 		apiconsts.PodAnnotationQoSLevelDedicatedCores: policyImplement.dedicatedCoresHintHandler,
 		apiconsts.PodAnnotationQoSLevelReclaimedCores: policyImplement.reclaimedCoresHintHandler,
+		apiconsts.PodAnnotationQoSLevelSystemCores:    policyImplement.systemCoresHintHandler,
 	}
 
 	policyImplement.asyncLimitedWorkersMap = map[string]*asyncworker.AsyncLimitedWorkers{
@@ -394,7 +385,7 @@ func (p *DynamicPolicy) Start() (err error) {
 		general.Infof("setSockMem enabled")
 		err := periodicalhandler.RegisterPeriodicalHandlerWithHealthz(memconsts.SetSockMem,
 			general.HealthzCheckStateNotReady, qrm.QRMMemoryPluginPeriodicalHandlerGroupName,
-			sockmem.SetSockMemLimit, 60*time.Second, healthCheckTolerationTimes)
+			sockmem.SetSockMemLimit, 120*time.Second, healthCheckTolerationTimes)
 		if err != nil {
 			general.Infof("setSockMem failed, err=%v", err)
 		}
@@ -407,6 +398,15 @@ func (p *DynamicPolicy) Start() (err error) {
 			p.logCacheEvictionManager.EvictLogCache, 600*time.Second, healthCheckTolerationTimes)
 		if err != nil {
 			general.Errorf("evictLogCache failed, err=%v", err)
+		}
+	}
+	if p.enableSettingFragMem {
+		general.Infof("setFragMem enabled")
+		err := periodicalhandler.RegisterPeriodicalHandlerWithHealthz(memconsts.SetMemCompact,
+			general.HealthzCheckStateNotReady, qrm.QRMMemoryPluginPeriodicalHandlerGroupName,
+			fragmem.SetMemCompact, 1800*time.Second, healthCheckTolerationTimes)
+		if err != nil {
+			general.Infof("setFragMem failed, err=%v", err)
 		}
 	}
 
@@ -800,6 +800,27 @@ func (p *DynamicPolicy) GetResourcePluginOptions(context.Context,
 func (p *DynamicPolicy) Allocate(ctx context.Context,
 	req *pluginapi.ResourceRequest,
 ) (resp *pluginapi.ResourceAllocationResponse, respErr error) {
+	general.InfofV(6, "mbm: resource allocate at entrance - pod %s/%s,  anno %v", req.PodNamespace, req.PodName, req.Annotations)
+	// req.annotations might be changed during allocate method; clone a copy to ensure intact at post-process
+	reqAnnotations := general.DeepCopyMap(req.Annotations)
+
+	resp, err := p.allocate(ctx, req)
+	if err != nil {
+		return resp, err
+	}
+
+	// post-process handling to augment with MB related features (socket pod preemption on admission etc)
+	if mb.PodAdmitter != nil {
+		// assuming no error safely as allocate has already checked out
+		qosLevel, _ := util.GetKatalystQoSLevelFromResourceReq(p.qosConfig, req, p.podAnnotationKeptKeys, p.podLabelKeptKeys)
+		resp = mb.PodAdmitter.PostProcessAllocate(req, resp, qosLevel, reqAnnotations)
+	}
+	return resp, err
+}
+
+func (p *DynamicPolicy) allocate(ctx context.Context,
+	req *pluginapi.ResourceRequest,
+) (resp *pluginapi.ResourceAllocationResponse, respErr error) {
 	if req == nil {
 		return nil, fmt.Errorf("Allocate got nil req")
 	}
@@ -1018,7 +1039,7 @@ func (p *DynamicPolicy) getContainerRequestedMemoryBytes(allocationInfo *state.A
 	// TODO optimize this logic someday:
 	//	only for refresh cpu request for old pod with cpu ceil and old VPA pods.
 	//  we can remove refresh logic after upgrade all kubelet and qrm.
-	if allocationInfo.QoSLevel == apiconsts.PodAnnotationQoSLevelSharedCores {
+	if allocationInfo.CheckShared() {
 		// if there is these two annotations in memory state, it is a new pod,
 		// we don't need to check the pod request from podWatcher
 		if allocationInfo.Annotations[apiconsts.PodAnnotationAggregatedRequestsKey] != "" ||
@@ -1026,7 +1047,7 @@ func (p *DynamicPolicy) getContainerRequestedMemoryBytes(allocationInfo *state.A
 			return allocationInfo.AggregatedQuantity
 		}
 
-		if allocationInfo.CheckNumaBinding() {
+		if allocationInfo.CheckNUMABinding() {
 			// snb count all memory into main container, sidecar is zero
 			if allocationInfo.CheckSideCar() {
 				// sidecar container always is zero
@@ -1050,7 +1071,7 @@ func (p *DynamicPolicy) getContainerRequestedMemoryBytes(allocationInfo *state.A
 				}
 			}
 		} else {
-			// normal share cores pod
+			// non-binding share cores pod
 			requestBytes, err := p.getContainerSpecMemoryRequestBytes(allocationInfo.PodUid, allocationInfo.ContainerName)
 			if err != nil {
 				general.Errorf("[other] get container failed with error: %v, return the origin value", err)
@@ -1119,7 +1140,7 @@ func (p *DynamicPolicy) hasLastLevelEnhancementKey(lastLevelEnhancementKey strin
 	return false
 }
 
-func (p *DynamicPolicy) checkNormalShareCoresResource(req *pluginapi.ResourceRequest) (bool, error) {
+func (p *DynamicPolicy) checkNonBindingShareCoresMemoryResource(req *pluginapi.ResourceRequest) (bool, error) {
 	reqInt, _, err := util.GetPodAggregatedRequestResource(req)
 	if err != nil {
 		return false, fmt.Errorf("GetQuantityFromResourceReq failed with error: %v", err)
@@ -1134,7 +1155,7 @@ func (p *DynamicPolicy) checkNormalShareCoresResource(req *pluginapi.ResourceReq
 				continue
 			}
 			// shareCoresAllocated should involve both main and sidecar containers
-			if containerAllocation.QoSLevel == apiconsts.PodAnnotationQoSLevelSharedCores && !containerAllocation.CheckNumaBinding() {
+			if containerAllocation.CheckDedicated() && !containerAllocation.CheckNUMABinding() {
 				shareCoresAllocated += p.getContainerRequestedMemoryBytes(containerAllocation)
 			}
 		}
@@ -1142,20 +1163,20 @@ func (p *DynamicPolicy) checkNormalShareCoresResource(req *pluginapi.ResourceReq
 
 	machineState := p.state.GetMachineState()
 	resourceState := machineState[v1.ResourceMemory]
-	numaWithoutNUMABindingPods := resourceState.GetNUMANodesWithoutNUMABindingPods()
+	numaWithoutNUMABindingPods := resourceState.GetNUMANodesWithoutSharedOrDedicatedNUMABindingPods()
 	numaAllocatableWithoutNUMABindingPods := uint64(0)
 	for _, numaID := range numaWithoutNUMABindingPods.ToSliceInt() {
 		numaAllocatableWithoutNUMABindingPods += resourceState[numaID].Allocatable
 	}
 
-	general.Infof("[checkNormalShareCoresResource] node memory allocated: %d, allocatable: %d", shareCoresAllocated, numaAllocatableWithoutNUMABindingPods)
+	general.Infof("[checkNonBindingShareCoresMemoryResource] node memory allocated: %d, allocatable: %d", shareCoresAllocated, numaAllocatableWithoutNUMABindingPods)
 	if shareCoresAllocated > numaAllocatableWithoutNUMABindingPods {
-		general.Warningf("[checkNormalShareCoresResource] no enough memory resource for normal share cores pod: %s/%s, container: %s (allocated: %d, allocatable: %d)",
+		general.Warningf("[checkNonBindingShareCoresMemoryResource] no enough memory resource for non-binding share cores pod: %s/%s, container: %s (allocated: %d, allocatable: %d)",
 			req.PodNamespace, req.PodName, req.ContainerName, shareCoresAllocated, numaAllocatableWithoutNUMABindingPods)
 		return false, nil
 	}
 
-	general.InfoS("checkNormalShareCoresResource memory successfully",
+	general.InfoS("checkNonBindingShareCoresMemoryResource memory successfully",
 		"podNamespace", req.PodNamespace,
 		"podName", req.PodName,
 		"containerName", req.ContainerName,
