@@ -67,15 +67,16 @@ func (p *powerCapService) Stop() error {
 }
 
 func (p *powerCapService) Start() error {
+	// ensure to reset power capping to prevent accumulative effect
+	// registered as defer to avoid deadlock
+	defer p.Reset()
+
 	p.Lock()
 	defer p.Unlock()
 
 	if p.started {
 		return nil
 	}
-
-	// to reset power capping to prevent accumulative effect
-	p.Reset()
 
 	p.started = true
 	p.grpcServer.Run()
