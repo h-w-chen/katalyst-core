@@ -174,3 +174,44 @@ func Test_getGroupCCDMBs(t *testing.T) {
 		})
 	}
 }
+
+func Test_distributeLocalRemote(t *testing.T) {
+	t.Parallel()
+	type args struct {
+		r         int
+		w         int
+		readLocal int
+	}
+	tests := []struct {
+		name        string
+		args        args
+		wantRLocal  int
+		wantRRemote int
+		wantWLocal  int
+		wantWRemote int
+	}{
+		{
+			name: "happy path",
+			args: args{
+				r:         100,
+				w:         50,
+				readLocal: 70,
+			},
+			wantRLocal:  70,
+			wantRRemote: 30,
+			wantWLocal:  35,
+			wantWRemote: 15,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			gotRLocal, gotRRemote, gotWLocal, gotWRemote := distributeLocalRemote(tt.args.r, tt.args.w, tt.args.readLocal)
+			assert.Equalf(t, tt.wantRLocal, gotRLocal, "distributeLocalRemote(%v, %v, %v)", tt.args.r, tt.args.w, tt.args.readLocal)
+			assert.Equalf(t, tt.wantRRemote, gotRRemote, "distributeLocalRemote(%v, %v, %v)", tt.args.r, tt.args.w, tt.args.readLocal)
+			assert.Equalf(t, tt.wantWLocal, gotWLocal, "distributeLocalRemote(%v, %v, %v)", tt.args.r, tt.args.w, tt.args.readLocal)
+			assert.Equalf(t, tt.wantWRemote, gotWRemote, "distributeLocalRemote(%v, %v, %v)", tt.args.r, tt.args.w, tt.args.readLocal)
+		})
+	}
+}
