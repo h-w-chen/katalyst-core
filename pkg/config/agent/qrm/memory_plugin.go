@@ -37,11 +37,15 @@ type MemoryQRMPluginConfig struct {
 	EnableOOMPriority bool
 	// OOMPriorityPinnedMapAbsPath: the absolute path of oom priority pinned bpf map
 	OOMPriorityPinnedMapAbsPath string
+	// EnableNonBindingShareCoresMemoryResourceCheck: enable the topology check for non-binding share cores pods
+	EnableNonBindingShareCoresMemoryResourceCheck bool
 
 	// SockMemQRMPluginConfig: the configuration for sockmem limitation in cgroup and host level
 	SockMemQRMPluginConfig
 	// LogCacheQRMPluginConfig: the configuration for logcache evicting
 	LogCacheQRMPluginConfig
+	// FragMemOptions: the configuration for memory compaction related features
+	FragMemOptions
 }
 
 type SockMemQRMPluginConfig struct {
@@ -68,6 +72,13 @@ type LogCacheQRMPluginConfig struct {
 	PathList []string
 	// Keywords for recognizing log files
 	FileFilters []string
+}
+
+type FragMemOptions struct {
+	EnableSettingFragMem bool
+	// SetMemFragScoreAsync sets the threashold of frag score for async memory compaction.
+	// The async compaction behavior will be triggered while exceeding this score.
+	SetMemFragScoreAsync int
 }
 
 func NewMemoryQRMPluginConfig() *MemoryQRMPluginConfig {

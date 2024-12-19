@@ -272,12 +272,12 @@ func (p *DynamicPolicy) checkMemorySet(_ *coreconfig.Configuration,
 		for containerName, allocationInfo := range containerEntries {
 			if allocationInfo == nil || !allocationInfo.CheckMainContainer() {
 				continue
-			} else if allocationInfo.QoSLevel == consts.PodAnnotationQoSLevelSharedCores &&
+			} else if allocationInfo.CheckShared() &&
 				p.getContainerRequestedMemoryBytes(allocationInfo) == 0 {
 				general.Warningf("skip memset checking for pod: %s/%s container: %s with zero memory request",
 					allocationInfo.PodNamespace, allocationInfo.PodName, containerName)
 				continue
-			} else if allocationInfo.CheckNumaBinding() {
+			} else if allocationInfo.CheckSharedOrDedicatedNUMABinding() {
 				unionNUMABindingStateMemorySet = unionNUMABindingStateMemorySet.Union(allocationInfo.NumaAllocationResult)
 			}
 
@@ -315,7 +315,7 @@ func (p *DynamicPolicy) checkMemorySet(_ *coreconfig.Configuration,
 				allocationInfo.NumaAllocationResult.String(), actualMemorySets[podUID][containerName].String())
 
 			// only do comparison for dedicated_cores with numa_binding to avoid effect of adjustment for shared_cores
-			if !allocationInfo.CheckNumaBinding() {
+			if !allocationInfo.CheckNUMABinding() {
 				continue
 			}
 
@@ -341,7 +341,7 @@ func (p *DynamicPolicy) checkMemorySet(_ *coreconfig.Configuration,
 
 			switch allocationInfo.QoSLevel {
 			case consts.PodAnnotationQoSLevelDedicatedCores:
-				if allocationInfo.CheckNumaBinding() {
+				if allocationInfo.CheckNUMABinding() {
 					if !memorySetOverlap && cset.Intersection(unionNUMABindingActualMemorySet).Size() != 0 {
 						memorySetOverlap = true
 						general.Errorf("pod: %s/%s, container: %s memset: %s overlaps with others",
@@ -373,7 +373,7 @@ func (p *DynamicPolicy) checkMemorySet(_ *coreconfig.Configuration,
 	}
 
 	machineState := p.state.GetMachineState()[v1.ResourceMemory]
-	notAssignedMemSet := machineState.GetNUMANodesWithoutNUMABindingPods()
+	notAssignedMemSet := machineState.GetNUMANodesWithoutSharedOrDedicatedNUMABindingPods()
 	if !unionNUMABindingStateMemorySet.Union(notAssignedMemSet).Equals(p.topology.CPUDetails.NUMANodes()) {
 		general.Infof("found node memset invalid. unionNUMABindingStateMemorySet: %s, notAssignedMemSet: %s, topology: %s",
 			unionNUMABindingStateMemorySet.String(), notAssignedMemSet.String(), p.topology.CPUDetails.NUMANodes().String())
@@ -476,7 +476,7 @@ func (p *DynamicPolicy) clearResidualState(_ *coreconfig.Configuration,
 }
 
 // setMemoryMigrate is used to calculate and set memory migrate configuration, notice that
-// 1. not to set memory migrate for NUMA binding containers
+// 1. not to set memory migrate for shared or dedicated NUMA binding containers
 // 2. for a certain given pod/container, only one setting action is on the flight
 // 3. the setting action is done asynchronously to avoid hang
 func (p *DynamicPolicy) setMemoryMigrate() {
@@ -496,7 +496,7 @@ func (p *DynamicPolicy) setMemoryMigrate() {
 			} else if containerName == "" {
 				general.Errorf("pod: %s has empty containerName entry", podUID)
 				continue
-			} else if allocationInfo.CheckNumaBinding() {
+			} else if allocationInfo.CheckSharedOrDedicatedNUMABinding() {
 				continue
 			}
 

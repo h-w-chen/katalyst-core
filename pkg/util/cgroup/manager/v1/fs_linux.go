@@ -239,9 +239,15 @@ func (m *manager) GetMemory(absCgroupPath string) (*common.MemoryStats, error) {
 }
 
 func (m *manager) GetNumaMemory(absCgroupPath string) (map[int]*common.MemoryNumaMetrics, error) {
-	numaStat, err := common.ParseCgroupNumaValue(absCgroupPath, "memory.numa_stat")
+	const fileName = "memory.numa_stat"
+	content, err := libcgroups.ReadFile(absCgroupPath, fileName)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read %s: %w", fileName, err)
+	}
+
+	numaStat, err := common.ParseCgroupNumaValue(content)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse numa stat: %w", err)
 	}
 
 	pageSize := uint64(syscall.Getpagesize())
@@ -308,12 +314,20 @@ func (m *manager) GetCPUSet(absCgroupPath string) (*common.CPUSetStats, error) {
 	var err error
 	cpusetStats.CPUs, err = fscommon.GetCgroupParamString(absCgroupPath, "cpuset.cpus")
 	if err != nil {
-		return nil, fmt.Errorf("read cpuset.cpus failed with error: %v", err)
+		return nil, err
+	}
+	cpusetStats.EffectiveCPUs, err = fscommon.GetCgroupParamString(absCgroupPath, "cpuset.effective_cpus")
+	if err != nil {
+		return nil, err
 	}
 
 	cpusetStats.Mems, err = fscommon.GetCgroupParamString(absCgroupPath, "cpuset.mems")
 	if err != nil {
-		return nil, fmt.Errorf("read cpuset.mems failed with error: %v", err)
+		return nil, err
+	}
+	cpusetStats.EffectiveMems, err = fscommon.GetCgroupParamString(absCgroupPath, "cpuset.effective_mems")
+	if err != nil {
+		return nil, err
 	}
 
 	return cpusetStats, nil
