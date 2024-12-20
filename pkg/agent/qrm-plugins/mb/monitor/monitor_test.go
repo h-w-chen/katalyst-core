@@ -202,6 +202,18 @@ func Test_distributeLocalRemote(t *testing.T) {
 			wantWLocal:  35,
 			wantWRemote: 15,
 		},
+		{
+			name: "random test",
+			args: args{
+				r:         12750,
+				w:         4976,
+				readLocal: 12749,
+			},
+			wantRLocal:  12749,
+			wantRRemote: 1,
+			wantWLocal:  4975,
+			wantWRemote: 1,
+		},
 	}
 	for _, tt := range tests {
 		tt := tt

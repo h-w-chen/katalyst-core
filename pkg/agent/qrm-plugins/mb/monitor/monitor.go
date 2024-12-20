@@ -206,12 +206,12 @@ func distributeLocalRemote(r, w, readLocal int) (rLocal, rRemote, wLocal, wRemot
 		rRemote = 0
 	}
 
-	lRatio := 100
+	lRatio := float64(100)
 	if r > 0 && rLocal <= r {
-		lRatio = rLocal * 100 / r
+		lRatio = float64(rLocal) / float64(r)
 	}
 
-	wLocal = w * lRatio / 100
+	wLocal = int(float64(w) * lRatio)
 	wRemote = w - wLocal
 	return
 }
