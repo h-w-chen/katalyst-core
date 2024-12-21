@@ -25,17 +25,19 @@ import (
 )
 
 type MemoryOptions struct {
-	PolicyName                  string
-	ReservedMemoryGB            uint64
-	SkipMemoryStateCorruption   bool
-	EnableSettingMemoryMigrate  bool
-	EnableMemoryAdvisor         bool
-	ExtraControlKnobConfigFile  string
-	EnableOOMPriority           bool
-	OOMPriorityPinnedMapAbsPath string
+	PolicyName                                    string
+	ReservedMemoryGB                              uint64
+	SkipMemoryStateCorruption                     bool
+	EnableSettingMemoryMigrate                    bool
+	EnableMemoryAdvisor                           bool
+	ExtraControlKnobConfigFile                    string
+	EnableOOMPriority                             bool
+	OOMPriorityPinnedMapAbsPath                   string
+	EnableNonBindingShareCoresMemoryResourceCheck bool
 
 	SockMemOptions
 	LogCacheOptions
+	FragMemOptions
 }
 
 type SockMemOptions struct {
@@ -63,6 +65,13 @@ type LogCacheOptions struct {
 	FileFilters []string
 }
 
+type FragMemOptions struct {
+	EnableSettingFragMem bool
+	// SetMemFragScoreAsync sets the threashold of frag score for async memory compaction.
+	// The async compaction behavior will be triggered while exceeding this score.
+	SetMemFragScoreAsync int
+}
+
 func NewMemoryOptions() *MemoryOptions {
 	return &MemoryOptions{
 		PolicyName:                 "dynamic",
@@ -71,6 +80,7 @@ func NewMemoryOptions() *MemoryOptions {
 		EnableSettingMemoryMigrate: false,
 		EnableMemoryAdvisor:        false,
 		EnableOOMPriority:          false,
+		EnableNonBindingShareCoresMemoryResourceCheck: true,
 		SockMemOptions: SockMemOptions{
 			EnableSettingSockMem: false,
 			SetGlobalTCPMemRatio: 20,  // default: 20% * {host total memory}
@@ -84,6 +94,10 @@ func NewMemoryOptions() *MemoryOptions {
 			MaxInterval:            time.Second * 60 * 60 * 2,
 			PathList:               []string{},
 			FileFilters:            []string{".*\\.log.*"},
+		},
+		FragMemOptions: FragMemOptions{
+			EnableSettingFragMem: false,
+			SetMemFragScoreAsync: 80,
 		},
 	}
 }
@@ -105,6 +119,8 @@ func (o *MemoryOptions) AddFlags(fss *cliflag.NamedFlagSets) {
 		o.ExtraControlKnobConfigFile, "the absolute path of extra control knob config file")
 	fs.BoolVar(&o.EnableOOMPriority, "enable-oom-priority",
 		o.EnableOOMPriority, "if set true, we will enable oom priority enhancement")
+	fs.BoolVar(&o.EnableNonBindingShareCoresMemoryResourceCheck, "enable-non-binding-share-cores-memory-resource-check",
+		o.EnableNonBindingShareCoresMemoryResourceCheck, "enable the topology check for non-binding shares cores pods")
 	fs.StringVar(&o.OOMPriorityPinnedMapAbsPath, "oom-priority-pinned-bpf-map-path",
 		o.OOMPriorityPinnedMapAbsPath, "the absolute path of oom priority pinned bpf map")
 	fs.BoolVar(&o.EnableSettingSockMem, "enable-setting-sockmem",
@@ -127,6 +143,10 @@ func (o *MemoryOptions) AddFlags(fss *cliflag.NamedFlagSets) {
 		"the absolute path list where files will be checked to evict page cache")
 	fs.StringSliceVar(&o.FileFilters, "qrm-memory-logcache-file-filters",
 		o.FileFilters, "string list to filter log files, default to *log*")
+	fs.BoolVar(&o.EnableSettingFragMem, "enable-setting-mem-compaction",
+		o.EnableSettingFragMem, "if set true, we will enable memory compaction related features")
+	fs.IntVar(&o.SetMemFragScoreAsync, "qrm-memory-frag-score-async",
+		o.SetMemFragScoreAsync, "set the threshold of frag score for async memory compaction")
 }
 
 func (o *MemoryOptions) ApplyTo(conf *qrmconfig.MemoryQRMPluginConfig) error {
@@ -137,6 +157,7 @@ func (o *MemoryOptions) ApplyTo(conf *qrmconfig.MemoryQRMPluginConfig) error {
 	conf.EnableMemoryAdvisor = o.EnableMemoryAdvisor
 	conf.ExtraControlKnobConfigFile = o.ExtraControlKnobConfigFile
 	conf.EnableOOMPriority = o.EnableOOMPriority
+	conf.EnableNonBindingShareCoresMemoryResourceCheck = o.EnableNonBindingShareCoresMemoryResourceCheck
 	conf.OOMPriorityPinnedMapAbsPath = o.OOMPriorityPinnedMapAbsPath
 	conf.EnableSettingSockMem = o.EnableSettingSockMem
 	conf.SetGlobalTCPMemRatio = o.SetGlobalTCPMemRatio
@@ -148,5 +169,7 @@ func (o *MemoryOptions) ApplyTo(conf *qrmconfig.MemoryQRMPluginConfig) error {
 	conf.MaxInterval = o.MaxInterval
 	conf.PathList = o.PathList
 	conf.FileFilters = o.FileFilters
+	conf.EnableSettingFragMem = o.EnableSettingFragMem
+	conf.SetMemFragScoreAsync = o.SetMemFragScoreAsync
 	return nil
 }

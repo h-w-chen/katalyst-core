@@ -17,14 +17,13 @@ limitations under the License.
 package plugin
 
 import (
-	"strconv"
 	"sync"
 
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/kubelet/pkg/apis/resourceplugin/v1alpha1"
 
 	apiconsts "github.com/kubewharf/katalyst-api/pkg/consts"
-	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/cpu/dynamicpolicy/state"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/commonstate"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/memory/dynamicpolicy/memoryadvisor"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/metacache"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/types"
@@ -120,7 +119,7 @@ func (cp *cacheReaper) reclaimedContainersFilter(ci *types.ContainerInfo, numaID
 			general.ErrorS(err, "failed to get MetricMemTotalNuma")
 			return true
 		}
-		cache, err = cp.metaServer.GetContainerNumaMetric(ci.PodUID, ci.ContainerName, strconv.Itoa(numaID), consts.MetricsMemFilePerNumaContainer)
+		cache, err = cp.metaServer.GetContainerNumaMetric(ci.PodUID, ci.ContainerName, numaID, consts.MetricsMemFilePerNumaContainer)
 		if err != nil {
 			general.ErrorS(err, "failed to get MetricsMemFilePerNumaContainer", "podName", ci.PodName, "containerName", ci.ContainerName, "numaID", numaID)
 			return true
@@ -143,7 +142,7 @@ func (cp *cacheReaper) Reconcile(status *types.MemoryPressureStatus) error {
 
 	containers := make([]*types.ContainerInfo, 0)
 	cp.metaReader.RangeContainer(func(podUID string, containerName string, containerInfo *types.ContainerInfo) bool {
-		if cp.reclaimedContainersFilter(containerInfo, state.FakedNUMAID, minCacheUtilizationThreshold) {
+		if cp.reclaimedContainersFilter(containerInfo, commonstate.FakedNUMAID, minCacheUtilizationThreshold) {
 			containers = append(containers, containerInfo)
 		}
 		return true

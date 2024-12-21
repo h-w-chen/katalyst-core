@@ -71,6 +71,7 @@ type MalachiteMetricsProvisioner struct {
 	baseConf        *global.BaseConfiguration
 	emitter         metrics.MetricEmitter
 	startOnce       sync.Once
+	cpuToNumaMap    map[int]int
 }
 
 func (m *MalachiteMetricsProvisioner) Run(ctx context.Context) {
@@ -139,7 +140,8 @@ func (m *MalachiteMetricsProvisioner) updateSystemStats() error {
 			metrics.MetricTag{Key: "kind", Val: "memory"})
 	} else {
 		m.processSystemMemoryData(systemMemoryData)
-		m.processSystemNumaData(systemMemoryData)
+		m.processSystemNumaData(systemMemoryData, systemComputeData)
+		m.processSystemExtFragData(systemMemoryData)
 	}
 
 	systemIOData, err := m.malachiteClient.GetSystemIOStats()
@@ -234,6 +236,10 @@ func (m *MalachiteMetricsProvisioner) processSystemComputeData(systemComputeData
 	// todo, currently we only get a unified data for the whole system compute data
 	updateTime := time.Unix(systemComputeData.UpdateTime, 0)
 
+	globalCPU := systemComputeData.GlobalCPU
+	m.metricStore.SetNodeMetric(consts.MetricCPUUsageRatioSystem,
+		utilmetric.MetricData{Value: globalCPU.CPUUsage / 100, Time: &updateTime})
+
 	load := systemComputeData.Load
 	m.metricStore.SetNodeMetric(consts.MetricLoad1MinSystem,
 		utilmetric.MetricData{Value: load.One, Time: &updateTime})
@@ -241,6 +247,10 @@ func (m *MalachiteMetricsProvisioner) processSystemComputeData(systemComputeData
 		utilmetric.MetricData{Value: load.Five, Time: &updateTime})
 	m.metricStore.SetNodeMetric(consts.MetricLoad15MinSystem,
 		utilmetric.MetricData{Value: load.Fifteen, Time: &updateTime})
+
+	procsRunning := systemComputeData.ProcessStats.ProcessRunning
+	m.metricStore.SetNodeMetric(consts.MetricProcsRunningSystem,
+		utilmetric.MetricData{Value: float64(procsRunning), Time: &updateTime})
 }
 
 func (m *MalachiteMetricsProvisioner) processSystemMemoryData(systemMemoryData *malachitetypes.SystemMemoryData) {
@@ -274,6 +284,15 @@ func (m *MalachiteMetricsProvisioner) processSystemMemoryData(systemMemoryData *
 	m.metricStore.SetNodeMetric(consts.MetricMemAvailableSystem,
 		utilmetric.MetricData{Value: float64(mem.MemAvailable << 10), Time: &updateTime})
 
+	m.metricStore.SetNodeMetric(consts.MetricMemActiveAnonSystem,
+		utilmetric.MetricData{Value: float64(mem.MemActiveAnon << 10), Time: &updateTime})
+	m.metricStore.SetNodeMetric(consts.MetricMemInactiveAnonSystem,
+		utilmetric.MetricData{Value: float64(mem.MemInactiveAnon << 10), Time: &updateTime})
+	m.metricStore.SetNodeMetric(consts.MetricMemActiveFileSystem,
+		utilmetric.MetricData{Value: float64(mem.MemActiveFile << 10), Time: &updateTime})
+	m.metricStore.SetNodeMetric(consts.MetricMemInactiveFileSystem,
+		utilmetric.MetricData{Value: float64(mem.MemInactiveFile << 10), Time: &updateTime})
+
 	m.metricStore.SetNodeMetric(consts.MetricMemDirtySystem,
 		utilmetric.MetricData{Value: float64(mem.MemDirtyPageCache << 10), Time: &updateTime})
 	m.metricStore.SetNodeMetric(consts.MetricMemWritebackSystem,
@@ -290,6 +309,15 @@ func (m *MalachiteMetricsProvisioner) processSystemMemoryData(systemMemoryData *
 
 	m.metricStore.SetNodeMetric(consts.MetricMemScaleFactorSystem,
 		utilmetric.MetricData{Value: float64(mem.VMWatermarkScaleFactor), Time: &updateTime})
+
+	m.metricStore.SetNodeMetric(consts.MetricMemSockTCPSystem,
+		utilmetric.MetricData{Value: float64(mem.MemSockTcp), Time: &updateTime})
+	m.metricStore.SetNodeMetric(consts.MetricMemSockTCPLimitSystem,
+		utilmetric.MetricData{Value: float64(mem.MemSockTcpLimit), Time: &updateTime})
+	m.metricStore.SetNodeMetric(consts.MetricMemSockUDPSystem,
+		utilmetric.MetricData{Value: float64(mem.MemSockUdp), Time: &updateTime})
+	m.metricStore.SetNodeMetric(consts.MetricMemSockUDPLimitSystem,
+		utilmetric.MetricData{Value: float64(mem.MemSockUdpLimit), Time: &updateTime})
 
 	// timestamp
 	m.metricStore.SetNodeMetric(consts.MetricMemUpdateTimeSystem,
@@ -349,6 +377,8 @@ func (m *MalachiteMetricsProvisioner) processSystemIOData(systemIOData *malachit
 			diskType = consts.DiskTypeSSD
 		} else if device.DiskType == "NVME" {
 			diskType = consts.DiskTypeNVME
+		} else if device.DiskType == "VIRTIO" {
+			diskType = consts.DiskTypeVIRTIO
 		}
 		m.metricStore.SetDeviceMetric(device.DeviceName, consts.MetricIODiskType,
 			utilmetric.MetricData{Value: float64(diskType), Time: &updateTime})
@@ -426,9 +456,26 @@ func (m *MalachiteMetricsProvisioner) processSystemNetData(systemNetData *malach
 	}
 }
 
-func (m *MalachiteMetricsProvisioner) processSystemNumaData(systemMemoryData *malachitetypes.SystemMemoryData) {
+func (m *MalachiteMetricsProvisioner) processSystemNumaData(systemMemoryData *malachitetypes.SystemMemoryData, systemComputeData *malachitetypes.SystemComputeData) {
 	// todo, currently we only get a unified data for the whole system memory data
 	updateTime := time.Unix(systemMemoryData.UpdateTime, 0)
+
+	if m.cpuToNumaMap == nil {
+		cpuToNuma := make(map[int]int)
+		for _, numaInfo := range systemMemoryData.Numa {
+			for _, cpuID := range numaInfo.CPUList.Inner {
+				cpuToNuma[cpuID] = numaInfo.ID
+			}
+		}
+		m.cpuToNumaMap = cpuToNuma
+	}
+
+	cpuToNuma := make(map[int]int)
+	for _, numaInfo := range systemMemoryData.Numa {
+		for _, cpuID := range numaInfo.CPUList.Inner {
+			cpuToNuma[cpuID] = numaInfo.ID
+		}
+	}
 
 	for _, numa := range systemMemoryData.Numa {
 		m.metricStore.SetNumaMetric(numa.ID, consts.MetricMemTotalNuma,
@@ -464,12 +511,37 @@ func (m *MalachiteMetricsProvisioner) processSystemNumaData(systemMemoryData *ma
 		m.metricStore.SetNumaMetric(numa.ID, consts.MetricMemAMDL3MissLatencyNuma,
 			utilmetric.MetricData{Value: numa.AMDL3MissLatencyMax, Time: &updateTime})
 	}
+
+	numaCPUUsage := make(map[int]float64)
+	for _, cpuInfo := range systemComputeData.CPU {
+		cpuID, err := strconv.Atoi(cpuInfo.Name[3:])
+		if err != nil {
+			klog.Errorf("[malachite] parse cpu name %v with err: %v", cpuInfo.Name, err)
+			continue
+		}
+		numaCPUUsage[cpuToNuma[cpuID]] += cpuInfo.CPUUsage / 100
+	}
+
+	for numaID, usage := range numaCPUUsage {
+		m.metricStore.SetNumaMetric(numaID, consts.MetricCPUUsageNuma,
+			utilmetric.MetricData{Value: usage, Time: &updateTime})
+	}
+}
+
+func (m *MalachiteMetricsProvisioner) processSystemExtFragData(systemMemoryData *malachitetypes.SystemMemoryData) {
+	updateTime := time.Unix(systemMemoryData.UpdateTime, 0)
+
+	for _, numa := range systemMemoryData.ExtFrag {
+		m.metricStore.SetNumaMetric(numa.ID, consts.MetricMemFragScoreNuma,
+			utilmetric.MetricData{Value: float64(numa.MemFragScore), Time: &updateTime})
+	}
 }
 
 func (m *MalachiteMetricsProvisioner) processSystemCPUComputeData(systemComputeData *malachitetypes.SystemComputeData) {
 	// todo, currently we only get a unified data for the whole system compute data
 	updateTime := time.Unix(systemComputeData.UpdateTime, 0)
 
+	var cpiTotal, cpiCount float64
 	for _, cpu := range systemComputeData.CPU {
 		cpuID, err := strconv.Atoi(cpu.Name[3:])
 		if err != nil {
@@ -485,9 +557,21 @@ func (m *MalachiteMetricsProvisioner) processSystemCPUComputeData(systemComputeD
 			utilmetric.MetricData{Value: cpu.CPUSchedWait * 1000, Time: &updateTime})
 		m.metricStore.SetCPUMetric(cpuID, consts.MetricCPUIOWaitRatio,
 			utilmetric.MetricData{Value: cpu.CPUIowaitRatio, Time: &updateTime})
+
+		if cpu.CpiData != nil {
+			cpiTotal += cpu.CpiData.Cpi
+			cpiCount += 1
+		}
 	}
 	m.metricStore.SetNodeMetric(consts.MetricCPUUsageRatio,
 		utilmetric.MetricData{Value: systemComputeData.GlobalCPU.CPUUsage / 100.0, Time: &updateTime})
+	m.metricStore.SetNodeMetric(consts.MetricCPUSysUsageRatio,
+		utilmetric.MetricData{Value: systemComputeData.GlobalCPU.CPUSysUsage / 100.0, Time: &updateTime})
+
+	if cpiCount > 0 {
+		m.metricStore.SetNodeMetric(consts.MetricCPIAvgSystem,
+			utilmetric.MetricData{Value: cpiTotal / cpiCount, Time: &updateTime})
+	}
 }
 
 func (m *MalachiteMetricsProvisioner) processCgroupCPUData(cgroupPath string, cgStats *malachitetypes.MalachiteCgroupInfo) {
@@ -705,6 +789,8 @@ func (m *MalachiteMetricsProvisioner) processContainerCPUData(podUID, containerN
 			utilmetric.MetricData{Value: cpu.CPUUserUsageRatio, Time: &updateTime})
 		m.metricStore.SetContainerMetric(podUID, containerName, consts.MetricCPUUsageSysContainer,
 			utilmetric.MetricData{Value: cpu.CPUSysUsageRatio, Time: &updateTime})
+		m.metricStore.SetContainerMetric(podUID, containerName, consts.MetricCPUUsageRatioContainer,
+			utilmetric.MetricData{Value: cpu.CPUUsageRatio / (float64(cpu.CfsQuotaUs) / float64(cpu.CfsPeriodUs)), Time: &updateTime})
 		m.metricStore.SetContainerMetric(podUID, containerName, consts.MetricCPUShareContainer,
 			utilmetric.MetricData{Value: float64(cpu.CPUShares), Time: &updateTime})
 		m.metricStore.SetContainerMetric(podUID, containerName, consts.MetricCPUQuotaContainer,
@@ -762,6 +848,25 @@ func (m *MalachiteMetricsProvisioner) processContainerCPUData(podUID, containerN
 					utilmetric.MetricData{Value: cpi, Time: &updateTime})
 			}
 		}
+
+		if m.cpuToNumaMap == nil {
+			return
+		}
+		numaCPUUsage := make(map[int]uint64)
+		for cpuID, usage := range cpu.PercpuUsage {
+			numaID := m.cpuToNumaMap[cpuID]
+			numaCPUUsage[numaID] += usage
+		}
+		for numaID, usage := range numaCPUUsage {
+			numaCPUUsageOld, err := m.metricStore.GetContainerNumaMetric(podUID, containerName, numaID, consts.MetricsCPUUsageCountNUMAContainer)
+			if err == nil && numaCPUUsageOld.Time.Before(updateTime) {
+				rate := (float64(usage) - numaCPUUsageOld.Value) / updateTime.Sub(*numaCPUUsageOld.Time).Seconds() / 1000000000
+				m.metricStore.SetContainerNumaMetric(podUID, containerName, numaID, consts.MetricsCPUUsageNUMAContainer, utilmetric.MetricData{Value: rate, Time: &updateTime})
+			}
+
+			m.metricStore.SetContainerNumaMetric(podUID, containerName, numaID, consts.MetricsCPUUsageCountNUMAContainer,
+				utilmetric.MetricData{Value: float64(usage), Time: &updateTime})
+		}
 	} else if cgStats.CgroupType == "V2" && cgStats.V2 != nil {
 		cpu := cgStats.V2.Cpu
 		updateTime := time.Unix(cgStats.V2.Cpu.UpdateTime, 0)
@@ -774,6 +879,8 @@ func (m *MalachiteMetricsProvisioner) processContainerCPUData(podUID, containerN
 			utilmetric.MetricData{Value: cpu.CPUUserUsageRatio, Time: &updateTime})
 		m.metricStore.SetContainerMetric(podUID, containerName, consts.MetricCPUUsageSysContainer,
 			utilmetric.MetricData{Value: cpu.CPUSysUsageRatio, Time: &updateTime})
+		m.metricStore.SetContainerMetric(podUID, containerName, consts.MetricCPUUsageRatioContainer,
+			utilmetric.MetricData{Value: cpu.CPUUsageRatio / (float64(cpu.Max) / float64(cpu.MaxPeriod)), Time: &updateTime})
 
 		m.metricStore.SetContainerMetric(podUID, containerName, consts.MetricCPUNrRunnableContainer,
 			utilmetric.MetricData{Value: float64(cpu.TaskNrRunning), Time: &updateTime})
@@ -824,6 +931,25 @@ func (m *MalachiteMetricsProvisioner) processContainerCPUData(podUID, containerN
 				m.metricStore.SetContainerMetric(podUID, containerName, consts.MetricCPUCPIContainer,
 					utilmetric.MetricData{Value: cpi, Time: &updateTime})
 			}
+		}
+
+		if m.cpuToNumaMap == nil {
+			return
+		}
+		numaCPUUsage := make(map[int]uint64)
+		for cpuID, usage := range cpu.PercpuUsage {
+			numaID := m.cpuToNumaMap[cpuID]
+			numaCPUUsage[numaID] += usage
+		}
+		for numaID, usage := range numaCPUUsage {
+			numaCPUUsageOld, err := m.metricStore.GetContainerNumaMetric(podUID, containerName, numaID, consts.MetricsCPUUsageCountNUMAContainer)
+			if err == nil && numaCPUUsageOld.Time.Before(updateTime) {
+				rate := (float64(usage) - numaCPUUsageOld.Value) / updateTime.Sub(*numaCPUUsageOld.Time).Seconds() / 1000000000
+				m.metricStore.SetContainerNumaMetric(podUID, containerName, numaID, consts.MetricsCPUUsageNUMAContainer, utilmetric.MetricData{Value: rate, Time: &updateTime})
+			}
+
+			m.metricStore.SetContainerNumaMetric(podUID, containerName, numaID, consts.MetricsCPUUsageCountNUMAContainer,
+				utilmetric.MetricData{Value: float64(usage), Time: &updateTime})
 		}
 	}
 }
@@ -1049,7 +1175,12 @@ func (m *MalachiteMetricsProvisioner) processContainerPerNumaMemoryData(podUID, 
 		updateTime := time.Unix(cgStats.V1.Memory.UpdateTime, 0)
 
 		for _, data := range numaStats {
-			numaID := strings.TrimPrefix(data.NumaName, "N")
+			numaName := strings.TrimPrefix(data.NumaName, "N")
+			numaID, err := strconv.Atoi(numaName)
+			if err != nil {
+				klog.ErrorS(err, "failed to convert numaName %v", numaName)
+				continue
+			}
 			m.metricStore.SetContainerNumaMetric(podUID, containerName, numaID, consts.MetricsMemTotalPerNumaContainer,
 				utilmetric.MetricData{Value: float64(data.Total << pageShift), Time: &updateTime})
 			m.metricStore.SetContainerNumaMetric(podUID, containerName, numaID, consts.MetricsMemFilePerNumaContainer,
@@ -1062,8 +1193,13 @@ func (m *MalachiteMetricsProvisioner) processContainerPerNumaMemoryData(podUID, 
 		updateTime := time.Unix(cgStats.V2.Memory.UpdateTime, 0)
 
 		for numa, data := range numaStats {
-			numaID := strings.TrimPrefix(numa, "N")
+			numaName := strings.TrimPrefix(numa, "N")
 			total := data.Anon + data.File + data.Unevictable
+			numaID, err := strconv.Atoi(numaName)
+			if err != nil {
+				klog.ErrorS(err, "failed to convert numaName %v", numaName)
+				continue
+			}
 			m.metricStore.SetContainerNumaMetric(podUID, containerName, numaID, consts.MetricsMemTotalPerNumaContainer,
 				utilmetric.MetricData{Value: float64(total), Time: &updateTime})
 			m.metricStore.SetContainerNumaMetric(podUID, containerName, numaID, consts.MetricsMemFilePerNumaContainer,
