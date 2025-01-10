@@ -24,10 +24,15 @@ type PowerCapper interface {
 	Stop() error
 	Reset()
 	Cap(ctx context.Context, targetWatts, currWatt int)
+	IsReady() bool
 }
 
 // noopCapper is placeholder for disabled power capping server
 type noopCapper struct{}
+
+func (n noopCapper) IsReady() bool {
+	return true
+}
 
 func (n noopCapper) Stop() error {
 	return nil
