@@ -23,10 +23,12 @@ import (
 )
 
 const (
-	MetricProvisionerMalachite = "malachite"
-	MetricProvisionerCgroup    = "cgroup"
-	MetricProvisionerKubelet   = "kubelet"
-	MetricProvisionerRodan     = "rodan"
+	MetricProvisionerMalachite         = "malachite"
+	MetricProvisionerMalachiteRealtime = "malachite_realtime"
+	MetricProvisionerCgroup            = "cgroup"
+	MetricProvisionerKubelet           = "kubelet"
+	MetricProvisionerRodan             = "rodan"
+	MetricProvisionerResctrl   = "resctrl"
 )
 
 type MetricConfiguration struct {

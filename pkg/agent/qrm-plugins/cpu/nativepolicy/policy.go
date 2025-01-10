@@ -29,6 +29,7 @@ import (
 
 	"github.com/kubewharf/katalyst-api/pkg/plugins/skeleton"
 	"github.com/kubewharf/katalyst-core/cmd/katalyst-agent/app/agent"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/commonstate"
 	cpuconsts "github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/cpu/consts"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/cpu/dynamicpolicy/state"
 	nativepolicyutil "github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/cpu/nativepolicy/util"
@@ -53,23 +54,6 @@ const (
 	stateCheckPeriod = 30 * time.Second
 	maxResidualTime  = 5 * time.Minute
 )
-
-var (
-	readonlyStateLock sync.RWMutex
-	readonlyState     state.ReadonlyState
-)
-
-// GetReadonlyState returns state.ReadonlyState to provides a way
-// to obtain the running states of the plugin
-func GetReadonlyState() (state.ReadonlyState, error) {
-	readonlyStateLock.RLock()
-	defer readonlyStateLock.RUnlock()
-
-	if readonlyState == nil {
-		return nil, fmt.Errorf("readonlyState isn't setted")
-	}
-	return readonlyState, nil
-}
 
 // NativePolicy is a policy compatible with Kubernetes native semantics and is used in topology-aware scheduling scenarios.
 type NativePolicy struct {
@@ -109,14 +93,13 @@ func NewNativePolicy(agentCtx *agent.GenericContext, conf *config.Configuration,
 	general.Infof("new native policy")
 
 	stateImpl, stateErr := state.NewCheckpointState(conf.GenericQRMPluginConfiguration.StateFileDirectory, cpuPluginStateFileName,
-		cpuconsts.CPUResourcePluginPolicyNameNative, agentCtx.CPUTopology, conf.SkipCPUStateCorruption)
+		cpuconsts.CPUResourcePluginPolicyNameNative, agentCtx.CPUTopology, conf.SkipCPUStateCorruption, nativepolicyutil.GenerateMachineStateFromPodEntries)
 	if stateErr != nil {
 		return false, agent.ComponentStub{}, fmt.Errorf("NewCheckpointState failed with error: %v", stateErr)
 	}
 
-	readonlyStateLock.Lock()
-	readonlyState = stateImpl
-	readonlyStateLock.Unlock()
+	state.SetReadonlyState(stateImpl)
+	state.SetReadWriteState(stateImpl)
 
 	wrappedEmitter := agentCtx.EmitterPool.GetDefaultMetricsEmitter().WithTags(agentName, metrics.MetricTag{
 		Key: util.QRMPluginPolicyTagName,
@@ -458,9 +441,9 @@ func (p *NativePolicy) GetResourcesAllocation(_ context.Context,
 
 			resultCPUSet := machine.NewCPUSet()
 			switch allocationInfo.OwnerPoolName {
-			case state.PoolNameDedicated:
+			case commonstate.PoolNameDedicated:
 				resultCPUSet = allocationInfo.AllocationResult
-			case state.PoolNameShare:
+			case commonstate.PoolNameShare:
 				resultCPUSet = defaultCPUSet
 
 				if !allocationInfo.AllocationResult.Equals(defaultCPUSet) {
@@ -530,7 +513,7 @@ func (p *NativePolicy) GetTopologyAwareResources(_ context.Context,
 		},
 	}
 
-	if allocationInfo.OwnerPoolName == state.PoolNameDedicated {
+	if allocationInfo.OwnerPoolName == commonstate.PoolNameDedicated {
 		resp.ContainerTopologyAwareResources.AllocatedResources[string(v1.ResourceCPU)] = &pluginapi.TopologyAwareResource{
 			IsNodeResource:                    false,
 			IsScalarResource:                  true,

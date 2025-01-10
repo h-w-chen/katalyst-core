@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io/fs"
 	"math"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
@@ -32,6 +33,16 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/util/cgroup/common"
 	"github.com/kubewharf/katalyst-core/pkg/util/eventbus"
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
+	"github.com/kubewharf/katalyst-core/pkg/util/machine"
+)
+
+const (
+	MPOL_DEFAULT = iota
+	MPOL_PREFERRED
+	MPOL_BIND
+	MPOL_INTERLEAVE
+	MPOL_LOCAL
+	MPOL_MAX
 )
 
 func ApplyMemoryWithRelativePath(relCgroupPath string, data *common.MemoryData) error {
@@ -476,7 +487,7 @@ func DisableSwapMaxWithAbsolutePathRecursive(absCgroupPath string) error {
 	return nil
 }
 
-func MemoryOffloadingWithAbsolutePath(ctx context.Context, absCgroupPath string, nbytes int64) error {
+func MemoryOffloadingWithAbsolutePath(ctx context.Context, absCgroupPath string, nbytes int64, mems machine.CPUSet) error {
 	startTime := time.Now()
 
 	var cmd string
@@ -493,7 +504,7 @@ func MemoryOffloadingWithAbsolutePath(ctx context.Context, absCgroupPath string,
 		return nil
 	}
 
-	_, err := exec.Command("bash", "-c", cmd).Output()
+	err := doReclaimMemory(cmd, mems)
 
 	_ = asyncworker.EmitAsyncedMetrics(ctx, metrics.ConvertMapToTags(map[string]string{
 		"absCGPath": absCgroupPath,
@@ -503,4 +514,41 @@ func MemoryOffloadingWithAbsolutePath(ctx context.Context, absCgroupPath string,
 	general.Infof("[MemoryOffloadingWithAbsolutePath] it takes %v to do \"%s\" on cgroup: %s", delta, cmd, absCgroupPath)
 
 	return err
+}
+
+func GetEffectiveCPUSetWithAbsolutePath(absCgroupPath string) (machine.CPUSet, machine.CPUSet, error) {
+	if !IsCgroupPath(absCgroupPath) {
+		return machine.CPUSet{}, machine.CPUSet{}, fmt.Errorf("path %s is not a cgroup", absCgroupPath)
+	}
+
+	cpusetStat, err := GetCPUSetWithAbsolutePath(absCgroupPath)
+	if err != nil {
+		// if controller is disabled, we should walk the parent's dir.
+		if os.IsNotExist(err) {
+			return GetEffectiveCPUSetWithAbsolutePath(filepath.Dir(absCgroupPath))
+		}
+		return machine.CPUSet{}, machine.CPUSet{}, err
+	}
+	// if the cpus or mems is empty, they will inherit the parent's mask.
+	cpus, err := machine.Parse(cpusetStat.EffectiveCPUs)
+	if err != nil {
+		return machine.CPUSet{}, machine.CPUSet{}, err
+	}
+	if cpus.IsEmpty() {
+		cpus, _, err = GetEffectiveCPUSetWithAbsolutePath(filepath.Dir(absCgroupPath))
+		if err != nil {
+			return machine.CPUSet{}, machine.CPUSet{}, err
+		}
+	}
+	mems, err := machine.Parse(cpusetStat.EffectiveMems)
+	if err != nil {
+		return machine.CPUSet{}, machine.CPUSet{}, err
+	}
+	if mems.IsEmpty() {
+		_, mems, err = GetEffectiveCPUSetWithAbsolutePath(filepath.Dir(absCgroupPath))
+		if err != nil {
+			return machine.CPUSet{}, machine.CPUSet{}, err
+		}
+	}
+	return cpus, mems, nil
 }

@@ -29,7 +29,7 @@ import (
 	pluginapi "k8s.io/kubelet/pkg/apis/resourceplugin/v1alpha1"
 
 	"github.com/kubewharf/katalyst-api/pkg/consts"
-	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/cpu/dynamicpolicy/state"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/commonstate"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/util"
 	"github.com/kubewharf/katalyst-core/pkg/util/machine"
 )
@@ -620,11 +620,11 @@ func TestSNBVPAWithSidecar(t *testing.T) {
 	as.Nil(err)
 }
 
-func TestNormalShareVPA(t *testing.T) {
+func TestNonBindingShareCoresVPA(t *testing.T) {
 	t.Parallel()
 	as := require.New(t)
 
-	tmpDir, err := ioutil.TempDir("", "checkpoint-TestNormalShareVPA")
+	tmpDir, err := ioutil.TempDir("", "checkpoint-TestNonBindingShareCoresVPA")
 	as.Nil(err)
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
@@ -639,7 +639,7 @@ func TestNormalShareVPA(t *testing.T) {
 
 	testName := "test"
 
-	// test for normal share
+	// test for non-binding share cores
 	req := &pluginapi.ResourceRequest{
 		PodUid:         string(uuid.NewUUID()),
 		PodNamespace:   testName,
@@ -659,7 +659,7 @@ func TestNormalShareVPA(t *testing.T) {
 		},
 	}
 
-	// no topology hints for normal share
+	// no topology hints for non-binding share cores
 	res, err := dynamicPolicy.GetTopologyHints(context.Background(), req)
 	as.Nil(err)
 	as.Nil(res.ResourceHints[string(v1.ResourceCPU)])
@@ -672,7 +672,7 @@ func TestNormalShareVPA(t *testing.T) {
 	resp1, err := dynamicPolicy.GetResourcesAllocation(context.Background(), &pluginapi.GetResourcesAllocationRequest{})
 	as.Nil(err)
 
-	reclaim := dynamicPolicy.state.GetAllocationInfo(state.PoolNameReclaim, state.FakedContainerName)
+	reclaim := dynamicPolicy.state.GetAllocationInfo(commonstate.PoolNameReclaim, commonstate.FakedContainerName)
 	as.NotNil(reclaim)
 
 	as.NotNil(resp1.PodResources[req.PodUid])
@@ -732,7 +732,7 @@ func TestNormalShareVPA(t *testing.T) {
 
 	resizeResp1, err := dynamicPolicy.GetTopologyHints(context.Background(), resizeReq1)
 	as.Nil(err)
-	// no hints for normal share
+	// no hints for non-binding share cores
 	as.Nil(resizeResp1.ResourceHints[string(v1.ResourceCPU)])
 
 	_, err = dynamicPolicy.Allocate(context.Background(), resizeReq1)
@@ -741,7 +741,7 @@ func TestNormalShareVPA(t *testing.T) {
 	resp1, err = dynamicPolicy.GetResourcesAllocation(context.Background(), &pluginapi.GetResourcesAllocationRequest{})
 	as.Nil(err)
 
-	reclaim = dynamicPolicy.state.GetAllocationInfo(state.PoolNameReclaim, state.FakedContainerName)
+	reclaim = dynamicPolicy.state.GetAllocationInfo(commonstate.PoolNameReclaim, commonstate.FakedContainerName)
 	as.NotNil(reclaim)
 
 	as.NotNil(resp1.PodResources[req.PodUid])
@@ -761,11 +761,11 @@ func TestNormalShareVPA(t *testing.T) {
 	as.Equal(float64(3), allocation.RequestQuantity)
 }
 
-func TestNormalShareVPAWithSidecar(t *testing.T) {
+func TestNonBindingShareCoresVPAWithSidecar(t *testing.T) {
 	t.Parallel()
 	as := require.New(t)
 
-	tmpDir, err := ioutil.TempDir("", "checkpoint-TestNormalShareVPAWithSidecar")
+	tmpDir, err := ioutil.TempDir("", "checkpoint-TestNonBindingShareCoresVPAWithSidecar")
 	as.Nil(err)
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
@@ -828,7 +828,7 @@ func TestNormalShareVPAWithSidecar(t *testing.T) {
 	as.NotNil(allocationRes.PodResources[podUID].ContainerResources[sidecarContainerName])
 	as.NotNil(allocationRes.PodResources[podUID].ContainerResources[sidecarContainerName].ResourceAllocation[string(v1.ResourceCPU)])
 	// reserve pool size: 2, reclaimed pool size: 4, share pool size: 42
-	reclaim := dynamicPolicy.state.GetAllocationInfo(state.PoolNameReclaim, state.FakedContainerName)
+	reclaim := dynamicPolicy.state.GetAllocationInfo(commonstate.PoolNameReclaim, commonstate.FakedContainerName)
 	as.NotNil(reclaim)
 	as.Equal(&pluginapi.ResourceAllocationInfo{
 		OciPropertyName:   util.OCIPropertyNameCPUSetCPUs,
@@ -877,7 +877,7 @@ func TestNormalShareVPAWithSidecar(t *testing.T) {
 	as.NotNil(allocationRes.PodResources[mainReq.PodUid].ContainerResources[mainContainerName])
 	as.NotNil(allocationRes.PodResources[mainReq.PodUid].ContainerResources[mainContainerName].ResourceAllocation[string(v1.ResourceCPU)])
 	// reserve pool size: 2, reclaimed pool size: 4, share pool size: 42
-	reclaim = dynamicPolicy.state.GetAllocationInfo(state.PoolNameReclaim, state.FakedContainerName)
+	reclaim = dynamicPolicy.state.GetAllocationInfo(commonstate.PoolNameReclaim, commonstate.FakedContainerName)
 	as.NotNil(reclaim)
 	as.Equal(&pluginapi.ResourceAllocationInfo{
 		OciPropertyName:   util.OCIPropertyNameCPUSetCPUs,
@@ -935,7 +935,7 @@ func TestNormalShareVPAWithSidecar(t *testing.T) {
 	as.NotNil(resizeMainContainerAllocations.PodResources[podUID].ContainerResources[mainContainerName])
 	as.NotNil(resizeMainContainerAllocations.PodResources[podUID].ContainerResources[mainContainerName].ResourceAllocation[string(v1.ResourceCPU)])
 	// reserve pool size: 2, reclaimed pool size: 4, share pool size: 42
-	reclaim = dynamicPolicy.state.GetAllocationInfo(state.PoolNameReclaim, state.FakedContainerName)
+	reclaim = dynamicPolicy.state.GetAllocationInfo(commonstate.PoolNameReclaim, commonstate.FakedContainerName)
 	as.NotNil(reclaim)
 	as.Equal(&pluginapi.ResourceAllocationInfo{
 		OciPropertyName:   util.OCIPropertyNameCPUSetCPUs,
@@ -1012,7 +1012,7 @@ func TestNormalShareVPAWithSidecar(t *testing.T) {
 	as.NotNil(resizeSidecarContainerAllocations.PodResources[podUID].ContainerResources[mainContainerName])
 	as.NotNil(resizeSidecarContainerAllocations.PodResources[podUID].ContainerResources[mainContainerName].ResourceAllocation[string(v1.ResourceCPU)])
 	// reserve pool size: 2, reclaimed pool size: 4, share pool size: 42
-	reclaim = dynamicPolicy.state.GetAllocationInfo(state.PoolNameReclaim, state.FakedContainerName)
+	reclaim = dynamicPolicy.state.GetAllocationInfo(commonstate.PoolNameReclaim, commonstate.FakedContainerName)
 	as.NotNil(reclaim)
 	as.Equal(&pluginapi.ResourceAllocationInfo{
 		OciPropertyName:   util.OCIPropertyNameCPUSetCPUs,

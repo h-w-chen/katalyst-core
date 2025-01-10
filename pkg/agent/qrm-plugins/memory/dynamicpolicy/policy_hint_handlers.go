@@ -46,23 +46,36 @@ func (p *DynamicPolicy) sharedCoresHintHandler(ctx context.Context,
 		return p.numaBindingHintHandler(ctx, req)
 	}
 
-	// TODO: support sidecar follow main container for normal share cores in future
+	// TODO: support sidecar follow main container for non-binding share cores in future
 	if req.ContainerType == pluginapi.ContainerType_MAIN {
-		ok, err := p.checkNormalShareCoresResource(req)
-		if err != nil {
-			general.Errorf("failed to check share cores resource: %q", err)
-			return nil, fmt.Errorf("failed to check share cores resource: %q", err)
-		}
+		if p.enableNonBindingShareCoresMemoryResourceCheck {
+			ok, err := p.checkNonBindingShareCoresMemoryResource(req)
+			if err != nil {
+				general.Errorf("failed to check share cores resource: %q", err)
+				return nil, fmt.Errorf("failed to check share cores resource: %q", err)
+			}
 
-		if !ok {
-			_ = p.emitter.StoreInt64(util.MetricNameShareCoresNoEnoughResourceFailed, 1, metrics.MetricTypeNameCount, metrics.ConvertMapToTags(map[string]string{
-				"resource":      v1.ResourceMemory.String(),
-				"podNamespace":  req.PodNamespace,
-				"podName":       req.PodName,
-				"containerName": req.ContainerName,
-			})...)
-			return nil, errNoAvailableMemoryHints
+			if !ok {
+				_ = p.emitter.StoreInt64(util.MetricNameShareCoresNoEnoughResourceFailed, 1, metrics.MetricTypeNameCount, metrics.ConvertMapToTags(map[string]string{
+					"resource":      v1.ResourceMemory.String(),
+					"podNamespace":  req.PodNamespace,
+					"podName":       req.PodName,
+					"containerName": req.ContainerName,
+				})...)
+				return nil, errNoAvailableMemoryHints
+			}
 		}
+	}
+
+	return util.PackResourceHintsResponse(req, string(v1.ResourceMemory),
+		map[string]*pluginapi.ListOfTopologyHints{
+			string(v1.ResourceMemory): nil, // indicates that there is no numa preference
+		})
+}
+
+func (p *DynamicPolicy) systemCoresHintHandler(_ context.Context, req *pluginapi.ResourceRequest) (*pluginapi.ResourceHintsResponse, error) {
+	if req == nil {
+		return nil, fmt.Errorf("got nil request")
 	}
 
 	return util.PackResourceHintsResponse(req, string(v1.ResourceMemory),
@@ -161,7 +174,7 @@ func (p *DynamicPolicy) numaBindingHintHandler(_ context.Context,
 
 	// if hints exists in extra state-file, prefer to use them
 	if hints == nil {
-		availableNUMAs := resourcesMachineState[v1.ResourceMemory].GetNUMANodesWithoutNUMABindingPods()
+		availableNUMAs := resourcesMachineState[v1.ResourceMemory].GetNUMANodesWithoutSharedOrDedicatedNUMABindingPods()
 
 		var extraErr error
 		hints, extraErr = util.GetHintsFromExtraStateFile(req.PodName, string(v1.ResourceMemory),

@@ -23,7 +23,6 @@ import (
 	pluginapi "k8s.io/kubelet/pkg/apis/resourceplugin/v1alpha1"
 
 	apiconsts "github.com/kubewharf/katalyst-api/pkg/consts"
-	cpuconsts "github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/cpu/consts"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/cpu/dynamicpolicy/state"
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
 	"github.com/kubewharf/katalyst-core/pkg/util/machine"
@@ -38,14 +37,14 @@ func getProportionalSize(oldPoolSize, oldTotalSize, newTotalSize int, ceil bool)
 }
 
 func generateMachineStateFromPodEntries(topology *machine.CPUTopology, podEntries state.PodEntries) (state.NUMANodeMap, error) {
-	return state.GenerateMachineStateFromPodEntries(topology, podEntries, cpuconsts.CPUResourcePluginPolicyNameDynamic)
+	return state.GenerateMachineStateFromPodEntries(topology, podEntries)
 }
 
 // updateAllocationInfoByReq updates allocationInfo by latest req when admitting active pod,
 // because qos level and annotations will change after we support customized updater of enhancements and qos level
 func updateAllocationInfoByReq(req *pluginapi.ResourceRequest, allocationInfo *state.AllocationInfo) error {
 	if req == nil {
-		return fmt.Errorf("updateAllocationInfoByReq got ni l req")
+		return fmt.Errorf("updateAllocationInfoByReq got nil req")
 	} else if allocationInfo == nil {
 		return nil
 	}
