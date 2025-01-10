@@ -109,10 +109,29 @@ func getCappingInstructionFromCalcInfo(info *advisorsvc.CalculationInfo) (*CapIn
 	opCurrValue := values[keyOpCurrentValue]
 	opTargetValue := values[keyOpTargetValue]
 
+	var err error
+	currValue := 0
+	if len(opCurrValue) > 0 {
+		currValue, err = strconv.Atoi(opCurrValue)
+		if err != nil {
+			return nil, errors.New("current value format error")
+		}
+	}
+
+	targetValue := 0
+	if len(opTargetValue) > 0 {
+		targetValue, err = strconv.Atoi(opTargetValue)
+		if err != nil {
+			return nil, errors.New("target value format error")
+		}
+	}
+
 	return &CapInstruction{
-		OpCode:         PowerCapOpCode(opCode),
-		OpCurrentValue: opCurrValue,
-		OpTargetValue:  opTargetValue,
+		OpCode:          PowerCapOpCode(opCode),
+		OpCurrentValue:  opCurrValue,
+		OpTargetValue:   opTargetValue,
+		RawCurrentValue: currValue,
+		RawTargetValue:  targetValue,
 	}, nil
 }
 
