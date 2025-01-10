@@ -20,6 +20,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/capper"
 )
 
 func Test_dvfsTracker_update(t *testing.T) {
@@ -51,6 +53,7 @@ func Test_dvfsTracker_update(t *testing.T) {
 				desiredWatt: 85,
 			},
 			wantDVFSTracker: dvfsTracker{
+				capperProber:    capper.NewNoopCapper().(CapperProber),
 				dvfsAccumEffect: 3,
 				inDVFS:          false,
 				prevPower:       90,
@@ -68,6 +71,7 @@ func Test_dvfsTracker_update(t *testing.T) {
 				desiredWatt: 85,
 			},
 			wantDVFSTracker: dvfsTracker{
+				capperProber:    capper.NewNoopCapper().(CapperProber),
 				dvfsAccumEffect: 13,
 				inDVFS:          true,
 				prevPower:       90,
@@ -85,6 +89,7 @@ func Test_dvfsTracker_update(t *testing.T) {
 				desiredWatt: 85,
 			},
 			wantDVFSTracker: dvfsTracker{
+				capperProber:    capper.NewNoopCapper().(CapperProber),
 				dvfsAccumEffect: 3,
 				inDVFS:          true,
 				prevPower:       101,
@@ -96,6 +101,7 @@ func Test_dvfsTracker_update(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			d := &dvfsTracker{
+				capperProber:    capper.NewNoopCapper().(CapperProber),
 				dvfsAccumEffect: tt.fields.dvfsUsed,
 				inDVFS:          tt.fields.indvfs,
 				prevPower:       tt.fields.prevPower,
