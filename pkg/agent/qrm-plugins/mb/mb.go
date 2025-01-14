@@ -57,6 +57,12 @@ func createMBPlanAllocator() (allocator.PlanAllocator, error) {
 
 func NewComponent(agentCtx *agent.GenericContext, conf *config.Configuration, _ interface{}, agentName string,
 ) (bool, agent.Component, error) {
+	general.Infof("mbm: %s is created", agentName)
+
+	// override policy config with user provided args
+	policyconfig.PolicyConfig.MBQRMPluginConfig = *conf.QRMPluginsConfiguration.MBQRMPluginConfig
+	general.Infof("mbm: config: %s", policyconfig.PolicyConfig.String())
+
 	if !agentCtx.DieTopology.FakeNUMAEnabled {
 		if policyconfig.PolicyConfig.FailOnUnsupportedNode {
 			return false, nil, errors.New("mbm: not virtual numa; should not dynamically manage the memory bandwidth")
@@ -65,12 +71,6 @@ func NewComponent(agentCtx *agent.GenericContext, conf *config.Configuration, _ 
 			return false, nil, nil
 		}
 	}
-
-	general.Infof("mbm: %s is created", agentName)
-
-	// override policy config with user provided args
-	policyconfig.PolicyConfig.MBQRMPluginConfig = *conf.QRMPluginsConfiguration.MBQRMPluginConfig
-	general.Infof("mbm: config: %s", policyconfig.PolicyConfig.String())
 
 	domainManager := mbdomain.NewMBDomainManager(agentCtx.DieTopology, conf.IncubationInterval, conf.DomainMBCapacity)
 	mbMonitor := metricstore.NewMBReader(agentCtx.MetricsFetcher)
