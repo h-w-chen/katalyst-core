@@ -88,9 +88,6 @@ func NewMetaAgent(conf *config.Configuration, clientSet *client.GenericClientSet
 		return nil, err
 	}
 
-	// todo: for dummy test only; remove it later
-	machineInfo.DieTopology.FakeNUMAEnabled = false
-
 	// init cgroup paths
 	common.InitKubernetesCGroupPath(common.CgroupType(conf.CgroupType), getAllAdditionalK8sCgroupPaths(conf, machineInfo))
 
