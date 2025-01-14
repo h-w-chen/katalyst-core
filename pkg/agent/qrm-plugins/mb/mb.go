@@ -57,6 +57,15 @@ func createMBPlanAllocator() (allocator.PlanAllocator, error) {
 
 func NewComponent(agentCtx *agent.GenericContext, conf *config.Configuration, _ interface{}, agentName string,
 ) (bool, agent.Component, error) {
+	if !agentCtx.DieTopology.FakeNUMAEnabled {
+		if policyconfig.PolicyConfig.FailOnUnsupportedNode {
+			return false, nil, errors.New("mbm: not virtual numa; should not dynamically manage the memory bandwidth")
+		} else {
+			general.Errorf("mbm: not virtual numa; no need to dynamically manage the memory bandwidth; continue without mbm functionality")
+			return false, nil, nil
+		}
+	}
+
 	general.Infof("mbm: %s is created", agentName)
 
 	// override policy config with user provided args

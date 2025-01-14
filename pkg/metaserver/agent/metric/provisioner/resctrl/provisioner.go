@@ -45,6 +45,12 @@ func NewResctrlMetricsProvisioner(baseConf *global.BaseConfiguration, _ *metaser
 	emitter metrics.MetricEmitter, fetcher pod.PodFetcher, metricStore *utilmetric.MetricStore,
 	machineInfo *machine.KatalystMachineInfo,
 ) types.MetricsProvisioner {
+	if !machineInfo.DieTopology.FakeNUMAEnabled {
+		// for now only fake numa (virtual numa) machine makes sense to collect resctrl mb metrics
+		general.Errorf("mbm: not a fake numa machine; no need to start resctrl mb provisioner")
+		return nil
+	}
+
 	dataKeeper, err := state.NewMBRawDataKeeper()
 	if err != nil {
 		general.Errorf("mbm: failed to create raw data state keeper: %v", err)
