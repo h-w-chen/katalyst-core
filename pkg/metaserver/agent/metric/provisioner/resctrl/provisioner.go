@@ -40,6 +40,16 @@ const (
 	metricsNamResctrlMBSummaryUnHealthy = "resctrl_mb_summary_unhealthy"
 )
 
+type dummyResctrlProvisioner struct{}
+
+func (d dummyResctrlProvisioner) Run(ctx context.Context) {
+	// dummy provisioner just run to exit
+}
+
+func newDummyResctrlProvisioner() types.MetricsProvisioner {
+	return &dummyResctrlProvisioner{}
+}
+
 // NewResctrlMetricsProvisioner returns the default implementation of MetricsFetcher.
 func NewResctrlMetricsProvisioner(baseConf *global.BaseConfiguration, _ *metaserver.MetricConfiguration,
 	emitter metrics.MetricEmitter, fetcher pod.PodFetcher, metricStore *utilmetric.MetricStore,
@@ -48,7 +58,7 @@ func NewResctrlMetricsProvisioner(baseConf *global.BaseConfiguration, _ *metaser
 	if !machineInfo.DieTopology.FakeNUMAEnabled {
 		// for now only fake numa (virtual numa) machine makes sense to collect resctrl mb metrics
 		general.Errorf("mbm: not a fake numa machine; no need to start resctrl mb provisioner")
-		return nil
+		return newDummyResctrlProvisioner()
 	}
 
 	dataKeeper, err := state.NewMBRawDataKeeper()
