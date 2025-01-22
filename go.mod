@@ -3,7 +3,7 @@ module github.com/kubewharf/katalyst-core
 go 1.18
 
 require (
-	code.byted.org/tce/amd-utils v0.2.1
+	code.byted.org/tce/amd-utils v0.2.4
 	github.com/agiledragon/gomonkey/v2 v2.13.0
 	github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d
 	github.com/bytedance/mockey v1.2.11
