@@ -125,10 +125,8 @@ func (s *memoryPluginState) SetMachineState(numaNodeResourcesMap NUMANodeResourc
 	defer s.Unlock()
 
 	s.machineState = numaNodeResourcesMap.Clone()
-	if klog.V(6).Enabled() {
-		klog.InfoS("[memory_plugin] Updated memory plugin machine state",
-			"numaNodeResourcesMap", numaNodeResourcesMap.String())
-	}
+	klog.V(7).InfoS("[memory_plugin] Updated memory plugin machine state",
+		"numaNodeResourcesMap", numaNodeResourcesMap.String())
 }
 
 func (s *memoryPluginState) SetNUMAHeadroom(numaHeadroom map[int]int64) {
@@ -164,15 +162,8 @@ func (s *memoryPluginState) SetPodResourceEntries(podResourceEntries PodResource
 	defer s.Unlock()
 
 	s.podResourceEntries = podResourceEntries.Clone()
-<<<<<<< HEAD
-	if klog.V(6).Enabled() {
-		klog.InfoS("[memory_plugin] Updated memory plugin pod resource entries",
-			"podResourceEntries", podResourceEntries.String())
-	}
-=======
 	klog.V(7).InfoS("[memory_plugin] Updated memory plugin pod resource entries",
 		"podResourceEntries", podResourceEntries.String())
->>>>>>> b29c5a0a (wip - temporary disabling state_mem lengthy logs)
 }
 
 func (s *memoryPluginState) Delete(resourceName v1.ResourceName, podUID, containerName string) {
