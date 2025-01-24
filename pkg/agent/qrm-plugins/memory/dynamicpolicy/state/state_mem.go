@@ -152,7 +152,7 @@ func (s *memoryPluginState) SetAllocationInfo(resourceName v1.ResourceName, podU
 	}
 
 	s.podResourceEntries[resourceName][podUID][containerName] = allocationInfo.Clone()
-	klog.InfoS("[memory_plugin] updated memory plugin pod resource entries",
+	klog.V(7).InfoS("[memory_plugin] updated memory plugin pod resource entries",
 		"resourceName", resourceName,
 		"podUID", podUID,
 		"containerName", containerName,
@@ -164,10 +164,15 @@ func (s *memoryPluginState) SetPodResourceEntries(podResourceEntries PodResource
 	defer s.Unlock()
 
 	s.podResourceEntries = podResourceEntries.Clone()
+<<<<<<< HEAD
 	if klog.V(6).Enabled() {
 		klog.InfoS("[memory_plugin] Updated memory plugin pod resource entries",
 			"podResourceEntries", podResourceEntries.String())
 	}
+=======
+	klog.V(7).InfoS("[memory_plugin] Updated memory plugin pod resource entries",
+		"podResourceEntries", podResourceEntries.String())
+>>>>>>> b29c5a0a (wip - temporary disabling state_mem lengthy logs)
 }
 
 func (s *memoryPluginState) Delete(resourceName v1.ResourceName, podUID, containerName string) {
