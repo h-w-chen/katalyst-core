@@ -74,6 +74,12 @@ const (
 	MetricMemSockUDPLimitSystem = "mem.sock.udp_limit.system"
 )
 
+// resctrl memory bandwidth metrics
+const (
+	MetricTotalMemBandwidthQoSGroup      = "mb.total.qosgroup"
+	MetricMemBandwidthLocalRatioQoSGroup = "mb.local.ratio.qosgroup"
+)
+
 // System blkio metrics
 const (
 	MetricIOReadSystem  = "io.read.system"

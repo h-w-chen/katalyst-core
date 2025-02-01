@@ -26,8 +26,10 @@ import (
 	info "github.com/google/cadvisor/info/v1"
 	"github.com/google/cadvisor/machine"
 	"github.com/google/cadvisor/utils/sysfs"
+	"github.com/pkg/errors"
 
 	"github.com/kubewharf/katalyst-core/pkg/config/agent/global"
+	"github.com/kubewharf/katalyst-core/pkg/util/general"
 )
 
 // GetKatalystMachineInfo returns KatalystMachineInfo by collecting machine info
@@ -58,14 +60,27 @@ func GetKatalystMachineInfo(conf *global.MachineInfoConfiguration) (*KatalystMac
 		return nil, err
 	}
 
-	return &KatalystMachineInfo{
+	for node, dists := range extraTopologyInfo.NumaDistanceMap {
+		general.InfofV(6, "numa distance for node %d:  %v", node, dists)
+	}
+
+	general.InfofV(6, "mbm: creating die topology")
+	dieTopologyInfo, err := NewDieTopology(extraTopologyInfo.NumaDistanceMap)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create die topology")
+	}
+
+	katalystMachineInfo := &KatalystMachineInfo{
 		MachineInfo:       machineInfo,
 		CPUTopology:       cpuTopology,
 		MemoryTopology:    memoryTopology,
 		ExtraCPUInfo:      extraCPUInfo,
 		ExtraNetworkInfo:  extraNetworkInfo,
 		ExtraTopologyInfo: extraTopologyInfo,
-	}, nil
+		DieTopology:       dieTopologyInfo,
+	}
+
+	return katalystMachineInfo, nil
 }
 
 // getMachineInfo is used to construct info.MachineInfo in cadvisor

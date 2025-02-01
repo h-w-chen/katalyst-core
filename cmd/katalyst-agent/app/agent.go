@@ -26,6 +26,7 @@ import (
 
 	katalystbase "github.com/kubewharf/katalyst-core/cmd/base"
 	"github.com/kubewharf/katalyst-core/cmd/katalyst-agent/app/agent"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
 	"github.com/kubewharf/katalyst-core/pkg/client"
 	"github.com/kubewharf/katalyst-core/pkg/config"
 	"github.com/kubewharf/katalyst-core/pkg/config/agent/dynamic/crd"
@@ -54,6 +55,12 @@ func Run(conf *config.Configuration, clientSet *client.GenericClientSet, generic
 	if err != nil {
 		return err
 	}
+
+	// todo: figure out a more elegant approach than setting global vars
+	//       one approach is to refactor to change incubation interval to setter
+	// below var to be exposed for resctrl mb provisioner to create mb monitor
+	monitor.IncubationInterval = conf.IncubationInterval
+	monitor.DomainMBCapacity = conf.DomainMBCapacity
 
 	genericCtx, err := agent.NewGenericContext(baseCtx, conf)
 	if err != nil {

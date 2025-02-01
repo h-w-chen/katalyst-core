@@ -38,6 +38,7 @@ import (
 	"github.com/kubewharf/katalyst-core/cmd/katalyst-agent/app/agent/qrm"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/advisorsvc"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/commonstate"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb"
 	memconsts "github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/memory/consts"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/memory/dynamicpolicy/memoryadvisor"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/memory/dynamicpolicy/oom"
@@ -853,6 +854,27 @@ func (p *DynamicPolicy) GetResourcePluginOptions(context.Context,
 // plugin can allocate corresponding resource for the container
 // according to resource request
 func (p *DynamicPolicy) Allocate(ctx context.Context,
+	req *pluginapi.ResourceRequest,
+) (resp *pluginapi.ResourceAllocationResponse, respErr error) {
+	general.InfofV(6, "mbm: resource allocate at entrance - pod %s/%s,  anno %v", req.PodNamespace, req.PodName, req.Annotations)
+	// req.annotations might be changed during allocate method; clone a copy to ensure intact at post-process
+	reqAnnotations := general.DeepCopyMap(req.Annotations)
+
+	resp, err := p.allocate(ctx, req)
+	if err != nil {
+		return resp, err
+	}
+
+	// post-process handling to augment with MB related features (socket pod preemption on admission etc)
+	if mb.PodAdmitter != nil {
+		// assuming no error safely as allocate has already checked out
+		qosLevel, _ := util.GetKatalystQoSLevelFromResourceReq(p.qosConfig, req, p.podAnnotationKeptKeys, p.podLabelKeptKeys)
+		resp = mb.PodAdmitter.PostProcessAllocate(req, resp, qosLevel, reqAnnotations)
+	}
+	return resp, err
+}
+
+func (p *DynamicPolicy) allocate(ctx context.Context,
 	req *pluginapi.ResourceRequest,
 ) (resp *pluginapi.ResourceAllocationResponse, respErr error) {
 	if req == nil {
