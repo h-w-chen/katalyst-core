@@ -42,6 +42,7 @@ type MemoryOptions struct {
 	SockMemOptions
 	LogCacheOptions
 	FragMemOptions
+	ResctrlOptions
 }
 
 type SockMemOptions struct {
@@ -76,6 +77,13 @@ type FragMemOptions struct {
 	SetMemFragScoreAsync int
 }
 
+type ResctrlOptions struct {
+	// CPUSetPoolToSharedSubgroup specifies, if present, the subgroup id for shared-core QoS pod
+	// based on its cpu set pool annotation
+	CPUSetPoolToSharedSubgroup map[string]int
+	DefaultSharedSubgroup      int
+}
+
 func NewMemoryOptions() *MemoryOptions {
 	return &MemoryOptions{
 		PolicyName:                                    "dynamic",
@@ -105,6 +113,10 @@ func NewMemoryOptions() *MemoryOptions {
 		FragMemOptions: FragMemOptions{
 			EnableSettingFragMem: false,
 			SetMemFragScoreAsync: 80,
+		},
+		ResctrlOptions: ResctrlOptions{
+			CPUSetPoolToSharedSubgroup: nil, // nil or empty for no subgroup
+			DefaultSharedSubgroup:      -1,  // <0 means top mon group shared, not in form of "shared-xx"
 		},
 	}
 }
@@ -160,6 +172,10 @@ func (o *MemoryOptions) AddFlags(fss *cliflag.NamedFlagSets) {
 		o.EnableSettingFragMem, "if set true, we will enable memory compaction related features")
 	fs.IntVar(&o.SetMemFragScoreAsync, "qrm-memory-frag-score-async",
 		o.SetMemFragScoreAsync, "set the threshold of frag score for async memory compaction")
+	fs.StringToIntVar(&o.CPUSetPoolToSharedSubgroup, "cpuset-pool-to-shared-subgroup",
+		o.CPUSetPoolToSharedSubgroup, "customize shared-xx subgroup if present")
+	fs.IntVar(&o.DefaultSharedSubgroup, "default-shared-subgroup",
+		o.DefaultSharedSubgroup, "fallback subgroup for shared qos, -1 is top shared group")
 }
 
 func (o *MemoryOptions) ApplyTo(conf *qrmconfig.MemoryQRMPluginConfig) error {
@@ -187,5 +203,7 @@ func (o *MemoryOptions) ApplyTo(conf *qrmconfig.MemoryQRMPluginConfig) error {
 	conf.FileFilters = o.FileFilters
 	conf.EnableSettingFragMem = o.EnableSettingFragMem
 	conf.SetMemFragScoreAsync = o.SetMemFragScoreAsync
+	conf.CPUSetPoolToSharedSubgroup = o.CPUSetPoolToSharedSubgroup
+	conf.DefaultSharedSubgroup = o.DefaultSharedSubgroup
 	return nil
 }
