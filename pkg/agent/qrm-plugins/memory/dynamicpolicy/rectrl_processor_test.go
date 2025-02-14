@@ -112,10 +112,10 @@ func TestResctrlProcessor_getInjectedAnnotationResp(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			r := ResctrlProcessor{
+			r := resctrlProcessor{
 				option: tt.fields.option,
 			}
-			assert.Equalf(t, tt.want, r.getInjectedAnnotationResp(tt.args.qosLevel, tt.args.req, tt.args.resp), "getInjectedAnnotationResp(%v, %v, %v)", tt.args.qosLevel, tt.args.req, tt.args.resp)
+			assert.Equalf(t, tt.want, r.GetInjectedAnnotationResp(tt.args.qosLevel, tt.args.req, tt.args.resp), "getInjectedAnnotationResp(%v, %v, %v)", tt.args.qosLevel, tt.args.req, tt.args.resp)
 		})
 	}
 }

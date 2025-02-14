@@ -112,7 +112,7 @@ type DynamicPolicy struct {
 	advisorMonitor *timemonitor.TimeMonitor
 
 	// resctrlProcessor is in charge of resctrl FS hints for mon group layout customizations
-	resctrlProcessor *ResctrlProcessor
+	resctrlProcessor ResctrlProcessor
 
 	topology *machine.CPUTopology
 	state    state.State
@@ -859,7 +859,10 @@ func (p *DynamicPolicy) postAllocateForResctrl(qosLevel string, req *pluginapi.R
 	if p.resctrlProcessor == nil {
 		return resp
 	}
-	return p.resctrlProcessor.getInjectedAnnotationResp(qosLevel, req, resp)
+
+	// todo: invoke the registered callbacks
+
+	return p.resctrlProcessor.GetInjectedAnnotationResp(qosLevel, req, resp)
 }
 
 // Allocate is called during pod admit so that the resource

@@ -30,7 +30,12 @@ import (
 
 const templateSharedSubgroup = "shared-%02d"
 
-type ResctrlProcessor struct {
+type ResctrlProcessor interface {
+	GetInjectedAnnotationResp(qosLevel string, req *pluginapi.ResourceRequest, resp *pluginapi.ResourceAllocationResponse,
+	) *pluginapi.ResourceAllocationResponse
+}
+
+type resctrlProcessor struct {
 	option *qrm.ResctrlOptions
 }
 
@@ -62,7 +67,7 @@ func getSharedSubgroup(val int) string {
 	return fmt.Sprintf(templateSharedSubgroup, val)
 }
 
-func (r *ResctrlProcessor) getSharedSubgroupByPool(pool string) string {
+func (r *resctrlProcessor) getSharedSubgroupByPool(pool string) string {
 	if v, ok := r.option.CPUSetPoolToSharedSubgroup[pool]; ok {
 		return getSharedSubgroup(v)
 	}
@@ -81,7 +86,7 @@ func injectRespAnnotationSharedGroup(resp *pluginapi.ResourceAllocationResponse,
 	allocInfo.Annotations["rdt.resources.beta.kubernetes.io/pod"] = monGroup
 }
 
-func (r *ResctrlProcessor) getInjectedAnnotationResp(qosLevel string,
+func (r *resctrlProcessor) GetInjectedAnnotationResp(qosLevel string,
 	req *pluginapi.ResourceRequest, resp *pluginapi.ResourceAllocationResponse,
 ) *pluginapi.ResourceAllocationResponse {
 	// check for shared subgroup if applicable
@@ -95,6 +100,6 @@ func (r *ResctrlProcessor) getInjectedAnnotationResp(qosLevel string,
 	return resp
 }
 
-func newResctrlProcessor(option *qrm.ResctrlOptions) *ResctrlProcessor {
-	return &ResctrlProcessor{option: option}
+func newResctrlProcessor(option *qrm.ResctrlOptions) ResctrlProcessor {
+	return &resctrlProcessor{option: option}
 }
