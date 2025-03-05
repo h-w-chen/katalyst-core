@@ -58,28 +58,39 @@ func TestResctrlProcessor_getInjectedAnnotationResp(t *testing.T) {
 		{
 			name: "default nil no change",
 			fields: fields{
-				option: &qrm.ResctrlOptions{},
+				option: nil,
 			},
 			args: args{
 				qosLevel: "shared_cores",
 				resp:     respTest,
 			},
-			want: &pluginapi.ResourceAllocationResponse{
-				AllocationResult: &pluginapi.ResourceAllocation{
-					ResourceAllocation: map[string]*pluginapi.ResourceAllocationInfo{
-						"memory": {
-							Annotations: map[string]string{
-								"test-key": "test-value",
-							},
-						},
-					},
+			want: respTest,
+		},
+		{
+			name: "disabled opt no change",
+			fields: fields{
+				option: &qrm.ResctrlOptions{
+					ResctrlOptEnabled:          false,
+					CPUSetPoolToSharedSubgroup: map[string]int{"batch": 30},
+					DefaultSharedSubgroup:      50,
 				},
 			},
+			args: args{
+				qosLevel: "shared_cores",
+				req: &pluginapi.ResourceRequest{
+					Annotations: map[string]string{
+						"katalyst.kubewharf.io/cpu_enhancement": `{"cpuset_pool":"batch"}`,
+					},
+				},
+				resp: respTest,
+			},
+			want: respTest,
 		},
 		{
 			name: "batch is shared-30 if specified so",
 			fields: fields{
 				option: &qrm.ResctrlOptions{
+					ResctrlOptEnabled: true,
 					CPUSetPoolToSharedSubgroup: map[string]int{
 						"batch": 30,
 					},

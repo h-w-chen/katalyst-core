@@ -90,6 +90,8 @@ type FragMemOptions struct {
 }
 
 type ResctrlOptions struct {
+	// ResctrlOptEnabled is the flag that enable/disable resctrl option related pod admission
+	ResctrlOptEnabled bool
 	// CPUSetPoolToSharedSubgroup specifies, if present, the subgroup id for shared-core QoS pod
 	// based on its cpu set pool annotation
 	CPUSetPoolToSharedSubgroup map[string]int

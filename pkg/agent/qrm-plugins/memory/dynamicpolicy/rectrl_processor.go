@@ -89,14 +89,17 @@ func injectRespAnnotationSharedGroup(resp *pluginapi.ResourceAllocationResponse,
 func (r *resctrlProcessor) GetInjectedAnnotationResp(qosLevel string,
 	req *pluginapi.ResourceRequest, resp *pluginapi.ResourceAllocationResponse,
 ) *pluginapi.ResourceAllocationResponse {
-	// check for shared subgroup if applicable
-	if len(r.option.CPUSetPoolToSharedSubgroup) == 0 || qosLevel != apiconsts.PodAnnotationQoSLevelSharedCores {
+	if r.option == nil || !r.option.ResctrlOptEnabled {
 		return resp
 	}
 
-	cpusetPool := identifyCPUSetPool(req.Annotations)
-	monGroup := r.getSharedSubgroupByPool(cpusetPool)
-	injectRespAnnotationSharedGroup(resp, monGroup)
+	// inject shared subgroup if applicable
+	if len(r.option.CPUSetPoolToSharedSubgroup) > 0 && qosLevel == apiconsts.PodAnnotationQoSLevelSharedCores {
+		cpusetPool := identifyCPUSetPool(req.Annotations)
+		monGroup := r.getSharedSubgroupByPool(cpusetPool)
+		injectRespAnnotationSharedGroup(resp, monGroup)
+	}
+
 	return resp
 }
 
