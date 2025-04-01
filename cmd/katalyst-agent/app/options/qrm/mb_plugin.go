@@ -55,6 +55,8 @@ type MBOptions struct {
 	SourcerType string
 
 	FailOnUnsupportedNode bool
+
+	MonGroupsPolicy string
 }
 
 func NewMBOptions() *MBOptions {
@@ -104,6 +106,7 @@ func (m *MBOptions) AddFlags(fss *cliflag.NamedFlagSets) {
 	fs.StringVar(&m.SourcerType, "mb-sourcer-type", m.SourcerType, "type of mb target source distributor")
 	fs.BoolVar(&m.FailOnUnsupportedNode, "mb-fail-hard", m.FailOnUnsupportedNode, "true to fail hard, false to run downgraded")
 	fs.StringVar(&m.MBPolicy, "mb-policy", m.MBPolicy, "type of domain mb policy")
+	fs.StringVar(&m.MonGroupsPolicy, "mon-groups-policy", m.MonGroupsPolicy, "type of mon-groups policy")
 }
 
 func (m *MBOptions) ApplyTo(conf *qrmconfig.MBQRMPluginConfig) error {
@@ -128,5 +131,7 @@ func (m *MBOptions) ApplyTo(conf *qrmconfig.MBQRMPluginConfig) error {
 	conf.SourcerType = m.SourcerType
 
 	conf.FailOnUnsupportedNode = m.FailOnUnsupportedNode
+
+	conf.MonGroupsPolicy = m.MonGroupsPolicy
 	return nil
 }
