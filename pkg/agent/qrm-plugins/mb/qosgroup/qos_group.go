@@ -34,7 +34,8 @@ const (
 	QoSGroupSystem    QoSGroup = resctrlconsts.GroupSystem
 	QoSGroupReclaimed QoSGroup = resctrlconsts.GroupReclaimed
 
-	qosSharedPrefix = "shared-"
+	qosSharedPrefix       = "shared-"
+	defaultSharedSubgroup = 50
 )
 
 var qosLevelToQoSGroup = map[consts.QoSLevel]QoSGroup{

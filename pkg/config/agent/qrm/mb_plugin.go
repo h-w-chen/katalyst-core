@@ -23,6 +23,7 @@ type MBQRMPluginConfig struct {
 	// this is to notify kubelet which subgroup a pod should be in
 	// based on pod spec (qos level + relevant cpuset_pool annotation)
 	CPUSetPoolToSharedSubgroup map[string]int
+	QoSGroupEnabledQoS         []string
 
 	// mb resource allocation and policy related
 	MinMBPerCCD      int
@@ -48,6 +49,8 @@ type MBQRMPluginConfig struct {
 	CCDMBDistributorType string
 
 	FailOnUnsupportedNode bool
+
+	MonGroupsPolicy string
 }
 
 func NewMBQRMPluginConfig() *MBQRMPluginConfig {
