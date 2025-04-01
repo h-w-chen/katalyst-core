@@ -117,7 +117,7 @@ func NewComponent(agentCtx *agent.GenericContext, conf *config.Configuration, _ 
 	}
 	podSubgrouper := podadmit.NewPodGrouper(conf.CPUSetPoolToSharedSubgroup, defaultSubgroup)
 	nodePreempter := podadmit.NewNodePreempter(domainManager, plugin.mbController)
-	PodAdmitter = podadmit.NewPodAdmitter(nodePreempter, podSubgrouper)
+	PodAdmitter = podadmit.NewPodAdmitter(conf, nodePreempter, podSubgrouper)
 
 	return true, &agent.PluginWrapper{GenericPlugin: plugin}, nil
 }

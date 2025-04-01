@@ -48,6 +48,8 @@ type MBQRMPluginConfig struct {
 	CCDMBDistributorType string
 
 	FailOnUnsupportedNode bool
+
+	MonGroupsPolicy string
 }
 
 func NewMBQRMPluginConfig() *MBQRMPluginConfig {
