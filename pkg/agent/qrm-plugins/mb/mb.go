@@ -31,12 +31,11 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy/strategy/domaintarget"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor/metricstore"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/podadmit"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/qosgroup"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/resctrl"
 	"github.com/kubewharf/katalyst-core/pkg/config"
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
 )
-
-const defaultSharedSubgroup = 50
 
 // todo: replace global vars with a better mechanism to facilitate dynamic memory policy
 // below global var is used by dynamic memory policy to
@@ -111,13 +110,9 @@ func NewComponent(agentCtx *agent.GenericContext, conf *config.Configuration, _ 
 	}
 
 	// set up pod admitter to interact with kubelet to cope with shared or socket pod admissions
-	defaultSubgroup, ok := conf.CPUSetPoolToSharedSubgroup["share"]
-	if !ok {
-		defaultSubgroup = defaultSharedSubgroup
-	}
-	podSubgrouper := podadmit.NewPodGrouper(conf.CPUSetPoolToSharedSubgroup, defaultSubgroup)
+	podSubgrouper := qosgroup.NewPodGrouper(conf)
 	nodePreempter := podadmit.NewNodePreempter(domainManager, plugin.mbController)
-	PodAdmitter = podadmit.NewPodAdmitter(nodePreempter, podSubgrouper)
+	PodAdmitter = podadmit.NewPodAdmitter(conf, nodePreempter, podSubgrouper)
 
 	return true, &agent.PluginWrapper{GenericPlugin: plugin}, nil
 }

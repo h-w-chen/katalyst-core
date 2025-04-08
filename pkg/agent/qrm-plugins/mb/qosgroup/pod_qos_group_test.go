@@ -14,13 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package podadmit
+package qosgroup
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/kubewharf/katalyst-api/pkg/consts"
 	"github.com/stretchr/testify/assert"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 func TestPodGrouper_GetQoSGroup(t *testing.T) {
@@ -28,6 +30,7 @@ func TestPodGrouper_GetQoSGroup(t *testing.T) {
 	type fields struct {
 		poolToSharedSubgroup  map[string]int
 		defaultSharedSubgroup int
+		enabledQos            sets.String
 	}
 	type args struct {
 		qosLevel    string
@@ -37,7 +40,7 @@ func TestPodGrouper_GetQoSGroup(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    string
+		want    QoSGroup
 		wantErr assert.ErrorAssertionFunc
 	}{
 		{
@@ -46,6 +49,10 @@ func TestPodGrouper_GetQoSGroup(t *testing.T) {
 				poolToSharedSubgroup: map[string]int{
 					"batch": 30,
 				},
+				enabledQos: sets.NewString(
+					consts.PodAnnotationQoSLevelDedicatedCores,
+					consts.PodAnnotationQoSLevelSharedCores,
+				),
 			},
 			args: args{
 				qosLevel: "shared_cores",
@@ -63,6 +70,10 @@ func TestPodGrouper_GetQoSGroup(t *testing.T) {
 					"batch": 30,
 				},
 				defaultSharedSubgroup: 50,
+				enabledQos: sets.NewString(
+					consts.PodAnnotationQoSLevelDedicatedCores,
+					consts.PodAnnotationQoSLevelSharedCores,
+				),
 			},
 			args: args{
 				qosLevel: "shared_cores",
@@ -71,13 +82,32 @@ func TestPodGrouper_GetQoSGroup(t *testing.T) {
 			wantErr: assert.NoError,
 		},
 		{
-			name:   "dedicated_cored is dedicated",
-			fields: fields{},
+			name: "dedicated_cored is dedicated",
+			fields: fields{
+				enabledQos: sets.NewString(
+					consts.PodAnnotationQoSLevelDedicatedCores,
+					consts.PodAnnotationQoSLevelSharedCores,
+				),
+			},
 			args: args{
 				qosLevel: "dedicated_cores",
 			},
 			want:    "dedicated",
 			wantErr: assert.NoError,
+		},
+		{
+			name: "disabled qos",
+			fields: fields{
+				enabledQos: sets.NewString(
+					consts.PodAnnotationQoSLevelDedicatedCores,
+					consts.PodAnnotationQoSLevelSharedCores,
+				),
+			},
+			args: args{
+				qosLevel: "reclaimed_cores",
+			},
+			want:    "",
+			wantErr: assert.Error,
 		},
 	}
 	for _, tt := range tests {
@@ -87,41 +117,13 @@ func TestPodGrouper_GetQoSGroup(t *testing.T) {
 			p := PodGrouper{
 				poolToSharedSubgroup:  tt.fields.poolToSharedSubgroup,
 				defaultSharedSubgroup: tt.fields.defaultSharedSubgroup,
+				enabledQos:            tt.fields.enabledQos,
 			}
 			got, err := p.GetQoSGroup(tt.args.qosLevel, tt.args.annotations)
 			if !tt.wantErr(t, err, fmt.Sprintf("GetQoSGroup(%v, %v)", tt.args.qosLevel, tt.args.annotations)) {
 				return
 			}
 			assert.Equalf(t, tt.want, got, "GetQoSGroup(%v, %v)", tt.args.qosLevel, tt.args.annotations)
-		})
-	}
-}
-
-func Test_isNumaExclusive(t *testing.T) {
-	t.Parallel()
-	type args struct {
-		annotations map[string]string
-	}
-	tests := []struct {
-		name string
-		args args
-		want bool
-	}{
-		{
-			name: "happy path of positive",
-			args: args{
-				annotations: map[string]string{
-					"katalyst.kubewharf.io/memory_enhancement": `{"numa_binding": "true", "numa_exclusive": "true"}`,
-				},
-			},
-			want: true,
-		},
-	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			assert.Equalf(t, tt.want, isNumaExclusive(tt.args.annotations), "isNumaExclusive(%v)", tt.args.annotations)
 		})
 	}
 }

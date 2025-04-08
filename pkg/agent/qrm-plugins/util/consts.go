@@ -67,3 +67,9 @@ const (
 const QRMTimeFormat = "2006-01-02 15:04:05.999999999 -0700 MST"
 
 const QRMPluginPolicyTagName = "policy"
+
+const (
+	// allocation annotations
+	AnnotationRdtClosID           = "rdt.resources.beta.kubernetes.io/pod"
+	AnnotationRdtNeedPodMonGroups = "rdt.resources.beta.kubernetes.io/need-mon-groups"
+)

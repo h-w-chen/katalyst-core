@@ -19,6 +19,7 @@ package qrm
 import (
 	"time"
 
+	"github.com/kubewharf/katalyst-api/pkg/consts"
 	cliflag "k8s.io/component-base/cli/flag"
 
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/controller/policy/strategy/ccdtarget"
@@ -31,6 +32,7 @@ const defaultIncubationInterval = time.Second * 30
 type MBOptions struct {
 	// shared meta group related (it could have several subgroups like shared-50, shared-30)
 	CPUSetPoolToSharedSubgroup map[string]int
+	QoSGroupEnabledQoS         []string
 
 	// mb resource allocation and policy related
 	MinMBPerCCD      int
@@ -55,6 +57,8 @@ type MBOptions struct {
 	SourcerType string
 
 	FailOnUnsupportedNode bool
+
+	MonGroupsPolicy string
 }
 
 func NewMBOptions() *MBOptions {
@@ -64,6 +68,10 @@ func NewMBOptions() *MBOptions {
 			"batch": 30,
 			"flink": 30,
 			"share": 50,
+		},
+		QoSGroupEnabledQoS: []string{
+			string(consts.QoSLevelSharedCores),
+			string(consts.QoSLevelDedicatedCores),
 		},
 		MinMBPerCCD:      4_000,   // 4 GB
 		MaxMBPerCCD:      35_000,  // 35 GB
@@ -92,6 +100,7 @@ func (m *MBOptions) AddFlags(fss *cliflag.NamedFlagSets) {
 		"time to protect socket pod before it is fully exercise memory bandwidth")
 	fs.StringToIntVar(&m.CPUSetPoolToSharedSubgroup, "cpuset-pool-to-shared-subgroup", m.CPUSetPoolToSharedSubgroup,
 		"mapping from cpuset pool name to shared_xx")
+	fs.StringSliceVar(&m.QoSGroupEnabledQoS, "qos-group-enabled-qos", m.QoSGroupEnabledQoS, "qos list of enabled qos-group")
 	fs.IntVar(&m.MinMBPerCCD, "min-mb-per-ccd", m.MinMBPerCCD, "lower bound of MB per ccd in MBps")
 	fs.IntVar(&m.MaxMBPerCCD, "max-mb-per-ccd", m.MaxMBPerCCD, "upper bound of MB per ccd in MBps")
 	fs.IntVar(&m.DomainMBCapacity, "domain-mb-capacity", m.DomainMBCapacity, "MB capacity per domain(socket) in MBps")
@@ -104,11 +113,13 @@ func (m *MBOptions) AddFlags(fss *cliflag.NamedFlagSets) {
 	fs.StringVar(&m.SourcerType, "mb-sourcer-type", m.SourcerType, "type of mb target source distributor")
 	fs.BoolVar(&m.FailOnUnsupportedNode, "mb-fail-hard", m.FailOnUnsupportedNode, "true to fail hard, false to run downgraded")
 	fs.StringVar(&m.MBPolicy, "mb-policy", m.MBPolicy, "type of domain mb policy")
+	fs.StringVar(&m.MonGroupsPolicy, "mon-groups-policy", m.MonGroupsPolicy, "type of mon-groups policy")
 }
 
 func (m *MBOptions) ApplyTo(conf *qrmconfig.MBQRMPluginConfig) error {
 	conf.IncubationInterval = m.IncubationInterval
 	conf.CPUSetPoolToSharedSubgroup = m.CPUSetPoolToSharedSubgroup
+	conf.QoSGroupEnabledQoS = m.QoSGroupEnabledQoS
 	conf.MinMBPerCCD = m.MinMBPerCCD
 	conf.MaxMBPerCCD = m.MaxMBPerCCD
 	conf.DomainMBCapacity = m.DomainMBCapacity
@@ -128,5 +139,7 @@ func (m *MBOptions) ApplyTo(conf *qrmconfig.MBQRMPluginConfig) error {
 	conf.SourcerType = m.SourcerType
 
 	conf.FailOnUnsupportedNode = m.FailOnUnsupportedNode
+
+	conf.MonGroupsPolicy = m.MonGroupsPolicy
 	return nil
 }
