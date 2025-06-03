@@ -17,8 +17,9 @@ limitations under the License.
 package strategy
 
 import (
+	"github.com/pkg/errors"
+
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/advisor/action/strategy/assess"
-	"github.com/kubewharf/katalyst-core/pkg/util/general"
 )
 
 // DVFS: Dynamic Voltage Frequency Scaling, is a technique servers use to manage the power consumption.
@@ -51,18 +52,19 @@ func (d *dvfsTracker) isCapperAvailable() bool {
 	return d.capperProber != nil && d.capperProber.IsCapperReady()
 }
 
-func (d *dvfsTracker) update(currPower int) {
+func (d *dvfsTracker) update(currPower int) error {
+	var err error
 	// only accumulate when dvfs is engaged
 	if d.inDVFS && d.isCapperAvailable() {
-		val, err := d.assessor.AssessEffect(currPower)
-		if err != nil {
-			general.Errorf("pap: failed to get accumulated effect: %v", err)
+		if val, errAssess := d.assessor.AssessEffect(currPower); errAssess != nil {
+			err = errors.Wrap(err, "failed to assess dvfs effect")
 		} else {
 			d.dvfsAccumEffect = val
 		}
 	}
 
 	d.assessor.Update(currPower)
+	return err
 }
 
 func (d *dvfsTracker) dvfsEnter() {

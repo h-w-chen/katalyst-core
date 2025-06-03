@@ -146,7 +146,11 @@ func (e *evictFirstStrategy) yieldActionPlan(op, internalOp spec.InternalOp, act
 }
 
 func (e *evictFirstStrategy) RecommendAction(actualWatt int, desiredWatt int, alert spec.PowerAlert, internalOp spec.InternalOp, ttl time.Duration) action.PowerAction {
-	e.dvfsTracker.update(actualWatt)
+	if err := e.dvfsTracker.update(actualWatt); err != nil {
+		general.Errorf("pap: failed to get valid recommended action: %v", err)
+		// temporary failure; fine with a noop action
+		return action.PowerAction{Op: spec.InternalOpNoop, Arg: 0}
+	}
 
 	e.emitDVFSAccumulatedEffect(e.dvfsTracker.dvfsAccumEffect)
 	general.InfofV(6, "pap: dvfs effect: %d", e.dvfsTracker.dvfsAccumEffect)

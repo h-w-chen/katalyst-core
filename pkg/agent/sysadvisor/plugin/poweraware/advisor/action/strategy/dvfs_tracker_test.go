@@ -54,6 +54,7 @@ func Test_dvfsTracker_update(t *testing.T) {
 		fields          fields
 		args            args
 		wantDVFSTracker dvfsTracker
+		WantError       bool
 	}{
 		{
 			name: "not in dvfs, not to accumulate",
@@ -120,8 +121,11 @@ func Test_dvfsTracker_update(t *testing.T) {
 				inDVFS:          tt.fields.indvfs,
 				assessor:        assess.NewPowerChangeAssessor(3, tt.fields.prevPower),
 			}
-			d.update(tt.args.actualWatt)
+			got := d.update(tt.args.actualWatt)
 			assert.Equal(t, &tt.wantDVFSTracker, d)
+			if (got != nil) != tt.WantError {
+				assert.Fail(t, "unexpected error situation")
+			}
 		})
 	}
 }
