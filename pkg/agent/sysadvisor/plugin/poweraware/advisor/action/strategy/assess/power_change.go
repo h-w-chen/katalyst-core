@@ -24,6 +24,14 @@ type powerChangeAssessor struct {
 	prevPower         int
 }
 
+func (p *powerChangeAssessor) IsInitialized() bool {
+	return true
+}
+
+func (p *powerChangeAssessor) Init() error {
+	return nil
+}
+
 func (p *powerChangeAssessor) AssessTarget(actualWatt, desiredWatt int, maxDecreasePercent int) int {
 	lowerLimit := (100 - maxDecreasePercent) * actualWatt / 100
 	if lowerLimit > desiredWatt {
@@ -37,7 +45,12 @@ func (p *powerChangeAssessor) Update(currPower int) {
 	p.prevPower = currPower
 }
 
-func (p *powerChangeAssessor) AssessEffect(currentPower int) (int, error) {
+func (p *powerChangeAssessor) AssessEffect(currentPower int, inDVFS, capperAvailable bool) (int, error) {
+	// only accumulate when dvfs is engaged
+	if !inDVFS || !capperAvailable {
+		return p.accumulatedEffect, nil
+	}
+
 	if currentPower <= 0 {
 		return 0, fmt.Errorf("invalid cuurent value %d", currentPower)
 	}

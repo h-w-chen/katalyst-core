@@ -36,9 +36,26 @@ type cpuFreqChangeAssessor struct {
 	cpuFreqReader reader.MetricReader
 }
 
+func (c *cpuFreqChangeAssessor) IsInitialized() bool {
+	return c.initFreqKHZ >= minKHZ
+}
+
+func (c *cpuFreqChangeAssessor) Init() error {
+	currentFreq, err := c.cpuFreqReader.Get(context.Background())
+	if err != nil {
+
+		return errors.Wrap(err, "failed to fetch latest cpu freq to access dvfs effect")
+	}
+
+	general.Infof("pap: cpufreq set intitial value %d khz", currentFreq)
+	c.initFreqKHZ = currentFreq
+	return nil
+}
+
 func (c *cpuFreqChangeAssessor) Clear() {}
 
-func (c *cpuFreqChangeAssessor) AssessEffect(_ int) (int, error) {
+func (c *cpuFreqChangeAssessor) AssessEffect(_ int, _, _ bool) (int, error) {
+	// always check cpu freq to assess the effect
 	currentFreq, err := c.cpuFreqReader.Get(context.Background())
 	if err != nil {
 		return 0, errors.Wrap(err, "failed to fetch latest cpu freq to access dvfs effect")
@@ -48,19 +65,13 @@ func (c *cpuFreqChangeAssessor) AssessEffect(_ int) (int, error) {
 }
 
 func (c *cpuFreqChangeAssessor) assessEffectByFreq(currentFreq int) (int, error) {
+	general.InfofV(6, "pap: cpuFreqChangeAssessor assessEffectByFreq: curr %d, init %d", currentFreq, c.initFreqKHZ)
 	if currentFreq < minKHZ {
 		return 0, fmt.Errorf("invalid currentFreq frequency %d khz", currentFreq)
 	}
 
-	if c.initFreqKHZ < minKHZ {
-		general.Infof("pap: cpufreq set intitial value %d khz", currentFreq)
-		oldInitFreqKHZ := c.initFreqKHZ
-		c.initFreqKHZ = currentFreq
-		return 0, fmt.Errorf("invalid initial frequency %d khz; will be %d next run", oldInitFreqKHZ, currentFreq)
-	}
-
 	if currentFreq >= c.initFreqKHZ {
-		return 0, fmt.Errorf("temporary spiky frequency %d higher than initial %d", currentFreq, c.initFreqKHZ)
+		return 0, nil
 	}
 
 	return 100 - currentFreq*100/c.initFreqKHZ, nil

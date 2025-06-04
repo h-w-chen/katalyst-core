@@ -119,8 +119,7 @@ func (e *evictFirstStrategy) adjustTargetForConstraintDVFS(actualWatt, desiredWa
 		return 0, errors.New("no room for dvfs")
 	}
 
-	adjustedTarget := e.dvfsTracker.adjustTargetWatt(actualWatt, desiredWatt)
-	return adjustedTarget, nil
+	return e.dvfsTracker.adjustTargetWatt(actualWatt, desiredWatt)
 }
 
 func (e *evictFirstStrategy) yieldActionPlan(op, internalOp spec.InternalOp, actualWatt, desiredWatt int, alert spec.PowerAlert, ttl time.Duration) action.PowerAction {
@@ -181,6 +180,7 @@ func NewEvictFirstStrategy(emitter metrics.MetricEmitter, prober EvictableProber
 		evictableProber: prober,
 		dvfsTracker: dvfsTracker{
 			dvfsAccumEffect: 0,
+			isEffectCurrent: true,
 			capperProber:    capperProber,
 			assessor:        assessor,
 		},
