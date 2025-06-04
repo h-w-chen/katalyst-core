@@ -68,6 +68,7 @@ func (p *powerChangeAssessor) AssessEffect(currentPower int, inDVFS, capperAvail
 
 func (p *powerChangeAssessor) Clear() {
 	p.prevPower = 0
+	p.accumulatedEffect = 0
 }
 
 func NewPowerChangeAssessor(effect, preValue int) Assessor {

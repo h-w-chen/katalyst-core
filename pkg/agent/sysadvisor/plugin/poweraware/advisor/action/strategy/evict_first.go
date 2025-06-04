@@ -162,6 +162,7 @@ func (e *evictFirstStrategy) RecommendAction(actualWatt int, desiredWatt int, al
 	} else {
 		e.dvfsTracker.dvfsExit()
 	}
+
 	return actionPlan
 }
 

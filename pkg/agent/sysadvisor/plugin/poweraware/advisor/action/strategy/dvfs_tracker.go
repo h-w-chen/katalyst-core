@@ -51,6 +51,8 @@ func (d *dvfsTracker) adjustTargetWatt(actualWatt, desiredWatt int) (int, error)
 		return actualWatt, errors.New("unknown current effect")
 	}
 
+	// fresh effect can be used only once to avoid misinformation of outdated effect
+	d.isEffectCurrent = false
 	return d.assessor.AssessTarget(actualWatt, desiredWatt, d.getDVFSAllowPercent()), nil
 }
 

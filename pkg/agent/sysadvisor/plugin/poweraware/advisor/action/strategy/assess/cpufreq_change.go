@@ -47,7 +47,7 @@ func (c *cpuFreqChangeAssessor) Init() error {
 		return errors.Wrap(err, "failed to fetch latest cpu freq to access dvfs effect")
 	}
 
-	general.Infof("pap: cpufreq set intitial value %d khz", currentFreq)
+	general.Infof("pap: cpufreq set initial value %d khz", currentFreq)
 	c.initFreqKHZ = currentFreq
 	return nil
 }
