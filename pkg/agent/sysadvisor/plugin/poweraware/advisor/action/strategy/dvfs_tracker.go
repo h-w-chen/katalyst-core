@@ -45,8 +45,12 @@ func (d *dvfsTracker) getDVFSAllowPercent() int {
 	return leftPercentage
 }
 
-// adjustTargetWatt yields the target value taking into account the limiting indicator value.
+// adjustTargetWatt adjusts the target value taking into account the limiting indication.
 func (d *dvfsTracker) adjustTargetWatt(actualWatt, desiredWatt int) (int, error) {
+	if d.getDVFSAllowPercent() <= 0 {
+		return 0, errors.New("no room for dvfs")
+	}
+
 	if !d.isEffectCurrent {
 		return actualWatt, errors.New("unknown current effect")
 	}
@@ -76,6 +80,7 @@ func (d *dvfsTracker) tryInit() {
 func (d *dvfsTracker) update(currPower int) {
 	d.updateTrackedEffect(currPower)
 	d.assessor.Update(currPower)
+	general.InfofV(6, "pap: dvfs effect: %d, is current: %v", d.dvfsAccumEffect, d.isEffectCurrent)
 }
 
 func (d *dvfsTracker) updateTrackedEffect(currPower int) {

@@ -32,8 +32,9 @@ const (
 )
 
 type cpuFreqChangeAssessor struct {
-	initFreqKHZ   int
-	highTracked   int
+	initFreqKHZ int
+	highTracked int
+
 	cpuFreqReader reader.MetricReader
 }
 
@@ -42,14 +43,14 @@ func (c *cpuFreqChangeAssessor) IsInitialized() bool {
 }
 
 func (c *cpuFreqChangeAssessor) Init() error {
-	currentFreq, err := c.cpuFreqReader.Get(context.Background())
+	freq, err := c.cpuFreqReader.Get(context.Background())
 	if err != nil {
 
-		return errors.Wrap(err, "failed to fetch latest cpu freq to access dvfs effect")
+		return errors.Wrap(err, "failed to get initial cpu freq value")
 	}
 
-	general.Infof("pap: cpufreq set initial value %d khz", currentFreq)
-	c.initFreqKHZ = currentFreq
+	general.Infof("pap: cpufreq set initial value %d khz", freq)
+	c.initFreqKHZ = freq
 	return nil
 }
 
@@ -94,7 +95,7 @@ func (c *cpuFreqChangeAssessor) AssessTarget(actualWatt, desiredWatt int, maxDec
 		return actualWatt
 	}
 
-	// when there is decrease room for cpu frequency, lower the power in smaller portion to avoid the misstep
+	// when there is decrease room for cpu frequency, lower the power in smaller portion to avoid misstep
 	lowerLimit := (100 - maxDecreasePercent/2) * actualWatt / 100
 	if lowerLimit > desiredWatt {
 		return lowerLimit
