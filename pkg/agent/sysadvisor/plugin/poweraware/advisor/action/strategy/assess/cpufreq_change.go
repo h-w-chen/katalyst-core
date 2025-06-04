@@ -48,6 +48,7 @@ func (c *cpuFreqChangeAssessor) AssessEffect(_ int) (int, error) {
 }
 
 func (c *cpuFreqChangeAssessor) assessEffectByFreq(currentFreq int) (int, error) {
+	general.InfofV(6, "pap: cpuFreqChangeAssessor assessEffectByFreq: curr %d, init %d", currentFreq, c.initFreqKHZ)
 	if currentFreq < minKHZ {
 		return 0, fmt.Errorf("invalid currentFreq frequency %d khz", currentFreq)
 	}
