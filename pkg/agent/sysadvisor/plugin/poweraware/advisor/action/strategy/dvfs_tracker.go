@@ -55,7 +55,11 @@ func (d *dvfsTracker) isCapperAvailable() bool {
 func (d *dvfsTracker) update(currPower int) error {
 	var err error
 	// only accumulate when dvfs is engaged
-	if d.inDVFS && d.isCapperAvailable() {
+	if !d.inDVFS {
+		err = errors.New("not in dvfs mode")
+	} else if !d.isCapperAvailable() {
+		err = errors.New("none power capper available")
+	} else {
 		if val, errAssess := d.assessor.AssessEffect(currPower); errAssess != nil {
 			err = errors.Wrap(err, "failed to assess dvfs effect")
 		} else {
