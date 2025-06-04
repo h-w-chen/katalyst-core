@@ -33,6 +33,7 @@ const (
 
 type cpuFreqChangeAssessor struct {
 	initFreqKHZ   int
+	highTracked   int
 	cpuFreqReader reader.MetricReader
 }
 
@@ -52,7 +53,9 @@ func (c *cpuFreqChangeAssessor) Init() error {
 	return nil
 }
 
-func (c *cpuFreqChangeAssessor) Clear() {}
+func (c *cpuFreqChangeAssessor) Clear() {
+	c.highTracked = 0
+}
 
 func (c *cpuFreqChangeAssessor) AssessEffect(_ int, _, _ bool) (int, error) {
 	// always check cpu freq to assess the effect
@@ -74,7 +77,11 @@ func (c *cpuFreqChangeAssessor) assessEffectByFreq(currentFreq int) (int, error)
 		return 0, nil
 	}
 
-	return 100 - currentFreq*100/c.initFreqKHZ, nil
+	instantEffect := 100 - currentFreq*100/c.initFreqKHZ
+	if instantEffect > c.highTracked {
+		c.highTracked = instantEffect
+	}
+	return c.highTracked, nil
 }
 
 func (c *cpuFreqChangeAssessor) Update(_ int) {

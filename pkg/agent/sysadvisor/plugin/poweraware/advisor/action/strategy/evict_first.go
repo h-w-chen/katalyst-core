@@ -130,6 +130,7 @@ func (e *evictFirstStrategy) yieldActionPlan(op, internalOp spec.InternalOp, act
 			var err error
 			desiredWatt, err = e.adjustTargetForConstraintDVFS(actualWatt, desiredWatt)
 			if err != nil {
+				general.Warningf("pap: noop to skip temporary failure %v", err)
 				return action.PowerAction{Op: spec.InternalOpNoop, Arg: 0}
 			}
 		}
