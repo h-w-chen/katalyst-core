@@ -20,3 +20,10 @@ type MBQRMPluginConfig struct {
 	// PolicyName is used to switch between several strategies
 	PolicyName string
 }
+
+func NewMBQRMPluginConfig() *MBQRMPluginConfig {
+	return &MBQRMPluginConfig{
+		// only generic is supported right now
+		PolicyName: "generic",
+	}
+}

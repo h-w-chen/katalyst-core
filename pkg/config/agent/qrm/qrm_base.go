@@ -61,5 +61,6 @@ func NewQRMPluginsConfiguration() *QRMPluginsConfiguration {
 		MemoryQRMPluginConfig:  NewMemoryQRMPluginConfig(),
 		NetworkQRMPluginConfig: NewNetworkQRMPluginConfig(),
 		IOQRMPluginConfig:      NewIOQRMPluginConfig(),
+		MBQRMPluginConfig:      NewMBQRMPluginConfig(),
 	}
 }
