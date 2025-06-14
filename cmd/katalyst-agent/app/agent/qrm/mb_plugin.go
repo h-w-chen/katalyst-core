@@ -22,6 +22,7 @@ import (
 
 	"github.com/kubewharf/katalyst-core/cmd/katalyst-agent/app/agent"
 	"github.com/kubewharf/katalyst-core/pkg/config"
+	"github.com/kubewharf/katalyst-core/pkg/util/general"
 )
 
 const (
@@ -31,6 +32,7 @@ const (
 var mbPolicyInitializers sync.Map
 
 func RegisterMBPolicyInitializer(name string, initFunc agent.InitFunc) {
+	general.Infof("mbm: register policy %q", name)
 	mbPolicyInitializers.Store(name, initFunc)
 }
 
