@@ -32,7 +32,7 @@ const (
 var mbPolicyInitializers sync.Map
 
 func RegisterMBPolicyInitializer(name string, initFunc agent.InitFunc) {
-	general.Infof("mbm: register policy %q", name)
+	general.Infof("mbm: register mb plugin policy %q", name)
 	mbPolicyInitializers.Store(name, initFunc)
 }
 
