@@ -143,6 +143,11 @@ const (
 	MetricTotalPowerUsedWatts = "total.power.used.watts"
 )
 
+// memory bandwidth metrics
+const (
+	MetricRealtimeMB = "realtime.mb"
+)
+
 // Image filesystem metrics
 const (
 	MetricsImageFsAvailable  = "available.rootfs.system"
