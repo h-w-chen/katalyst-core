@@ -559,6 +559,12 @@ func GetExtraTopologyInfo(conf *global.MachineInfoConfiguration, cpuTopology *CP
 		return nil, err
 	}
 
+	// todo: remove temp debug code
+	general.Infof("[mbm] debug - numa distance array len = %d", len(numaDistanceArray))
+	for id, x := range numaDistanceArray {
+		general.Infof("[mbm] debug - numa distance id = %d, content %v", id, x)
+	}
+
 	interfaceSocketInfo, err := GetInterfaceSocketInfo(extraNetworkInfo.GetAllocatableNICs(conf), cpuTopology)
 	if err != nil {
 		return nil, err
