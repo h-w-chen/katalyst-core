@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/klog/v2"
 
+	"github.com/kubewharf/katalyst-core/pkg/util/general"
 	"github.com/kubewharf/katalyst-core/pkg/util/machine"
 )
 
@@ -179,6 +180,11 @@ func NewDomainsByMachineInfo(info *machine.KatalystMachineInfo,
 	domainToNumas, err := identifyDomainByNumas(info.SiblingNumaMap)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get domains out of machine info")
+	}
+
+	general.InfofV(6, "[mbm] verbose domains topology")
+	if klog.V(6).Enabled() {
+		klog.Infof("[mbm] printing detail of ccd-numa topology...")
 	}
 
 	result := Domains{}

@@ -28,7 +28,7 @@ import (
 
 const tolerationTime = 3 * time.Second
 
-type MBReder interface {
+type MBReader interface {
 	GetMBData() (*malachitetypes.MBData, error)
 }
 
@@ -62,7 +62,7 @@ func (m *metaServerMBReader) getMBData(now time.Time) (*malachitetypes.MBData, e
 	return mbData, nil
 }
 
-func New(metricFetcher metrictypes.MetricsFetcher) MBReder {
+func New(metricFetcher metrictypes.MetricsFetcher) MBReader {
 	return &metaServerMBReader{
 		metricFetcher: metricFetcher,
 	}
