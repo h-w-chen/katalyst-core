@@ -22,6 +22,7 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/klog/v2"
 	pluginapi "k8s.io/kubelet/pkg/apis/resourceplugin/v1alpha1"
 
 	apiconsts "github.com/kubewharf/katalyst-api/pkg/consts"
@@ -107,6 +108,10 @@ func injectRespAnnotationPodMonGroup(resp *pluginapi.ResourceAllocationResponse,
 func (r *resctrlHinter) HintResp(qosLevel string,
 	req *pluginapi.ResourceRequest, resp *pluginapi.ResourceAllocationResponse,
 ) *pluginapi.ResourceAllocationResponse {
+	if klog.V(6).Enabled() {
+		klog.Infof("[resctrl-hint] to hint qos level = %q, req annotations = %v", qosLevel, req.Annotations)
+	}
+
 	if r.config == nil || !r.config.EnableResctrlHint {
 		return resp
 	}
@@ -118,6 +123,9 @@ func (r *resctrlHinter) HintResp(qosLevel string,
 	} else {
 		resctrlGroup = commonstate.GetSpecifiedPoolName(qosLevel,
 			r.getSharedSubgroupByPool(req.Annotations[apiconsts.PodAnnotationCPUEnhancementCPUSet]))
+	}
+	if klog.V(6).Enabled() {
+		klog.Infof("[resctrl-hint] to hint resctrl group = %q", resctrlGroup)
 	}
 
 	// when no recognized qos can be identified, no hint
