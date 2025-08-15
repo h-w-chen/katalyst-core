@@ -65,6 +65,8 @@ func getDieTopology(infoGetter cpuInfoGetter, numCPU int) (*DieTopology, error) 
 			return nil, errors.Wrap(err, "failed to get cpu die-numa topology")
 		}
 
+		general.Infof("[mbm] tmp get die topo: cpu %d, node %d", id, info.nodeID)
+
 		result.processCPU(id, info.l3CacheID, info.nodeID)
 	}
 

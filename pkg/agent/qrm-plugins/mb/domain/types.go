@@ -165,6 +165,7 @@ func getDiesByNUMAs(numas sets.Int, dieTopology *machine.DieTopology) (sets.Int,
 		if !ok {
 			return nil, fmt.Errorf("unknown numa id %d", numa)
 		}
+		general.Infof("[mbm] tmp numa %v => dies %v", numa, dies)
 		result.Insert(dies.List()...)
 	}
 	return result, nil
@@ -192,7 +193,9 @@ func NewDomainsByMachineInfo(info *machine.KatalystMachineInfo,
 
 	result := Domains{}
 	for domainID, numas := range domainToNumas {
+		//[mbm] ++++YYY debug - domain 2, numas = map[2:{}]
 		general.Infof("[mbm] ++++YYY debug - domain %d, numas = %v", domainID, numas)
+		// todo: die topology has issue???
 		dies, errCurr := getDiesByNUMAs(numas, info.DieTopology)
 		if errCurr != nil {
 			return nil, errors.Wrapf(err, "failed to locate numa ccds for domain %d", domainID)
