@@ -565,6 +565,12 @@ func GetExtraTopologyInfo(conf *global.MachineInfoConfiguration, cpuTopology *CP
 		general.Infof("[mbm] debug - numa distance id = %d, content %v", id, x)
 	}
 
+	yyy := GetSiblingNumaInfo(conf, numaDistanceArray)
+	general.Infof("[mbm] debug - sibling buma len = %d", len(yyy.SiblingNumaMap))
+	for id, x := range yyy.SiblingNumaMap {
+		general.Infof("[mbm] debug - numa id = %d, siblings %v", id, x)
+	}
+
 	interfaceSocketInfo, err := GetInterfaceSocketInfo(extraNetworkInfo.GetAllocatableNICs(conf), cpuTopology)
 	if err != nil {
 		return nil, err
@@ -614,6 +620,8 @@ func GetSiblingNumaInfo(
 
 			// the distance between two different NUMAs is equal to the sibling
 			// numa distance
+			general.Infof("[mbm] +++++ debug numa %d sibling dist = %d, node %d distance = %d", numaID,
+				siblingNumaDistance, distance.NumaID, distance.Distance)
 			if distance.Distance == siblingNumaDistance {
 				siblingSet.Insert(distance.NumaID)
 			}

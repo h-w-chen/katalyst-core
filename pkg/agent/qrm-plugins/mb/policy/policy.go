@@ -51,6 +51,13 @@ func NewGenericPolicy(agentCtx *agent.GenericContext, conf *config.Configuration
 		return false, nil, nil
 	}
 
+	// todo: remove temp debug code
+	numaDists := agentCtx.SiblingNumaMap
+	general.Infof("[mbm] ++++ debug - numa distance array len = %d", len(numaDists))
+	for id, x := range numaDists {
+		general.Infof("[mbm] ++++ debug - numa distance id = %d, content %v", id, x)
+	}
+
 	ccdMinMB := conf.MinCCDMB
 	ccdMaxMB := conf.MaxCCDMB
 	maxIncomingRemoteMB := conf.MaxIncomingRemoteMB
