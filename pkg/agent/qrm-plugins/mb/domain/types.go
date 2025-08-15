@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/klog/v2"
 
+	"github.com/kubewharf/katalyst-core/pkg/util/general"
 	"github.com/kubewharf/katalyst-core/pkg/util/machine"
 )
 
@@ -182,11 +183,16 @@ func NewDomainsByMachineInfo(info *machine.KatalystMachineInfo,
 	}
 
 	if klog.V(6).Enabled() {
+		for id, x := range domainToNumas {
+			general.Infof("[mbm] ++++xxx debug - domain %d, numas = %v", id, x)
+		}
+
 		klog.Infof("[mbm] printing detail of ccd-numa topology...")
 	}
 
 	result := Domains{}
 	for domainID, numas := range domainToNumas {
+		general.Infof("[mbm] ++++YYY debug - domain %d, numas = %v", domainID, numas)
 		dies, errCurr := getDiesByNUMAs(numas, info.DieTopology)
 		if errCurr != nil {
 			return nil, errors.Wrapf(err, "failed to locate numa ccds for domain %d", domainID)
