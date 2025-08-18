@@ -109,11 +109,12 @@ func (p *procFsCPUInfoGetter) getNumaID(cpuID int) (int, error) {
 
 	numaNode := -1
 	if err := afero.Walk(p.fs, cpuPath, func(path string, info os.FileInfo, err error) error {
-		general.Infof("[mbm] get numa id walking into %s", path)
+		general.Infof("[mbm] get numa id walking into %s, %v", path, err)
 		if err != nil {
 			return err
 		}
 
+		general.Infof("[mbm] get numa id %s, %v", path, info)
 		if !info.IsDir() {
 			return nil
 		}
