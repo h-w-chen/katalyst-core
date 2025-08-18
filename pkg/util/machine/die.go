@@ -65,7 +65,7 @@ func getDieTopology(infoGetter cpuInfoGetter, numCPU int) (*DieTopology, error) 
 			return nil, errors.Wrap(err, "failed to get cpu die-numa topology")
 		}
 
-		general.Infof("[mbm] tmp get die topo: cpu %d, node %d", id, info.nodeID)
+		general.Infof("[mbm] tmp get die topo: cpu %d, node %d, ccd %d", id, info.nodeID, info.l3CacheID)
 
 		result.processCPU(id, info.l3CacheID, info.nodeID)
 	}
@@ -90,7 +90,8 @@ func (p *procFsCPUInfoGetter) Get(cpuID int) (*cpuInfo, error) {
 		return nil, errors.Wrap(err, "failed to get cpu info")
 	}
 
-	nodeID, err := p.getNumaID(cpuID)
+	var nodeID int
+	nodeID, err = p.getNumaID(cpuID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get cpu info")
 	}
@@ -108,6 +109,7 @@ func (p *procFsCPUInfoGetter) getNumaID(cpuID int) (int, error) {
 
 	numaNode := -1
 	if err := afero.Walk(p.fs, cpuPath, func(path string, info os.FileInfo, err error) error {
+		general.Infof("[mbm] get numa id walking into %s", path)
 		if err != nil {
 			return err
 		}
@@ -125,6 +127,7 @@ func (p *procFsCPUInfoGetter) getNumaID(cpuID int) (int, error) {
 			return filepath.SkipDir
 		}
 
+		general.Infof("[mbm] get numa id found basename %s", baseName)
 		nodeStr := strings.TrimPrefix(baseName, "/node")
 		var errCurrent error
 		if numaNode, errCurrent = parseInt(nodeStr); errCurrent != nil {
