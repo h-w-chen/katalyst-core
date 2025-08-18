@@ -140,7 +140,7 @@ func (p *procFsCPUInfoGetter) getNumaID(cpuID int) (int, error) {
 			return nil
 		}
 
-		return filepath.SkipDir
+		return nil //filepath.SkipDir
 	}); err != nil && !errors.Is(err, errFound) {
 		return -1, err
 	}
