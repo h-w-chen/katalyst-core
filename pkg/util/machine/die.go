@@ -120,23 +120,27 @@ func (p *procFsCPUInfoGetter) getNumaID(cpuID int) (int, error) {
 		}
 
 		general.Infof("[mbm] get numa id trim %s, root %s", path, cpuPath)
-		baseName := strings.TrimPrefix(path, cpuPath)
-		if len(baseName) == 0 {
-			return nil
+		if strings.HasPrefix(path, cpuPath) {
+			baseName := strings.TrimPrefix(path, cpuPath)
+			if len(baseName) == 0 {
+				return nil
+			}
+
+			if !strings.HasPrefix(baseName, "/node") {
+				return filepath.SkipDir
+			}
+
+			general.Infof("[mbm] get numa id found basename %s", baseName)
+			nodeStr := strings.TrimPrefix(baseName, "/node")
+			var errCurrent error
+			if numaNode, errCurrent = parseInt(nodeStr); errCurrent != nil {
+				return errors.Wrapf(errCurrent, "failed to locate numa node for cpu %d", cpuID)
+			}
+
+			return errFound
 		}
 
-		if !strings.HasPrefix(baseName, "/node") {
-			return filepath.SkipDir
-		}
-
-		general.Infof("[mbm] get numa id found basename %s", baseName)
-		nodeStr := strings.TrimPrefix(baseName, "/node")
-		var errCurrent error
-		if numaNode, errCurrent = parseInt(nodeStr); errCurrent != nil {
-			return errors.Wrapf(errCurrent, "failed to locate numa node for cpu %d", cpuID)
-		}
-
-		return errFound
+		return filepath.SkipDir
 	}); err != nil && !errors.Is(err, errFound) {
 		return -1, err
 	}
