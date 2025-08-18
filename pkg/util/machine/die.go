@@ -116,6 +116,11 @@ func (p *procFsCPUInfoGetter) getNumaID(cpuID int) (int, error) {
 
 		general.Infof("[mbm] get numa id %s, %v", path, info)
 		general.Infof("[mbm] get numa id trimxx %s, root %s", path, cpuPath)
+
+		if info.IsDir() && path == cpuPath {
+			return nil
+		}
+
 		baseName := strings.TrimPrefix(path, cpuPath)
 		if len(baseName) == 0 {
 			return nil
