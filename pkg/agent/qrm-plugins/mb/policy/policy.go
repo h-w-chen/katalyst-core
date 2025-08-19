@@ -47,7 +47,7 @@ func NewGenericPolicy(agentCtx *agent.GenericContext, conf *config.Configuration
 		return false, nil, nil
 	}
 
-	defaultMBDomainCapacity := int(agentCtx.KatalystMachineInfo.SiblingNumaMBWAllocatable)
+	defaultMBDomainCapacity := int(agentCtx.KatalystMachineInfo.SiblingNumaMBWAllocatable) / 1024 / 1024
 	if defaultMBDomainCapacity < minMBCapacity {
 		general.Infof("[mbm] invalid domain mb capacity %d as configured; not to enable mbm", defaultMBDomainCapacity)
 		return false, nil, nil
