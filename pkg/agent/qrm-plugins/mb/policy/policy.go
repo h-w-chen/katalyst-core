@@ -53,6 +53,8 @@ func NewGenericPolicy(agentCtx *agent.GenericContext, conf *config.Configuration
 		return false, nil, nil
 	}
 
+	general.Infof("[mbm] config: default mb domain capacity %d MB", defaultMBDomainCapacity)
+
 	if klog.V(6).Enabled() {
 		// to print out numa siblings as they are critical to get proper mb domains
 		numaDists := agentCtx.SiblingNumaMap
