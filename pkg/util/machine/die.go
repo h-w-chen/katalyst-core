@@ -19,9 +19,9 @@ package machine
 import (
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path"
-	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -104,48 +104,32 @@ func (p *procFsCPUInfoGetter) Get(cpuID int) (*cpuInfo, error) {
 }
 
 func (p *procFsCPUInfoGetter) getNumaID(cpuID int) (int, error) {
-	// numa node is as of "nodeX/" folder
+	// numa node is as of "nodeX/"
 	cpuPath := path.Join(cpuFsRoot, fmt.Sprintf("cpu%d", cpuID))
+	fullPrefix := path.Join(cpuPath, "node")
 
 	numaNode := -1
-	if err := afero.Walk(p.fs, cpuPath, func(path string, info os.FileInfo, err error) error {
-		general.Infof("[mbm] get numa id walking into %s, %v", path, err)
-		if err != nil {
-			return err
-		}
-
-		general.Infof("[mbm] get numa id %s, %v", path, info)
+	err := afero.Walk(p.fs, cpuPath, func(path string, info os.FileInfo, err error) error {
 		if path == cpuPath {
 			return nil
 		}
+		general.Infof("[mbm] get numa id walking into %s, %v", path, err)
 
-		general.Infof("[mbm] get numa id trim %s, root %s", path, cpuPath)
-		if strings.HasPrefix(path, cpuPath) {
-			baseName := strings.TrimPrefix(path, cpuPath)
-			if len(baseName) == 0 {
-				return nil
-			}
-
-			if !strings.HasPrefix(baseName, "/node") {
-				return filepath.SkipDir
-			}
-
-			general.Infof("[mbm] get numa id found basename %s", baseName)
-			nodeStr := strings.TrimPrefix(baseName, "/node")
+		if strings.HasPrefix(path, fullPrefix) {
+			nodeStr := strings.TrimPrefix(path, fullPrefix)
 			var errCurrent error
 			if numaNode, errCurrent = parseInt(nodeStr); errCurrent != nil {
 				return errors.Wrapf(errCurrent, "failed to locate numa node for cpu %d", cpuID)
 			}
-
-			return errFound
 		}
 
-		if !info.IsDir() {
-			return nil
+		if info.IsDir() { // no sub folder
+			return fs.SkipDir
 		}
 
-		return nil //filepath.SkipDir
-	}); err != nil && !errors.Is(err, errFound) {
+		return nil
+	})
+	if err != nil && !errors.Is(err, errFound) {
 		return -1, errors.Wrap(err, "wrapped error")
 	}
 
