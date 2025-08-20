@@ -53,8 +53,6 @@ func NewGenericPolicy(agentCtx *agent.GenericContext, conf *config.Configuration
 		return false, nil, nil
 	}
 
-	general.Infof("[mbm] config: default mb domain capacity %d MB", defaultMBDomainCapacity)
-
 	if klog.V(6).Enabled() {
 		// to print out numa siblings as they are critical to get proper mb domains
 		numaDists := agentCtx.SiblingNumaMap
@@ -63,6 +61,14 @@ func NewGenericPolicy(agentCtx *agent.GenericContext, conf *config.Configuration
 			general.Infof("[mbm] numa %d, siblings %v", id, siblings)
 		}
 	}
+
+	general.Infof("[mbm] config: default mb domain capacity %d MB", defaultMBDomainCapacity)
+	general.Infof("[mbm] config: group customized capacities %v", conf.DomainGroupAwareCapacity)
+	general.Infof("[mbm] config: min ccd mb %d MB", conf.MinCCDMB)
+	general.Infof("[mbm] config: max ccd mb %d MB", conf.MaxCCDMB)
+	general.Infof("[mbm] config: domain alient incoming mb limit %d MB", conf.MaxIncomingRemoteMB)
+	general.Infof("[mbm] config: no-throtlle groups %v", conf.NoThrottleGroups)
+	general.Infof("[mbm] config: cross-domain groups %v", conf.CrossDomainGroups)
 
 	ccdMinMB := conf.MinCCDMB
 	ccdMaxMB := conf.MaxCCDMB
