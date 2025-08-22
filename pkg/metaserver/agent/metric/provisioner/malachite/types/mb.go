@@ -18,19 +18,25 @@ package types
 
 // todo: revise after the payload format is finalized
 type MalachiteMBResponse struct {
-	Status int    `json:"status"`
-	Data   MBData `json:"data"`
+	Status int        `json:"status"`
+	Data   MBRespData `json:"data"`
+}
+
+type MBRespData struct {
+	MBData MBData `json:"resctrl"`
 }
 
 type MBData struct {
-	MBBody map[string]MBGroupData `json:"mb"`
-	// todo: support cached_write_mb option
-	UpdateTime int64 `json:"update_time"`
+	// todo： group x ccd-mb as resctrl groups are the keys for qos
+	// todo: process write victim if applicable
+	MBBody     MBGroupData `json:"l3mon"`
+	UpdateTime int64       `json:"update_time"`
 }
 
-type MBGroupData = map[int]MBStat
+type MBGroupData = []MBCCDStat
 
-type MBStat struct {
-	MBLocal  float64 `json:"local"`
-	MBRemote float64 `json:"remote"`
+type MBCCDStat struct {
+	CCDID   int   `json:"id"`
+	MBLocal int64 `json:"mbm_local_bytes"`
+	MBTotal int64 `json:"mbm_total_bytes"`
 }
