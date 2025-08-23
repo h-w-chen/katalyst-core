@@ -36,7 +36,7 @@ type MBData struct {
 type MBGroupData = []MBCCDStat
 
 type MBCCDStat struct {
-	CCDID   int   `json:"id"`
-	MBLocal int64 `json:"mbm_local_bytes"`
-	MBTotal int64 `json:"mbm_total_bytes"`
+	CCDID          int   `json:"id"`
+	MBLocalCounter int64 `json:"mbm_local_bytes"`
+	MBTotalCounter int64 `json:"mbm_total_bytes"`
 }

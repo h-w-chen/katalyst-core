@@ -74,9 +74,9 @@ func TestMalachiteClient_GetMBData(t *testing.T) {
 			want: &types.MBData{
 				MBBody: types.MBGroupData{
 					{
-						CCDID:   1,
-						MBLocal: 115340555748096,
-						MBTotal: 335021042372672,
+						CCDID:          1,
+						MBLocalCounter: 115340555748096,
+						MBTotalCounter: 335021042372672,
 					},
 				},
 				UpdateTime: 1755884558,

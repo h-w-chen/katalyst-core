@@ -23,6 +23,7 @@ import (
 
 	"github.com/stretchr/testify/mock"
 
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
 	malachitetypes "github.com/kubewharf/katalyst-core/pkg/metaserver/agent/metric/provisioner/malachite/types"
 )
 
@@ -78,20 +79,28 @@ func Test_metaServerMBReader_getMBData(t *testing.T) {
 	t.Parallel()
 
 	timestamp := time.Date(2025, 7, 18, 9, 10, 11, 0, time.UTC)
-	mFetcher := new(mockFetcher)
-	mFetcher.On("GetByStringIndex", "realtime.mb").Return(
-		&malachitetypes.MBData{
-			MBBody: map[string]malachitetypes.MBGroupData{
-				"/": {
-					0: {
-						MBLocal:  222,
-						MBRemote: 100,
-					},
-				},
+	rawCounter1 := &malachitetypes.MBData{
+		MBBody: malachitetypes.MBGroupData{
+			{
+				CCDID:          1,
+				MBLocalCounter: 11111,
+				MBTotalCounter: 11111,
 			},
-			UpdateTime: timestamp.Unix(),
 		},
-	)
+		UpdateTime: timestamp.Add(-1 * time.Second).Unix(),
+	}
+	rawCounter2 := &malachitetypes.MBData{
+		MBBody: malachitetypes.MBGroupData{
+			{
+				CCDID:          1,
+				MBLocalCounter: 22222,
+				MBTotalCounter: 22222,
+			},
+		},
+		UpdateTime: timestamp.Unix(),
+	}
+	mFetcher := new(mockFetcher)
+	mFetcher.On("GetByStringIndex", "realtime.mb").Return(rawCounter2)
 
 	type fields struct {
 		metricFetcher interface {
@@ -105,7 +114,7 @@ func Test_metaServerMBReader_getMBData(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    *malachitetypes.MBData
+		want    *MBData
 		wantErr bool
 	}{
 		{
@@ -116,12 +125,13 @@ func Test_metaServerMBReader_getMBData(t *testing.T) {
 			args: args{
 				now: timestamp,
 			},
-			want: &malachitetypes.MBData{
-				MBBody: map[string]malachitetypes.MBGroupData{
+			want: &MBData{
+				MBBody: monitor.GroupMBStats{
 					"/": {
-						0: {
-							MBLocal:  222,
-							MBRemote: 100,
+						1: {
+							LocalMB:  0,
+							RemoteMB: 0,
+							TotalMB:  0,
 						},
 					},
 				},
@@ -135,7 +145,8 @@ func Test_metaServerMBReader_getMBData(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			m := &metaServerMBReader{
-				metricFetcher: tt.fields.metricFetcher,
+				metricFetcher:   tt.fields.metricFetcher,
+				currCounterData: rawCounter1,
 			}
 			got, err := m.getMBData(tt.args.now)
 			if (err != nil) != tt.wantErr {
@@ -144,6 +155,66 @@ func Test_metaServerMBReader_getMBData(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("getMBData() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_calcRateData(t *testing.T) {
+	t.Parallel()
+	type args struct {
+		newCounter malachitetypes.MBGroupData
+		oldCounter malachitetypes.MBGroupData
+		elspsed    time.Duration
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    monitor.GroupMBStats
+		wantErr bool
+	}{
+		{
+			name: "happy path",
+			args: args{
+				oldCounter: malachitetypes.MBGroupData{
+					{
+						CCDID:          5,
+						MBLocalCounter: 2 * 1024 * 1024,
+						MBTotalCounter: 3 * 1024 * 1024,
+					},
+				},
+				newCounter: malachitetypes.MBGroupData{
+					{
+						CCDID:          5,
+						MBLocalCounter: 7 * 1024 * 1024,
+						MBTotalCounter: 10 * 1024 * 1024,
+					},
+				},
+				elspsed: 1 * time.Second,
+			},
+			want: monitor.GroupMBStats{
+				"/": {
+					5: {
+						LocalMB:  5,
+						RemoteMB: 2,
+						TotalMB:  7,
+					},
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got, err := calcMBRate(tt.args.newCounter, tt.args.oldCounter, tt.args.elspsed)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("calcRateData() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("calcRateData() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
