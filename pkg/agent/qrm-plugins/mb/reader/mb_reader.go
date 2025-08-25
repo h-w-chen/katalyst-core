@@ -61,7 +61,7 @@ func (m *metaServerMBReader) GetMBData() (*MBData, error) {
 func (m *metaServerMBReader) getMBData(now time.Time) (*MBData, error) {
 	newCounterData, err := m.getCounterData(now)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get mb data")
+		return nil, errors.Wrap(err, "failed to get mb data from meta server")
 	}
 
 	var rate *MBData
@@ -133,6 +133,10 @@ func calcMBRate(newCounter, oldCounter malachitetypes.MBGroupData, elapsed time.
 
 func (m *metaServerMBReader) getCounterData(now time.Time) (*malachitetypes.MBData, error) {
 	data := m.metricFetcher.GetByStringIndex(consts.MetricRealtimeMB)
+
+	if data == nil {
+		return nil, fmt.Errorf("got nil by metric key %s", consts.MetricRealtimeMB)
+	}
 
 	mbData, ok := data.(*malachitetypes.MBData)
 	if !ok {
