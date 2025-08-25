@@ -104,7 +104,6 @@ func (m *MalachiteRealtimeMBMetricsProvisioner) updateMB() error {
 	}
 
 	return errors.NewAggregate(errList)
-
 }
 
 func (m *MalachiteRealtimeMBMetricsProvisioner) processMBData(data *malachitetypes.MBData) {
