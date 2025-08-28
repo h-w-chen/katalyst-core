@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"golang.org/x/exp/maps"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/klog/v2"
 
@@ -209,7 +210,11 @@ func (m *metaServerMBReader) getCounterData(now time.Time) (*malachitetypes.MBDa
 		return nil, errors.New("stale mb data in metric store")
 	}
 
-	return mbData, nil
+	copyMBData := malachitetypes.MBData{
+		MBBody:     maps.Clone(mbData.MBBody),
+		UpdateTime: mbData.UpdateTime,
+	}
+	return &copyMBData, nil
 }
 
 func New(metricFetcher metrictypes.MetricsFetcher) MBReader {
