@@ -79,6 +79,8 @@ func (m *metaServerMBReader) getMBData(now time.Time) (*MBData, error) {
 	var rate *MBData
 	rate, err = calcRateData(newCounterData, m.currCounterData)
 	if newCounterData != nil {
+		// todo: +++
+		general.InfofV(6, "updating mb data %v", newCounterData)
 		m.currCounterData = newCounterData
 	}
 	return rate, err
