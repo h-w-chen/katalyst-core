@@ -172,9 +172,13 @@ func calcGroupMBRate(newCounter, oldCounter []malachitetypes.MBCCDStat, msElapse
 		}
 
 		// skip data with overflown, hopefully next round will get valid data
-		if ccdCounter.MBLocalCounter < oldCCDCounter.MBLocalCounter ||
-			ccdCounter.MBTotalCounter < oldCCDCounter.MBTotalCounter {
-			return nil, errors.New("raw counter value started over")
+		if ccdCounter.MBLocalCounter < oldCCDCounter.MBLocalCounter {
+			return nil, fmt.Errorf("raw local counter value started over: ccd %d, new %v, old %v",
+				ccd, ccdCounter.MBLocalCounter, oldCCDCounter.MBLocalCounter)
+		}
+		if ccdCounter.MBTotalCounter < oldCCDCounter.MBTotalCounter {
+			return nil, fmt.Errorf("raw total counter value started over: ccd %, new %v, old %v",
+				ccd, ccdCounter.MBTotalCounter, oldCCDCounter.MBTotalCounter)
 		}
 
 		rateLocalMB := (ccdCounter.MBLocalCounter - oldCCDCounter.MBLocalCounter) * 1000 / msElapsed / 1024 / 1024
