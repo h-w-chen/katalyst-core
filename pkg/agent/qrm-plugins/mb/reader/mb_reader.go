@@ -164,7 +164,9 @@ func calcGroupMBRate(newCounter, oldCounter []malachitetypes.MBCCDStat, msElapse
 	result := monitor.GroupMB{}
 	oldCounterLookup := map[int]*malachitetypes.MBCCDStat{}
 	for _, ccdCounter := range oldCounter {
-		oldCounterLookup[ccdCounter.CCDID] = &ccdCounter
+		// todo: +++
+		counter := ccdCounter
+		oldCounterLookup[counter.CCDID] = &counter
 	}
 
 	for _, ccdCounter := range newCounter {
