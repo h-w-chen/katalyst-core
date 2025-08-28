@@ -28,7 +28,7 @@ import (
 func (c *MalachiteClient) GetMBData() (*types.MBData, error) {
 	payload, err := c.getRealtimePayload(RealtimeMBResource)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get mb data")
+		return nil, errors.Wrap(err, "failed to get realtime_mb data")
 	}
 
 	rsp := &types.MalachiteMBResponse{}
@@ -41,5 +41,6 @@ func (c *MalachiteClient) GetMBData() (*types.MBData, error) {
 	}
 
 	c.checkSystemStatsOutOfDate("realtime_mb", RealtimeUpdateTimeout, rsp.Data.MBData.UpdateTime)
+
 	return &rsp.Data.MBData, nil
 }
