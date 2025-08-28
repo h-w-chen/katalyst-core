@@ -23,11 +23,13 @@ import (
 
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/klog/v2"
 
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
 	"github.com/kubewharf/katalyst-core/pkg/consts"
 	malachitetypes "github.com/kubewharf/katalyst-core/pkg/metaserver/agent/metric/provisioner/malachite/types"
 	metrictypes "github.com/kubewharf/katalyst-core/pkg/metaserver/agent/metric/types"
+	"github.com/kubewharf/katalyst-core/pkg/util/general"
 )
 
 const (
@@ -56,7 +58,11 @@ type metaServerMBReader struct {
 
 func isDataFresh(epocElapsed int64, now time.Time) bool {
 	timestamp := time.Unix(epocElapsed, 0)
-	return now.Before(timestamp.Add(tolerationTime))
+	isFresh := now.Before(timestamp.Add(tolerationTime))
+	if isFresh && klog.V(6).Enabled() {
+		general.Infof("realtime_mb timestamp %v, current %v", timestamp, now)
+	}
+	return isFresh
 }
 
 func (m *metaServerMBReader) GetMBData() (*MBData, error) {
