@@ -20,13 +20,15 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/pkg/errors"
+
 	"github.com/kubewharf/katalyst-core/pkg/metaserver/agent/metric/provisioner/malachite/types"
 )
 
 func (c *MalachiteClient) GetMBData() (*types.MBData, error) {
 	payload, err := c.getRealtimePayload(RealtimeMBResource)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to get mb data")
 	}
 
 	rsp := &types.MalachiteMBResponse{}
