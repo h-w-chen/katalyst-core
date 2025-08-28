@@ -249,11 +249,12 @@ func (d *domainAdvisor) domainDistributeGroup(domID int, group string,
 	return result
 }
 
-func New(ccdMinMB, ccdMaxMB int, defaultDomainCapacity int,
+func New(domains domain.Domains, ccdMinMB, ccdMaxMB int, defaultDomainCapacity int,
 	XDomGroups []string, groupNeverThrottles []string,
 	groupCapacity map[string]int,
 ) Advisor {
 	return &domainAdvisor{
+		domains:               domains,
 		xDomGroups:            sets.NewString(XDomGroups...),
 		groupNeverThrottles:   sets.NewString(groupNeverThrottles...),
 		defaultDomainCapacity: defaultDomainCapacity,
