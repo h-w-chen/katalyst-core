@@ -104,7 +104,10 @@ func (d *DomainStats) String() string {
 	sb.WriteString("}\n")
 
 	sb.WriteString("OutgoingGroupSumStat:{")
-	for group, stat := range d.OutgoingGroupSumStat {
+	keys := maps.Keys(d.OutgoingGroupSumStat)
+	sort.Strings(keys)
+	for _, group := range keys {
+		stat := d.OutgoingGroupSumStat[group]
 		sb.WriteString(group)
 		sb.WriteString(":{")
 		for domID, sum := range stat {

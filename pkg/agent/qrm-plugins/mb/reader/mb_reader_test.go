@@ -248,3 +248,97 @@ func Test_calcRateData(t *testing.T) {
 		})
 	}
 }
+
+func Test_calcMBRate(t *testing.T) {
+	type args struct {
+		newCounter malachitetypes.MBGroupData
+		oldCounter malachitetypes.MBGroupData
+		elapsed    time.Duration
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    monitor.GroupMBStats
+		wantErr bool
+	}{
+		{
+			name: "test",
+			args: args{
+				newCounter: malachitetypes.MBGroupData{
+					"/": {
+						{
+							CCDID:          5,
+							MBLocalCounter: 140691768966656,
+							MBTotalCounter: 370436984114304,
+						},
+						{
+							CCDID:          3,
+							MBLocalCounter: 246785938839808,
+							MBTotalCounter: 568936880803072,
+						},
+					},
+				},
+				oldCounter: malachitetypes.MBGroupData{
+					"/": {
+						{
+							CCDID:          5,
+							MBLocalCounter: 140691748593408,
+							MBTotalCounter: 370436903397888,
+						},
+						{
+							CCDID:          3,
+							MBLocalCounter: 246785902087424,
+							MBTotalCounter: 568936764991744,
+						},
+					},
+				},
+				elapsed: 1 * time.Second,
+			},
+			want: monitor.GroupMBStats{
+				"/": {
+					5: {
+						LocalMB:  19,
+						RemoteMB: 57,
+						TotalMB:  76,
+					},
+					3: {
+						LocalMB:  35,
+						RemoteMB: 75,
+						TotalMB:  110,
+					},
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := calcMBRate(tt.args.newCounter, tt.args.oldCounter, tt.args.elapsed)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("calcMBRate() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("calcMBRate() got = %v, want %v", got, tt.want)
+			}
+			t.Logf("got: %v", got)
+		})
+	}
+}
+
+func Test_F(t *testing.T) {
+	x := monitor.GroupMBStats{}
+	x["/"] = monitor.GroupMB{
+		5: {
+			LocalMB:  1,
+			RemoteMB: 2,
+			TotalMB:  3,
+		},
+		3: {
+			LocalMB:  8,
+			RemoteMB: 9,
+			TotalMB:  10,
+		},
+	}
+	t.Logf("got %v", x)
+}
