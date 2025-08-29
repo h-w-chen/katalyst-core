@@ -89,21 +89,19 @@ func (m *MBPlugin) run() {
 		general.Errorf("[mbm] failed to get mb data: %v", err)
 		return
 	}
-	general.InfofV(6, "[mbm] raw: group x ccd-level mb stat: %v", mbData)
 
 	statOutgoing := getGroupMonStat(mbData)
 	if mbData == nil {
 		general.Warningf("[mbm] got empty mb data")
 		return
 	}
-	general.InfofV(6, "[mbm] adapted: group x ccd-level mb stat: %v", statOutgoing)
 
 	monData, err := monitor.NewDomainStats(statOutgoing, m.ccdToDomain, m.xDomGroups)
 	if err != nil {
 		general.Errorf("[mbm] failed to run fetching mb stats: %v", err)
 		return
 	}
-	general.InfofV(6, "[mbm] mb domain summary mb stat: %v", statOutgoing)
+	general.InfofV(6, "[mbm] domain specific group ccd mb stat: %s", monData)
 
 	ctx := context.Background()
 	var mbPlan *plan.MBPlan
@@ -113,7 +111,7 @@ func (m *MBPlugin) run() {
 		return
 	}
 	if klog.V(6).Enabled() {
-		general.Infof("[mbm] mb plan update: %v", mbPlan)
+		general.Infof("[mbm] mb plan update: %s", mbPlan)
 	}
 
 	if err := m.planAllocator.Allocate(ctx, mbPlan); err != nil {

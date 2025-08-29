@@ -109,7 +109,7 @@ func calcRateData(newCounter, oldCounter *malachitetypes.MBData) (*MBData, error
 
 	return &MBData{
 		MBBody:     stats,
-		UpdateTime: newTimeStamp.Unix(),
+		UpdateTime: newCounter.UpdateTime,
 	}, nil
 }
 
@@ -182,7 +182,7 @@ func calcGroupMBRate(newCounter, oldCounter []malachitetypes.MBCCDStat, msElapse
 				ccd, ccdCounter.MBLocalCounter, oldCCDCounter.MBLocalCounter)
 		}
 		if ccdCounter.MBTotalCounter < oldCCDCounter.MBTotalCounter {
-			return nil, fmt.Errorf("raw total counter value started over: ccd %, new %v, old %v",
+			return nil, fmt.Errorf("raw total counter value started over: ccd %v, new %v, old %v",
 				ccd, ccdCounter.MBTotalCounter, oldCCDCounter.MBTotalCounter)
 		}
 
