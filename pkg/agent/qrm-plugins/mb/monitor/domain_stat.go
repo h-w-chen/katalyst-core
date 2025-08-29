@@ -61,11 +61,14 @@ func NewDomainStats(statOutgoing GroupMBStats, ccdToDomain map[int]int, xDomGrou
 func (d DomainMonStat) String() string {
 	var sb strings.Builder
 	sb.WriteString(fmt.Sprintf("DomainMonStat{"))
-	for group, stat := range d {
+	keys := maps.Keys(d)
+	sort.Strings(keys)
+	for _, group := range keys {
+		stat := d[group]
 		sb.WriteString(fmt.Sprintf("%q:{", group))
-		sortedDomIDs := maps.Keys(stat)
-		sort.Ints(sortedDomIDs)
-		for ccd := range sortedDomIDs {
+		sortedIDs := maps.Keys(stat)
+		sort.Ints(sortedIDs)
+		for _, ccd := range sortedIDs {
 			mb := stat.SumStat()
 			sb.WriteString(fmt.Sprintf("%d:{local:%d,remote:%d,total:%d},",
 				ccd, mb.LocalMB, mb.RemoteMB, mb.TotalMB))
@@ -87,7 +90,7 @@ func (d *DomainStats) String() string {
 	sb.WriteString("\nIncomings:{")
 	sortedDomIDs := maps.Keys(d.Incomings)
 	sort.Ints(sortedDomIDs)
-	for domID := range sortedDomIDs {
+	for _, domID := range sortedDomIDs {
 		sb.WriteString(fmt.Sprintf("%d:%s, ", domID, d.Incomings[domID]))
 	}
 	sb.WriteString("}\n")
@@ -95,7 +98,7 @@ func (d *DomainStats) String() string {
 	sb.WriteString("Outgoings:{")
 	sortedDomIDs = maps.Keys(d.Outgoings)
 	sort.Ints(sortedDomIDs)
-	for domID := range sortedDomIDs {
+	for _, domID := range sortedDomIDs {
 		sb.WriteString(fmt.Sprintf("%d:%s,", domID, d.Outgoings[domID]))
 	}
 	sb.WriteString("}\n")

@@ -450,7 +450,7 @@ func TestDomainStats_String(t *testing.T) {
 			name: "happy path",
 			fields: fields{
 				Incomings: map[int]DomainMonStat{
-					0: {
+					3: {
 						"/": map[int]MBInfo{
 							1: {
 								LocalMB:  1,
@@ -466,7 +466,7 @@ func TestDomainStats_String(t *testing.T) {
 							},
 						},
 					},
-					1: {
+					4: {
 						"/": map[int]MBInfo{
 							2: {
 								LocalMB:  10,
@@ -508,7 +508,7 @@ func TestDomainStats_String(t *testing.T) {
 				},
 			},
 			want: `[DomainStats]
-Incomings:{0:DomainMonStat{"/":{0:{local:1,remote:2,total:3},},"shared-50":{0:{local:4,remote:5,total:9},},}, 1:DomainMonStat{"/":{0:{local:10,remote:20,total:30},},}, }
+Incomings:{3:DomainMonStat{"/":{1:{local:1,remote:2,total:3},},"shared-50":{0:{local:4,remote:5,total:9},},}, 4:DomainMonStat{"/":{2:{local:10,remote:20,total:30},},}, }
 Outgoings:{0:DomainMonStat{"/":{0:{local:1,remote:2,total:3},},"shared-50":{0:{local:4,remote:5,total:9},},},}
 OutgoingGroupSumStat:{/:{0:{local:2,remote:4,total:6},},shared-50:{0:{local:8,remote:10,total:18},},}
 `,
