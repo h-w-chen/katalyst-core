@@ -69,7 +69,7 @@ func (d DomainMonStat) String() string {
 		sortedIDs := maps.Keys(stat)
 		sort.Ints(sortedIDs)
 		for _, ccd := range sortedIDs {
-			mb := stat.SumStat()
+			mb := stat[ccd]
 			sb.WriteString(fmt.Sprintf("%d:{local:%d,remote:%d,total:%d},",
 				ccd, mb.LocalMB, mb.RemoteMB, mb.TotalMB))
 		}
