@@ -104,6 +104,7 @@ func (m *MBPlugin) run() {
 		return
 	}
 	general.InfofV(6, "[mbm] domain specific group ccd mb stat: %s", monData)
+	general.InfofV(6, "[mbm] domain specific group ccd mb stat detail: %#v", monData)
 
 	ctx := context.Background()
 	var mbPlan *plan.MBPlan
