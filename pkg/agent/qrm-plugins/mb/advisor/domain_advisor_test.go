@@ -221,6 +221,26 @@ func Test_domainAdvisor_calcIncomingQuotas(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		//{
+		//	name: "integration test case",
+		//	fields: fields{
+		//		domains:               domain.Domains{
+		//			0: domain.NewDomain(0, sets.NewInt(0,1,2,3,4,5), 123),
+		//			1: domain.NewDomain(1, sets.NewInt(6,7,8,9,10,11), 123),
+		//			2: domain.NewDomain(2, sets.NewInt(16,17,18,19,20,21), 123),
+		//			3: domain.NewDomain(3, sets.NewInt(22,23,24,25,26,27), 123),
+		//		},
+		//		XDomGroups:            nil,
+		//		GroupCapacityInMB:     nil,
+		//		defaultDomainCapacity: 100 * 1024,
+		//	},
+		//	args:    args{
+		//		ctx: context.TODO(),
+		//		mon: &monitor.DomainStats{},
+		//	},
+		//	want:    nil,
+		//	wantErr: false,
+		//},
 	}
 	for _, tt := range tests {
 		tt := tt
@@ -508,6 +528,66 @@ func Test_domainAdvisor_GetPlan(t *testing.T) {
 				"shared-60": {0: 20_000, 2: 20_000},
 				"shared-50": {1: 13_500, 3: 13_500},
 			}},
+			wantErr: false,
+		},
+		{
+			name: "2 levels of groups",
+			fields: fields{
+				domains: domain.Domains{
+					0: domain.NewDomain(0, sets.NewInt(0, 1, 2, 3, 4, 5), 15_000),
+					1: domain.NewDomain(1, sets.NewInt(6, 7, 8, 9, 10, 11), 15_000),
+					2: domain.NewDomain(2, sets.NewInt(16, 17, 18, 19, 20, 21), 15_000),
+					3: domain.NewDomain(3, sets.NewInt(22, 23, 24, 25, 26, 27), 15_000),
+				},
+				defaultDomainCapacity: 100 * 1024,
+				quotaStrategy:         nil,
+				flower:                nil,
+				adjusters:             nil,
+			},
+			args: args{
+				ctx:        context.TODO(),
+				domainsMon: &monitor.DomainStats{
+					/*&{map[
+						0: 	map[
+							/:			map[0:{15 302 317} 2:{3 37 40} 4:{11 39 50} 6:{3 27 30} 8:{121 149 270} 10:{1193 325 1518}]
+							shared-50:	map[0:{0 0 0} 2:{0 0 0} 4:{0 0 0} 6:{0 0 0} 8:{0 0 0} 10:{0 0 0}]
+						]
+						1:	map[
+							/:			map[1:{10 48 58} 3:{35 88 123} 5:{29 112 141} 7:{18 64 82} 9:{84 65 149} 11:{27 63 90}]
+							shared-50:	map[1:{43 308 351} 3:{3 16 19} 5:{2 8 10} 7:{30 275 305} 9:{19 162 181} 11:{10 7 17}]
+						]
+						2:	map[
+							/:			map[16:{6 62 68} 18:{15 45 60} 20:{9 86 95} 22:{86 55 141} 24:{8 67 75} 26:{22 73 95}]
+							shared-50:	map[16:{0 0 0} 18:{0 0 0} 20:{0 0 0} 22:{0 0 0} 24:{0 0 0} 26:{0 0 0}]
+						]
+						3:	map[
+							/:			map[17:{33 72 105} 19:{16 101 117} 21:{64 106 170} 23:{51 127 178} 25:{35 108 143} 27:{44 82 126}]
+							shared-50:	map[17:{0 0 0} 19:{0 0 0} 21:{0 0 0} 23:{0 0 0} 25:{0 0 0} 27:{0 0 0}]
+						]
+					] map[
+						0:	map[
+							/:			map[0:{15 302 317} 2:{3 37 40} 4:{11 39 50} 6:{3 27 30} 8:{121 149 270} 10:{1193 325 1518}]
+							shared-50:	map[0:{0 0 0} 2:{0 0 0} 4:{0 0 0} 6:{0 0 0} 8:{0 0 0} 10:{0 0 0}]
+						]
+						1:	map[
+							/:			map[1:{10 48 58} 3:{35 88 123} 5:{29 112 141} 7:{18 64 82} 9:{84 65 149} 11:{27 63 90}]
+							shared-50:	map[1:{43 308 351} 3:{3 16 19} 5:{2 8 10} 7:{30 275 305} 9:{19 162 181} 11:{10 7 17}]
+						]
+						2:	map[
+							/:			map[16:{6 62 68} 18:{15 45 60} 20:{9 86 95} 22:{86 55 141} 24:{8 67 75} 26:{22 73 95}]
+							shared-50:	map[16:{0 0 0} 18:{0 0 0} 20:{0 0 0} 22:{0 0 0} 24:{0 0 0} 26:{0 0 0}]
+						]
+						3:	map[
+							/:			map[17:{33 72 105} 19:{16 101 117} 21:{64 106 170} 23:{51 127 178} 25:{35 108 143} 27:{44 82 126}]
+							shared-50:	map[17:{0 0 0} 19:{0 0 0} 21:{0 0 0} 23:{0 0 0} 25:{0 0 0} 27:{0 0 0}]
+						]
+					] map[
+						/:				[{1346 879 2225} {203 440 643} {146 388 534} {243 596 839}]
+						shared-50:		[{0 0 0} {107 776 883} {0 0 0} {0 0 0}]]}
+					*/
+				},
+			},
+			want:    nil,
 			wantErr: false,
 		},
 	}

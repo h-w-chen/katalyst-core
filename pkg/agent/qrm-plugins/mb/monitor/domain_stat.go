@@ -18,8 +18,11 @@ package monitor
 
 import (
 	"fmt"
+	"sort"
+	"strings"
 
 	"github.com/pkg/errors"
+	"golang.org/x/exp/maps"
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/kubewharf/katalyst-core/pkg/util/syntax"
@@ -53,6 +56,63 @@ func NewDomainStats(statOutgoing GroupMBStats, ccdToDomain map[int]int, xDomGrou
 	result.deriveIncomingStats(xDomGroups)
 	result.sumOutgoingByGroup()
 	return result, nil
+}
+
+func (d DomainMonStat) String() string {
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("DomainMonStat{"))
+	for group, stat := range d {
+		sb.WriteString(fmt.Sprintf("%q:{", group))
+		sortedDomIDs := maps.Keys(stat)
+		sort.Ints(sortedDomIDs)
+		for ccd := range sortedDomIDs {
+			mb := stat.SumStat()
+			sb.WriteString(fmt.Sprintf("%d:{local:%d,remote:%d,total:%d},",
+				ccd, mb.LocalMB, mb.RemoteMB, mb.TotalMB))
+		}
+		sb.WriteString(fmt.Sprintf("},"))
+	}
+	sb.WriteString(fmt.Sprintf("}"))
+	return sb.String()
+}
+
+func (d *DomainStats) String() string {
+	var sb strings.Builder
+	sb.WriteString("[DomainStats]")
+	if d == nil {
+		sb.WriteString("nil")
+		return sb.String()
+	}
+
+	sb.WriteString("\nIncomings:{")
+	sortedDomIDs := maps.Keys(d.Incomings)
+	sort.Ints(sortedDomIDs)
+	for domID := range sortedDomIDs {
+		sb.WriteString(fmt.Sprintf("%d:%s, ", domID, d.Incomings[domID]))
+	}
+	sb.WriteString("}\n")
+
+	sb.WriteString("Outgoings:{")
+	sortedDomIDs = maps.Keys(d.Outgoings)
+	sort.Ints(sortedDomIDs)
+	for domID := range sortedDomIDs {
+		sb.WriteString(fmt.Sprintf("%d:%s,", domID, d.Outgoings[domID]))
+	}
+	sb.WriteString("}\n")
+
+	sb.WriteString("OutgoingGroupSumStat:{")
+	for group, stat := range d.OutgoingGroupSumStat {
+		sb.WriteString(group)
+		sb.WriteString(":{")
+		for domID, sum := range stat {
+			sb.WriteString(fmt.Sprintf("%d:{local:%d,remote:%d,total:%d},",
+				domID, sum.LocalMB, sum.RemoteMB, sum.TotalMB))
+		}
+		sb.WriteString("},")
+	}
+	sb.WriteString("}\n")
+
+	return sb.String()
 }
 
 func (d *DomainStats) sumOutgoingByGroup() {

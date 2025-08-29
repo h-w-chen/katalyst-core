@@ -434,3 +434,96 @@ func TestDomainsMon_SumOutgoingByGroup(t *testing.T) {
 		})
 	}
 }
+
+func TestDomainStats_String(t *testing.T) {
+	type fields struct {
+		Incomings            map[int]DomainMonStat
+		Outgoings            map[int]DomainMonStat
+		OutgoingGroupSumStat map[string][]MBInfo
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   string
+	}{
+		{
+			name: "happy path",
+			fields: fields{
+				Incomings: map[int]DomainMonStat{
+					0: {
+						"/": map[int]MBInfo{
+							1: {
+								LocalMB:  1,
+								RemoteMB: 2,
+								TotalMB:  3,
+							},
+						},
+						"shared-50": map[int]MBInfo{
+							0: {
+								LocalMB:  4,
+								RemoteMB: 5,
+								TotalMB:  9,
+							},
+						},
+					},
+					1: {
+						"/": map[int]MBInfo{
+							2: {
+								LocalMB:  10,
+								RemoteMB: 20,
+								TotalMB:  30,
+							},
+						},
+					},
+				},
+				Outgoings: map[int]DomainMonStat{
+					0: {
+						"/": map[int]MBInfo{
+							0: {
+								LocalMB:  1,
+								RemoteMB: 2,
+								TotalMB:  3,
+							},
+						},
+						"shared-50": map[int]MBInfo{
+							0: {
+								LocalMB:  4,
+								RemoteMB: 5,
+								TotalMB:  9,
+							},
+						},
+					},
+				},
+				OutgoingGroupSumStat: map[string][]MBInfo{
+					"/": {{
+						LocalMB:  2,
+						RemoteMB: 4,
+						TotalMB:  6,
+					}},
+					"shared-50": {{
+						LocalMB:  8,
+						RemoteMB: 10,
+						TotalMB:  18,
+					}},
+				},
+			},
+			want: `[DomainStats]
+Incomings:{0:DomainMonStat{"/":{0:{local:1,remote:2,total:3},},"shared-50":{0:{local:4,remote:5,total:9},},}, 1:DomainMonStat{"/":{0:{local:10,remote:20,total:30},},}, }
+Outgoings:{0:DomainMonStat{"/":{0:{local:1,remote:2,total:3},},"shared-50":{0:{local:4,remote:5,total:9},},},}
+OutgoingGroupSumStat:{/:{0:{local:2,remote:4,total:6},},shared-50:{0:{local:8,remote:10,total:18},},}
+`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := &DomainStats{
+				Incomings:            tt.fields.Incomings,
+				Outgoings:            tt.fields.Outgoings,
+				OutgoingGroupSumStat: tt.fields.OutgoingGroupSumStat,
+			}
+			if got := d.String(); got != tt.want {
+				t.Errorf("String() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
