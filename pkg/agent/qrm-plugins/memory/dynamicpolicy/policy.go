@@ -690,7 +690,7 @@ func (p *DynamicPolicy) RemovePod(ctx context.Context,
 func (p *DynamicPolicy) GetResourcesAllocation(_ context.Context,
 	req *pluginapi.GetResourcesAllocationRequest,
 ) (*pluginapi.GetResourcesAllocationResponse, error) {
-	general.InfofV(6, "[resctrl-hint] GetResourcesAllocation req %v", req)
+	general.InfofV(6, "[resctrl-hint] GetResourcesAllocation req %#v", req)
 
 	if req == nil {
 		return nil, fmt.Errorf("GetResourcesAllocation got nil req")
@@ -873,6 +873,7 @@ func (p *DynamicPolicy) GetResourcePluginOptions(context.Context,
 // postAllocateForResctrl makes applicable changes to response's annotations
 // as hint to kubelet about resctrl FS related settings
 func (p *DynamicPolicy) postAllocateForResctrl(qosLevel string, req *pluginapi.ResourceRequest, resp *pluginapi.ResourceAllocationResponse) {
+	general.InfofV(6, "[resctrl-hint] postAllocateForResctrl qos %q, req %#v", qosLevel, req)
 	if p.resctrlHinter == nil {
 		return
 	}
@@ -886,7 +887,7 @@ func (p *DynamicPolicy) postAllocateForResctrl(qosLevel string, req *pluginapi.R
 func (p *DynamicPolicy) Allocate(ctx context.Context,
 	req *pluginapi.ResourceRequest,
 ) (resp *pluginapi.ResourceAllocationResponse, respErr error) {
-	general.InfofV(6, "[resctrl-hint] Allocate req %v", req)
+	general.InfofV(6, "[resctrl-hint] Allocate req %#v", req)
 
 	if req == nil {
 		return nil, fmt.Errorf("Allocate got nil req")
