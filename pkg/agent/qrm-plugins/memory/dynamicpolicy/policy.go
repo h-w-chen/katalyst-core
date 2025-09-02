@@ -887,7 +887,7 @@ func (p *DynamicPolicy) postAllocateForResctrl(qosLevel string, req *pluginapi.R
 func (p *DynamicPolicy) Allocate(ctx context.Context,
 	req *pluginapi.ResourceRequest,
 ) (resp *pluginapi.ResourceAllocationResponse, respErr error) {
-	general.InfofV(6, "[resctrl-hint] Allocate req %#v", req)
+	general.InfofV(6, "[resctrl-hint] Allocate req.anno %#v", req.Annotations)
 
 	if req == nil {
 		return nil, fmt.Errorf("Allocate got nil req")
@@ -901,6 +901,8 @@ func (p *DynamicPolicy) Allocate(ctx context.Context,
 
 	existReallocAnno, isReallocation := util.IsReallocation(req.Annotations)
 
+	general.InfofV(6, "[resctrl-hint] 222 req.anno %#v", req.Annotations)
+
 	qosLevel, err := util.GetKatalystQoSLevelFromResourceReq(p.qosConfig, req, p.podAnnotationKeptKeys, p.podLabelKeptKeys)
 	if err != nil {
 		err = fmt.Errorf("GetKatalystQoSLevelFromResourceReq for pod: %s/%s, container: %s failed with error: %v",
@@ -909,9 +911,11 @@ func (p *DynamicPolicy) Allocate(ctx context.Context,
 		return nil, err
 	}
 
+	general.InfofV(6, "[resctrl-hint] 333 req.anno %#v", req.Annotations)
 	// register post-process to inject applicable resp annotation as kubelet pod admit hint
 	defer func() {
 		if respErr == nil {
+			general.InfofV(6, "[resctrl-hint] 999 req.anno %#v", req.Annotations)
 			p.postAllocateForResctrl(qosLevel, req, resp)
 		}
 	}()
@@ -930,6 +934,8 @@ func (p *DynamicPolicy) Allocate(ctx context.Context,
 		"qosLevel", qosLevel,
 		"memoryReq(bytes)", reqInt,
 		"hint", req.Hint)
+
+	general.InfofV(6, "[resctrl-hint] 444 req.anno %#v", req.Annotations)
 
 	if req.ContainerType == pluginapi.ContainerType_INIT {
 		return &pluginapi.ResourceAllocationResponse{
@@ -1062,6 +1068,8 @@ func (p *DynamicPolicy) Allocate(ctx context.Context,
 			Annotations: general.DeepCopyMap(req.Annotations),
 		}, nil
 	}
+
+	general.InfofV(6, "[resctrl-hint] 888 req.anno %#v", req.Annotations)
 
 	if p.allocationHandlers[qosLevel] == nil {
 		return nil, fmt.Errorf("katalyst QoS level: %s is not supported yet", qosLevel)
