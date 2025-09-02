@@ -114,6 +114,11 @@ func (r *resctrlHinter) HintResourceAllocation(podMeta commonstate.AllocationMet
 		// tweak the case of system qos
 		resctrlGroup = commonstate.PoolNamePrefixSystem
 	case apiconsts.PodAnnotationQoSLevelSharedCores:
+		// todo: ? ask Zhongyu for proper fix
+		poolName := podMeta.OwnerPoolName
+		if len(poolName) == 0 {
+			poolName = podMeta.Annotations[apiconsts.PodAnnotationCPUEnhancementCPUSet]
+		}
 		resctrlGroup = r.getSharedSubgroupByPool(podMeta.OwnerPoolName)
 	default:
 		resctrlGroup = podMeta.OwnerPoolName
