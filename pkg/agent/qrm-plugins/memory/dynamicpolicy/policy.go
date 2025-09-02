@@ -690,6 +690,8 @@ func (p *DynamicPolicy) RemovePod(ctx context.Context,
 func (p *DynamicPolicy) GetResourcesAllocation(_ context.Context,
 	req *pluginapi.GetResourcesAllocationRequest,
 ) (*pluginapi.GetResourcesAllocationResponse, error) {
+	general.InfofV(6, "[resctrl-hint] GetResourcesAllocation req %v", req)
+
 	if req == nil {
 		return nil, fmt.Errorf("GetResourcesAllocation got nil req")
 	}
@@ -884,6 +886,8 @@ func (p *DynamicPolicy) postAllocateForResctrl(qosLevel string, req *pluginapi.R
 func (p *DynamicPolicy) Allocate(ctx context.Context,
 	req *pluginapi.ResourceRequest,
 ) (resp *pluginapi.ResourceAllocationResponse, respErr error) {
+	general.InfofV(6, "[resctrl-hint] Allocate req %v", req)
+
 	if req == nil {
 		return nil, fmt.Errorf("Allocate got nil req")
 	}
