@@ -887,7 +887,7 @@ func (p *DynamicPolicy) postAllocateForResctrl(qosLevel string, req *pluginapi.R
 func (p *DynamicPolicy) Allocate(ctx context.Context,
 	req *pluginapi.ResourceRequest,
 ) (resp *pluginapi.ResourceAllocationResponse, respErr error) {
-	general.InfofV(6, "[resctrl-hint] Allocate req.anno %#v", req.Annotations)
+	general.InfofV(6, "[resctrl-hint] 111 Allocate req.anno %#v", req.Annotations)
 
 	if req == nil {
 		return nil, fmt.Errorf("Allocate got nil req")
@@ -905,6 +905,7 @@ func (p *DynamicPolicy) Allocate(ctx context.Context,
 
 	qosLevel, err := util.GetKatalystQoSLevelFromResourceReq(p.qosConfig, req, p.podAnnotationKeptKeys, p.podLabelKeptKeys)
 	if err != nil {
+		general.InfofV(6, "[resctrl-hint] 225 req.anno %#v", req.Annotations)
 		err = fmt.Errorf("GetKatalystQoSLevelFromResourceReq for pod: %s/%s, container: %s failed with error: %v",
 			req.PodNamespace, req.PodName, req.ContainerName, err)
 		general.Errorf("%s", err.Error())
