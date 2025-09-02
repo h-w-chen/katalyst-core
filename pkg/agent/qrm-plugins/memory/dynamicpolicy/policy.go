@@ -904,6 +904,7 @@ func (p *DynamicPolicy) Allocate(ctx context.Context,
 	general.InfofV(6, "[resctrl-hint] 222 req.anno %#v", req.Annotations)
 
 	qosLevel, err := util.GetKatalystQoSLevelFromResourceReq(p.qosConfig, req, p.podAnnotationKeptKeys, p.podLabelKeptKeys)
+	general.InfofV(6, "[resctrl-hint] 224 req.anno %#v", req.Annotations)
 	if err != nil {
 		general.InfofV(6, "[resctrl-hint] 225 req.anno %#v", req.Annotations)
 		err = fmt.Errorf("GetKatalystQoSLevelFromResourceReq for pod: %s/%s, container: %s failed with error: %v",
@@ -920,6 +921,7 @@ func (p *DynamicPolicy) Allocate(ctx context.Context,
 			p.postAllocateForResctrl(qosLevel, req, resp)
 		}
 	}()
+	general.InfofV(6, "[resctrl-hint] 335 req.anno %#v", req.Annotations)
 
 	reqInt, _, err := util.GetQuantityFromResourceReq(req)
 	if err != nil {
