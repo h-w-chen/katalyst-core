@@ -127,6 +127,7 @@ func (r *resctrlHinter) HintResourceAllocation(podMeta commonstate.AllocationMet
 
 	// inject shared subgroup if share pool
 	if podMeta.QoSLevel == apiconsts.PodAnnotationQoSLevelSharedCores {
+		general.InfofV(6, "[resctrl-hint] shared core group, sub group %q, meta %v", resctrlGroup, podMeta)
 		injectRespAnnotationSharedGroup(resourceAllocation, resctrlGroup)
 	}
 
