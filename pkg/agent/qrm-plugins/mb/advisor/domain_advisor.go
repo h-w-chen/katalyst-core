@@ -253,11 +253,15 @@ func New(emitter metrics.MetricEmitter, domains domain.Domains, ccdMinMB, ccdMax
 	XDomGroups []string, groupNeverThrottles []string,
 	groupCapacity map[string]int,
 ) Advisor {
+	// do not throttle built-in "/" anytime
+	notThrottles := sets.NewString("/")
+	notThrottles.Insert(groupNeverThrottles...)
+
 	return &domainAdvisor{
 		emitter:               emitter,
 		domains:               domains,
 		xDomGroups:            sets.NewString(XDomGroups...),
-		groupNeverThrottles:   sets.NewString(groupNeverThrottles...),
+		groupNeverThrottles:   notThrottles,
 		defaultDomainCapacity: defaultDomainCapacity,
 		groupCapacityInMB:     groupCapacity,
 		quotaStrategy:         quota.New(),
