@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/cilium/ebpf"
+	"golang.org/x/exp/maps"
 	"google.golang.org/grpc"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -887,16 +888,20 @@ func (p *DynamicPolicy) postAllocateForResctrl(qosLevel string, req *pluginapi.R
 func (p *DynamicPolicy) Allocate(ctx context.Context,
 	req *pluginapi.ResourceRequest,
 ) (resp *pluginapi.ResourceAllocationResponse, respErr error) {
-	resp, err := p.allocate(ctx, req)
+	rreq := *req
+	rreq.Annotations = maps.Clone(req.Annotations)
+
+	qosLevel, err := util.GetKatalystQoSLevelFromResourceReq(p.qosConfig, req, p.podAnnotationKeptKeys, p.podLabelKeptKeys)
+	_ = err
+
+	resp, err = p.allocate(ctx, req)
 	if err != nil {
 		general.InfofV(6, "[resctrl-hint] 999 req.anno %#v, err %v", req.Annotations, err)
 		return resp, err
 	}
 
-	qosLevel, err := util.GetKatalystQoSLevelFromResourceReq(p.qosConfig, req, p.podAnnotationKeptKeys, p.podLabelKeptKeys)
-	_ = err
-	general.InfofV(6, "[resctrl-hint] 999 req.anno %#v", req.Annotations)
-	p.postAllocateForResctrl(qosLevel, req, resp)
+	general.InfofV(6, "[resctrl-hint] 999 req.anno %#v", rreq.Annotations)
+	p.postAllocateForResctrl(qosLevel, &rreq, resp)
 	return resp, nil
 }
 
