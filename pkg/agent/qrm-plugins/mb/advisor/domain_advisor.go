@@ -19,6 +19,7 @@ package advisor
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -57,6 +58,21 @@ type domainAdvisor struct {
 	ccdDistribute distributor.Distributor
 }
 
+func stringify(groupDomValues map[string][]int) string {
+	var sb strings.Builder
+	sb.WriteString("{")
+	for group, values := range groupDomValues {
+		sb.WriteString(group)
+		sb.WriteString(": {")
+		for dom, v := range values {
+			sb.WriteString(fmt.Sprintf("%d=%d", dom, v))
+		}
+		sb.WriteString("},")
+	}
+	sb.WriteString("}")
+	return sb.String()
+}
+
 func (d *domainAdvisor) GetPlan(ctx context.Context, domainsMon *monitor.DomainStats) (*plan.MBPlan, error) {
 	// identify mb incoming usage etc since the capacity applies to incoming traffic
 	domIncomingInfo, err := d.calcIncomingDomainStats(ctx, domainsMon)
@@ -68,6 +84,7 @@ func (d *domainAdvisor) GetPlan(ctx context.Context, domainsMon *monitor.DomainS
 	// based on mb incoming usage info, decide incoming quotas (i.e. targets)
 	domIncomingQuotas := d.getIncomingDomainQuotas(ctx, domIncomingInfo)
 	groupedDomIncomingTargets := domIncomingQuotas.GetGroupedDomainSetting()
+	general.InfofV(6, "groupedDomIncomingTargets: %s", stringify(groupedDomIncomingTargets))
 	d.emitIncomingTargets(groupedDomIncomingTargets)
 
 	// for each group, based on incoming targets, decide what the outgoing targets are
@@ -76,12 +93,14 @@ func (d *domainAdvisor) GetPlan(ctx context.Context, domainsMon *monitor.DomainS
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get plan")
 	}
+	general.InfofV(6, "groupedDomOutgoingTargets: %s", stringify(groupedDomOutgoingTargets))
 	d.emitOutgoingTargets(groupedDomOutgoingTargets)
 
 	// leverage the current observed outgoing stats (and implicit previous outgoing mb)
 	// to adjust th outgoing mb hopeful to reach the desired target
 	groupedDomOutgoings := domainsMon.OutgoingGroupSumStat
 	groupedDomainOutgoingQuotas := d.adjust(ctx, groupedDomOutgoingTargets, groupedDomOutgoings)
+	general.InfofV(6, "groupedDomainOutgoingQuotas: %s", stringify(groupedDomainOutgoingQuotas))
 	d.emitAdjustedOutgoingTargets(groupedDomainOutgoingQuotas)
 
 	// split outgoing mb to ccd level
