@@ -887,6 +887,22 @@ func (p *DynamicPolicy) postAllocateForResctrl(qosLevel string, req *pluginapi.R
 func (p *DynamicPolicy) Allocate(ctx context.Context,
 	req *pluginapi.ResourceRequest,
 ) (resp *pluginapi.ResourceAllocationResponse, respErr error) {
+	resp, err := p.allocate(ctx, req)
+	if err != nil {
+		general.InfofV(6, "[resctrl-hint] 999 req.anno %#v, err %v", req.Annotations, err)
+		return resp, err
+	}
+
+	qosLevel, err := util.GetKatalystQoSLevelFromResourceReq(p.qosConfig, req, p.podAnnotationKeptKeys, p.podLabelKeptKeys)
+	_ = err
+	general.InfofV(6, "[resctrl-hint] 999 req.anno %#v", req.Annotations)
+	p.postAllocateForResctrl(qosLevel, req, resp)
+	return resp, nil
+}
+
+func (p *DynamicPolicy) allocate(ctx context.Context,
+	req *pluginapi.ResourceRequest,
+) (resp *pluginapi.ResourceAllocationResponse, respErr error) {
 	general.InfofV(6, "[resctrl-hint] 111 Allocate req.anno %#v", req.Annotations)
 
 	if req == nil {
@@ -914,13 +930,13 @@ func (p *DynamicPolicy) Allocate(ctx context.Context,
 	}
 
 	general.InfofV(6, "[resctrl-hint] 333 req.anno %#v", req.Annotations)
-	// register post-process to inject applicable resp annotation as kubelet pod admit hint
-	defer func() {
-		if respErr == nil {
-			general.InfofV(6, "[resctrl-hint] 999 req.anno %#v", req.Annotations)
-			p.postAllocateForResctrl(qosLevel, req, resp)
-		}
-	}()
+	//// register post-process to inject applicable resp annotation as kubelet pod admit hint
+	//defer func() {
+	//	if respErr == nil {
+	//		general.InfofV(6, "[resctrl-hint] 999 req.anno %#v", req.Annotations)
+	//		p.postAllocateForResctrl(qosLevel, req, resp)
+	//	}
+	//}()
 	general.InfofV(6, "[resctrl-hint] 335 req.anno %#v", req.Annotations)
 
 	reqInt, _, err := util.GetQuantityFromResourceReq(req)
