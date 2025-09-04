@@ -112,8 +112,8 @@ func getGroupOutgoingTotals(group string, outgoings map[string][]monitor.MBInfo)
 		groupOutgoins = nil
 	}
 	results := make([]int, len(groupOutgoins))
-	for i, v := range groupOutgoins {
-		results[i] = v.TotalMB
+	for i := range groupOutgoins {
+		results[i] = groupOutgoins[i].TotalMB
 	}
 	return results
 }

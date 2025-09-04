@@ -142,7 +142,7 @@ func (d *domainAdvisor) adjust(_ context.Context,
 			d.adjusters[group] = adjuster.New()
 		}
 		result[group] = d.adjusters[group].AdjustOutgoingTargets(values, currents)
-		general.InfofV(6, "[mbm] [advisor] adjuster: group=%q, value=%v, currents=%v, result=%v",
+		general.InfofV(6, "[mbm] [advisor] 111 adjuster: group=%q, value=%v, currents=%v, result=%v",
 			group, values, currents, result[group])
 		activeGroups.Insert(group)
 	}
