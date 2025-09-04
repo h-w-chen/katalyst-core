@@ -135,9 +135,9 @@ func (d *domainAdvisor) adjust(_ context.Context,
 	activeGroups := sets.String{}
 	for group := range groupedSettings {
 		values := groupedSettings[group]
-		general.InfofV(6, "[mbm] [advisor] 000 adjuster: group=%q, value=%v",
-			group, values)
 		currents := getGroupOutgoingTotals(group, observed)
+		general.InfofV(6, "[mbm] [advisor] 000 adjuster: group=%q, value=%v, currents=%v",
+			group, values, currents)
 		if _, ok := d.adjusters[group]; !ok {
 			d.adjusters[group] = adjuster.New()
 		}

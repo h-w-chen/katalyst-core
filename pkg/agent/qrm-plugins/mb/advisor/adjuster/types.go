@@ -23,10 +23,8 @@ type Adjuster interface {
 }
 
 func New() Adjuster {
-	return &capAdjuster{
-		inner: &proportionLimitingAdjuster{
-			percentProportionLimit: 120, // 120% max adjustment once
-			inner:                  &feedbackAdjuster{},
-		},
+	return &proportionLimitingAdjuster{
+		percentProportionLimit: 120, // 120% max adjustment once
+		inner:                  &feedbackAdjuster{},
 	}
 }
