@@ -131,7 +131,8 @@ func (d *domainAdvisor) adjust(_ context.Context,
 ) map[string][]int {
 	result := map[string][]int{}
 	activeGroups := sets.String{}
-	for group, values := range groupedSettings {
+	for group := range groupedSettings {
+		values := groupedSettings[group]
 		currents := getGroupOutgoingTotals(group, observed)
 		if _, ok := d.adjusters[group]; !ok {
 			d.adjusters[group] = adjuster.New()
