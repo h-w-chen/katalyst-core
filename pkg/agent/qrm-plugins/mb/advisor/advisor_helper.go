@@ -158,3 +158,14 @@ func getUsedTotalByGroup(stats monitor.GroupMBStats) map[string]int {
 	}
 	return result
 }
+
+func getDomainTotalMBs(domStats map[int]*resource.MBGroupIncomingStat) []int {
+	domainNum := len(domStats)
+	result := make([]int, domainNum)
+	for i := range result {
+		for _, v := range domStats[i].GroupTotalUses {
+			result[i] += v
+		}
+	}
+	return result
+}

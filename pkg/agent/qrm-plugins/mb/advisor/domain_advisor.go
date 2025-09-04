@@ -23,6 +23,7 @@ import (
 
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/klog/v2"
 
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/advisor/adjuster"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/advisor/distributor"
@@ -78,6 +79,10 @@ func (d *domainAdvisor) GetPlan(ctx context.Context, domainsMon *monitor.DomainS
 	domIncomingInfo, err := d.calcIncomingDomainStats(ctx, domainsMon)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get plan")
+	}
+	if klog.V(6).Enabled() {
+		domTotalMBs := getDomainTotalMBs(domIncomingInfo)
+		general.InfofV(6, "[mbm] [advisor] domain incoming total: %v", domTotalMBs)
 	}
 	d.emitDomIncomingStatMetrics(domIncomingInfo)
 
