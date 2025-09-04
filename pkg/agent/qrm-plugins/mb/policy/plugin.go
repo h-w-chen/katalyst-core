@@ -114,10 +114,10 @@ func (m *MBPlugin) run() {
 		general.Infof("[mbm] mb plan update: %s", mbPlan)
 	}
 
-	if err := m.planAllocator.Allocate(ctx, mbPlan); err != nil {
-		general.Errorf("[mbm] failed to run allocating plan: %v", err)
-		return
-	}
+	//	if err := m.planAllocator.Allocate(ctx, mbPlan); err != nil {
+	//		general.Errorf("[mbm] failed to run allocating plan: %v", err)
+	//		return
+	//	}
 
 	general.InfofV(6, "[mbm] plugin run end")
 }
