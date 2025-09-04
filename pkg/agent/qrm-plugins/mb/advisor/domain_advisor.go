@@ -100,6 +100,7 @@ func (d *domainAdvisor) GetPlan(ctx context.Context, domainsMon *monitor.DomainS
 	// to adjust th outgoing mb hopeful to reach the desired target
 	// todo: ???
 	groupedDomOutgoings := domainsMon.OutgoingGroupSumStat
+	general.InfofV(6, "[mbm] [adjuster] groupedDomOutgoingTargets=%v", groupedDomOutgoingTargets)
 	groupedDomainOutgoingQuotas := d.adjust(ctx, groupedDomOutgoingTargets, groupedDomOutgoings)
 	//groupedDomainOutgoingQuotas := groupedDomOutgoingTargets
 	general.InfofV(6, "[mbm] [advisor] groupedDomainOutgoingQuotas: %s", stringify(groupedDomainOutgoingQuotas))
@@ -129,6 +130,7 @@ func (d *domainAdvisor) getNoThrottleMB() int {
 func (d *domainAdvisor) adjust(_ context.Context,
 	groupedSettings map[string][]int, observed map[string][]monitor.MBInfo,
 ) map[string][]int {
+	general.InfofV(6, "[mbm] [adjuster] arg groupedSettings = %v, observed = %v", groupedSettings, observed)
 	result := map[string][]int{}
 	activeGroups := sets.String{}
 	for group := range groupedSettings {
