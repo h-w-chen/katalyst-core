@@ -25,8 +25,8 @@ type capAdjuster struct {
 
 func (c *capAdjuster) AdjustOutgoingTargets(targets []int, currents []int) []int {
 	results := c.inner.AdjustOutgoingTargets(targets, currents)
-	for i, v := range results {
-		if v > targets[i] {
+	for i := range results {
+		if results[i] > targets[i] {
 			results[i] = targets[i]
 		}
 	}
@@ -42,8 +42,8 @@ type proportionLimitingAdjuster struct {
 
 func (p *proportionLimitingAdjuster) AdjustOutgoingTargets(targets []int, currents []int) []int {
 	results := p.inner.AdjustOutgoingTargets(targets, currents)
-	for i, v := range results {
-		if v > targets[i]*p.percentProportionLimit/100 {
+	for i := range results {
+		if results[i] > targets[i]*p.percentProportionLimit/100 {
 			results[i] = targets[i] * p.percentProportionLimit / 100
 		}
 	}
