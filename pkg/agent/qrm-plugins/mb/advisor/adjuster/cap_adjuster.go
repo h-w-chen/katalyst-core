@@ -34,3 +34,20 @@ func (c *capAdjuster) AdjustOutgoingTargets(targets []int, currents []int) []int
 }
 
 var _ Adjuster = &capAdjuster{}
+
+type proportionLimitingAdjuster struct {
+	percentProportionLimit int
+	inner                  Adjuster
+}
+
+func (p *proportionLimitingAdjuster) AdjustOutgoingTargets(targets []int, currents []int) []int {
+	results := p.inner.AdjustOutgoingTargets(targets, currents)
+	for i, v := range results {
+		if v > targets[i]*p.percentProportionLimit/100 {
+			results[i] = targets[i] * p.percentProportionLimit / 100
+		}
+	}
+	return results
+}
+
+var _ Adjuster = &proportionLimitingAdjuster{}

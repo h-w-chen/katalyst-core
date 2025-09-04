@@ -99,9 +99,9 @@ func (d *domainAdvisor) GetPlan(ctx context.Context, domainsMon *monitor.DomainS
 	// leverage the current observed outgoing stats (and implicit previous outgoing mb)
 	// to adjust th outgoing mb hopeful to reach the desired target
 	// todo: ???
-	//	groupedDomOutgoings := domainsMon.OutgoingGroupSumStat
-	//	groupedDomainOutgoingQuotas := d.adjust(ctx, groupedDomOutgoingTargets, groupedDomOutgoings)
-	groupedDomainOutgoingQuotas := groupedDomOutgoingTargets
+	groupedDomOutgoings := domainsMon.OutgoingGroupSumStat
+	groupedDomainOutgoingQuotas := d.adjust(ctx, groupedDomOutgoingTargets, groupedDomOutgoings)
+	//groupedDomainOutgoingQuotas := groupedDomOutgoingTargets
 	general.InfofV(6, "[mbm] [advisor] groupedDomainOutgoingQuotas: %s", stringify(groupedDomainOutgoingQuotas))
 	d.emitAdjustedOutgoingTargets(groupedDomainOutgoingQuotas)
 
