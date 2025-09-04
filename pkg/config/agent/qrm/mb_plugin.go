@@ -23,6 +23,7 @@ type MBQRMPluginConfig struct {
 	MinCCDMB            int
 	MaxCCDMB            int
 	MaxIncomingRemoteMB int
+	MBCapLimitPercent   int
 
 	// DomainQoSAwareCapacity keeps qos group customized mb upper capacity it allows
 	DomainGroupAwareCapacity map[string]int

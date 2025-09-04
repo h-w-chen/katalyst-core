@@ -122,7 +122,7 @@ func (m *MBPlugin) run() {
 	general.InfofV(6, "[mbm] plugin run end")
 }
 
-func newMBPlugin(ccdMinMB, ccdMaxMB int, defaultDomainCapacity int,
+func newMBPlugin(ccdMinMB, ccdMaxMB int, defaultDomainCapacity int, capPercent int,
 	domains domain.Domains, xDomGroups []string, groupNeverThrottles []string,
 	groupCapacities map[string]int, metricFetcher metrictypes.MetricsFetcher,
 	planAllocator allocator.PlanAllocator, emitPool metricspool.MetricsEmitterPool,
@@ -136,7 +136,7 @@ func newMBPlugin(ccdMinMB, ccdMaxMB int, defaultDomainCapacity int,
 		xDomGroups:  sets.NewString(xDomGroups...),
 		domains:     domains,
 		reader:      reader.New(metricFetcher),
-		advisor: advisor.New(emitter, domains, ccdMinMB, ccdMaxMB, defaultDomainCapacity,
+		advisor: advisor.New(emitter, domains, ccdMinMB, ccdMaxMB, defaultDomainCapacity, capPercent,
 			xDomGroups, groupNeverThrottles, groupCapacities,
 		),
 		planAllocator: planAllocator,

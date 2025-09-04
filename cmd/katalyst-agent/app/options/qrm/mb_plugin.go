@@ -22,11 +22,21 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/config/agent/qrm"
 )
 
+const (
+	defaultMinCCDMB = 4_000  // 4GB
+	defaultMaxCCDMB = 40_000 // 40GB
+
+	// defaultMBCapLimitPercent to limit quota no more than the target value as the value set in resctrl FS schemata
+	// would generally result in slight more mb traffic then the set value and not the other way around
+	defaultMBCapLimitPercent = 100
+)
+
 type MBOptions struct {
 	PolicyName               string
 	MinCCDMB                 int
 	MaxCCDMB                 int
 	MaxIncomingRemoteMB      int
+	MBCapLimitPercent        int
 	DomainGroupAwareCapacity map[string]int
 	NoThrottleGroups         []string
 	CrossDomainGroups        []string
@@ -34,8 +44,11 @@ type MBOptions struct {
 
 func NewMBOptions() *MBOptions {
 	return &MBOptions{
-		// only generic is supported right now
-		PolicyName: "generic",
+		PolicyName:          "generic", // only generic policy is supported right now
+		MinCCDMB:            defaultMinCCDMB,
+		MaxCCDMB:            defaultMaxCCDMB,
+		MaxIncomingRemoteMB: 0,
+		MBCapLimitPercent:   defaultMBCapLimitPercent,
 	}
 }
 
@@ -49,6 +62,8 @@ func (o *MBOptions) AddFlags(fss *cliflag.NamedFlagSets) {
 		o.MaxCCDMB, "max mb per ccd")
 	fs.IntVar(&o.MaxIncomingRemoteMB, "mb-remote-limit",
 		o.MaxIncomingRemoteMB, "max mb allowed from remote domains")
+	fs.IntVar(&o.MBCapLimitPercent, "mb-cap-limit-percent",
+		o.MBCapLimitPercent, "mb cap limit coefficient")
 	fs.StringToIntVar(&o.DomainGroupAwareCapacity, "mb-group-aware-capacity",
 		o.DomainGroupAwareCapacity, "customized mb capacities required by groups")
 	fs.StringSliceVar(&o.NoThrottleGroups, "mb-no-throttle-groups",
@@ -62,6 +77,7 @@ func (o *MBOptions) ApplyTo(conf *qrm.MBQRMPluginConfig) error {
 	conf.MinCCDMB = o.MinCCDMB
 	conf.MaxCCDMB = o.MaxCCDMB
 	conf.MaxIncomingRemoteMB = o.MaxIncomingRemoteMB
+	conf.MBCapLimitPercent = o.MBCapLimitPercent
 	conf.CrossDomainGroups = o.CrossDomainGroups
 	conf.NoThrottleGroups = o.NoThrottleGroups
 	conf.DomainGroupAwareCapacity = o.DomainGroupAwareCapacity
