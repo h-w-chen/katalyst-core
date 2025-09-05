@@ -20,6 +20,7 @@ import (
 	"context"
 	"time"
 
+	"golang.org/x/exp/maps"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog/v2"
@@ -62,8 +63,23 @@ func (m *MBPlugin) Name() string {
 
 func (m *MBPlugin) Start() error {
 	general.Infof("mbm: plugin started")
+
+	general.Infof("mbm: to restore resctrl FS on start")
+	ccds := sets.NewInt(maps.Keys(m.ccdToDomain)...)
+	if err := m.planAllocator.Reset(context.Background(), ccds); err != nil {
+		general.Errorf("mbm: reset resctrl FS on start failed: %v", err)
+	}
+
 	m.chStop = make(chan struct{})
-	go wait.Until(m.run, interval, m.chStop)
+	go func() {
+		wait.Until(m.run, interval, m.chStop)
+
+		general.Infof("mbm: timer stopped; to cleanup with resctrl FS restoration")
+		if err := m.planAllocator.Reset(context.Background(), ccds); err != nil {
+			general.Errorf("mbm: reset resctrl FS on stop failed: %v", err)
+		}
+	}()
+
 	return nil
 }
 
