@@ -64,7 +64,7 @@ func (m *MBPlugin) Name() string {
 func (m *MBPlugin) Start() error {
 	general.Infof("mbm: plugin started")
 
-	general.Infof("mbm: to restore resctrl FS on start")
+	general.Infof("mbm: to reset resctrl FS on start")
 	ccds := sets.NewInt(maps.Keys(m.ccdToDomain)...)
 	if err := m.planAllocator.Reset(context.Background(), ccds); err != nil {
 		general.Errorf("mbm: reset resctrl FS on start failed: %v", err)
@@ -74,7 +74,7 @@ func (m *MBPlugin) Start() error {
 	go func() {
 		wait.Until(m.run, interval, m.chStop)
 
-		general.Infof("mbm: timer stopped; to cleanup with resctrl FS restoration")
+		general.Infof("mbm: plugin timer stopped; to reset resctrl FS on cleanup")
 		if err := m.planAllocator.Reset(context.Background(), ccds); err != nil {
 			general.Errorf("mbm: reset resctrl FS on stop failed: %v", err)
 		}
