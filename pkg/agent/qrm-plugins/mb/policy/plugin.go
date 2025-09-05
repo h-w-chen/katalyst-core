@@ -45,6 +45,8 @@ const (
 )
 
 type MBPlugin struct {
+	resetResctrlOnly bool
+
 	chStop  chan struct{}
 	emitter metrics.MetricEmitter
 
@@ -68,6 +70,11 @@ func (m *MBPlugin) Start() error {
 	ccds := sets.NewInt(maps.Keys(m.ccdToDomain)...)
 	if err := m.planAllocator.Reset(context.Background(), ccds); err != nil {
 		general.Errorf("mbm: reset resctrl FS on start failed: %v", err)
+	}
+
+	if m.resetResctrlOnly {
+		general.Infof("mbm: to end after reset resctrl state")
+		return nil
 	}
 
 	m.chStop = make(chan struct{})
@@ -138,7 +145,8 @@ func (m *MBPlugin) run() {
 	general.InfofV(6, "[mbm] plugin run end")
 }
 
-func newMBPlugin(ccdMinMB, ccdMaxMB int, defaultDomainCapacity int, capPercent int,
+func newMBPlugin(resetResctrlOnly bool,
+	ccdMinMB, ccdMaxMB int, defaultDomainCapacity int, capPercent int,
 	domains domain.Domains, xDomGroups []string, groupNeverThrottles []string,
 	groupCapacities map[string]int, metricFetcher metrictypes.MetricsFetcher,
 	planAllocator allocator.PlanAllocator, emitPool metricspool.MetricsEmitterPool,
@@ -147,11 +155,12 @@ func newMBPlugin(ccdMinMB, ccdMaxMB int, defaultDomainCapacity int, capPercent i
 	general.Infof("[mbm] initialization: ccd-to-domain mapping %v", ccdMappings)
 	emitter := emitPool.GetDefaultMetricsEmitter().WithTags(metricName)
 	return &MBPlugin{
-		emitter:     emitter,
-		ccdToDomain: ccdMappings,
-		xDomGroups:  sets.NewString(xDomGroups...),
-		domains:     domains,
-		reader:      reader.New(metricFetcher),
+		resetResctrlOnly: resetResctrlOnly,
+		emitter:          emitter,
+		ccdToDomain:      ccdMappings,
+		xDomGroups:       sets.NewString(xDomGroups...),
+		domains:          domains,
+		reader:           reader.New(metricFetcher),
 		advisor: advisor.New(emitter, domains, ccdMinMB, ccdMaxMB, defaultDomainCapacity, capPercent,
 			xDomGroups, groupNeverThrottles, groupCapacities,
 		),

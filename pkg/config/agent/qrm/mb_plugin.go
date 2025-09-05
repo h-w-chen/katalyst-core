@@ -31,6 +31,10 @@ type MBQRMPluginConfig struct {
 	NoThrottleGroups []string
 	// CrossDomainGroups are groups that share resource across resource domains with significant remote usages
 	CrossDomainGroups []string
+
+	// ResetResctrlOnly to ensure resctrl FS schemata files in default mode and quit,
+	// to guarantee proper cleaned-up state
+	ResetResctrlOnly bool
 }
 
 func NewMBQRMPluginConfig() *MBQRMPluginConfig {

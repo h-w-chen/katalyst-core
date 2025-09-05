@@ -88,7 +88,8 @@ func NewGenericPolicy(agentCtx *agent.GenericContext, conf *config.Configuration
 
 	metricsFetcher := agentCtx.MetaServer.MetricsFetcher
 	planAllocator := allocator.New()
-	mbPlugin := newMBPlugin(ccdMinMB, ccdMaxMB,
+	mbPlugin := newMBPlugin(conf.ResetResctrlOnly,
+		ccdMinMB, ccdMaxMB,
 		defaultMBDomainCapacity, mbCapLimitPercent, domains,
 		xDomGroups, groupNeverThrottles, groupCapacities,
 		metricsFetcher, planAllocator, agentCtx.EmitterPool)
