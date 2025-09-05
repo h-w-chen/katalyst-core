@@ -174,9 +174,9 @@ func Test_resctrlAllocator_getResetPlan(t *testing.T) {
 
 	dummyFS := afero.NewMemMapFs()
 	_ = dummyFS.MkdirAll("/sys/fs/resctrl/", 0o755)
-	_ = afero.WriteFile(dummyFS, "/sys/fs/resctrl/schemata", []byte(`dummy`), 0644)
-	_ = afero.WriteFile(dummyFS, "/sys/fs/resctrl/shared-50/schemata", []byte(`dummy`), 0644)
-	_ = afero.WriteFile(dummyFS, "/sys/fs/resctrl/info/last_cmd_status", []byte(`dummy`), 0644)
+	_ = afero.WriteFile(dummyFS, "/sys/fs/resctrl/schemata", []byte(`dummy`), 0o644)
+	_ = afero.WriteFile(dummyFS, "/sys/fs/resctrl/shared-50/schemata", []byte(`dummy`), 0o644)
+	_ = afero.WriteFile(dummyFS, "/sys/fs/resctrl/info/last_cmd_status", []byte(`dummy`), 0o644)
 
 	type fields struct {
 		fs afero.Fs
