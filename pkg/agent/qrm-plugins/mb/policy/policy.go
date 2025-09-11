@@ -68,8 +68,8 @@ func NewGenericPolicy(agentCtx *agent.GenericContext, conf *config.Configuration
 	general.Infof("[mbm] config: min ccd mb %d MB", conf.MinCCDMB)
 	general.Infof("[mbm] config: max ccd mb %d MB", conf.MaxCCDMB)
 	general.Infof("[mbm] config: domain alient incoming mb limit %d MB", conf.MaxIncomingRemoteMB)
-	general.Infof("[mbm] config: mb cap limit percent %d %%", conf.MBCapLimitPercent)
-	general.Infof("[mbm] config: mb actibe traffic mb threshold %d", conf.ActiveTrafficMBThreshold)
+	general.Infof("[mbm] config: mb cap limit percent %d %", conf.MBCapLimitPercent)
+	general.Infof("[mbm] config: mb active traffic mb threshold %d", conf.ActiveTrafficMBThreshold)
 	general.Infof("[mbm] config: no-throtlle groups %v", conf.NoThrottleGroups)
 	general.Infof("[mbm] config: cross-domain groups %v", conf.CrossDomainGroups)
 
