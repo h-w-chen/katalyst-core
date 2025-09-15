@@ -37,7 +37,7 @@ const (
 	namePlanUpdate                = "mbm_plan_update"
 )
 
-func (d *domainAdvisor) emitDomIncomingStatMetrics(domLimits map[int]*resource.MBGroupIncomingStat) {
+func (d *domainAdvisor) emitDomIncomingStatSummaryMetrics(domLimits map[int]*resource.MBGroupIncomingStat) {
 	for domID, limit := range domLimits {
 		tags := map[string]string{
 			"domain": fmt.Sprintf("%d", domID),
@@ -46,6 +46,11 @@ func (d *domainAdvisor) emitDomIncomingStatMetrics(domLimits map[int]*resource.M
 		emitKV(d.emitter, nameMBMCapacity, limit.CapacityInMB, tags)
 		emitKV(d.emitter, nameMBMFree, limit.FreeInMB, tags)
 	}
+}
+
+func (d *domainAdvisor) emitStatsMtrics(domainsMon *monitor.DomainStats) {
+	d.emitOutgoingStats(domainsMon.Outgoings)
+	d.emitIncomingStats(domainsMon.Incomings)
 }
 
 func (d *domainAdvisor) emitIncomingStats(incomings map[int]monitor.DomainMonStat) {

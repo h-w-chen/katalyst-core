@@ -60,8 +60,7 @@ type domainAdvisor struct {
 }
 
 func (d *domainAdvisor) GetPlan(ctx context.Context, domainsMon *monitor.DomainStats) (*plan.MBPlan, error) {
-	d.emitOutgoingStats(domainsMon.Outgoings)
-	d.emitIncomingStats(domainsMon.Incomings)
+	d.emitStatsMtrics(domainsMon)
 
 	// identify mb incoming usage etc since the capacity applies to incoming traffic
 	domIncomingInfo, err := d.calcIncomingDomainStats(ctx, domainsMon)
@@ -72,7 +71,7 @@ func (d *domainAdvisor) GetPlan(ctx context.Context, domainsMon *monitor.DomainS
 		domTotalMBs := getDomainTotalMBs(domIncomingInfo)
 		general.InfofV(6, "[mbm] [advisor] domains incoming total: %v", domTotalMBs)
 	}
-	d.emitDomIncomingStatMetrics(domIncomingInfo)
+	d.emitDomIncomingStatSummaryMetrics(domIncomingInfo)
 
 	// based on mb incoming usage info, decide incoming quotas (i.e. targets)
 	domIncomingQuotas := d.getIncomingDomainQuotas(ctx, domIncomingInfo)
