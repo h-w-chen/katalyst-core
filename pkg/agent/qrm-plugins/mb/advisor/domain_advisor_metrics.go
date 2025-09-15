@@ -71,7 +71,7 @@ func (d *domainAdvisor) emitStat(stats map[int]monitor.DomainMonStat, metricName
 					"group":  group,
 					"ccd":    fmt.Sprintf("%d", ccd),
 				}
-				emitKV(d.emitter, nameMBMIncomingStat, v.TotalMB, tags)
+				emitKV(d.emitter, metricName, v.TotalMB, tags)
 			}
 		}
 	}
