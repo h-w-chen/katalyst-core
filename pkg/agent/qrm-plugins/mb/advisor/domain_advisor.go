@@ -60,6 +60,9 @@ type domainAdvisor struct {
 }
 
 func (d *domainAdvisor) GetPlan(ctx context.Context, domainsMon *monitor.DomainStats) (*plan.MBPlan, error) {
+	d.emitOutgoingStats(domainsMon.Outgoings)
+	d.emitIncomingStats(domainsMon.Incomings)
+
 	// identify mb incoming usage etc since the capacity applies to incoming traffic
 	domIncomingInfo, err := d.calcIncomingDomainStats(ctx, domainsMon)
 	if err != nil {
