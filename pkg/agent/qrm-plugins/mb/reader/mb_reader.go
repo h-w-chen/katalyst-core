@@ -35,6 +35,7 @@ import (
 const (
 	tolerationTime = 3 * time.Second
 	rootGroup      = "root"
+	maxCCDTotalMB  = 50_000
 )
 
 // LocalIsVictimAndTotalIsAllRead indicates special settings of resctrl controlling reg1 & reg2 which yield
@@ -208,6 +209,10 @@ func calcGroupMBRate(newCounter, oldCounter []malachitetypes.MBCCDStat, msElapse
 			// we know the total including victim; no idea how much the local and remote really are
 			// assuming all is local as this seems fine except for non-SNB
 			rateTotalMB += rateLocalMB
+			if rateTotalMB > maxCCDTotalMB {
+				return nil, fmt.Errorf("skip invalid mb cal: ccd %v, total %v, locval as victim",
+					ccd, rateTotalMB)
+			}
 			rateLocalMB = rateTotalMB
 		}
 
