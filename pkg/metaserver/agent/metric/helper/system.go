@@ -140,18 +140,20 @@ func GetNumaAvgMBWCapacityMap(metricsFetcher types.MetricsFetcher, numaMBWMap ma
 }
 
 func GetNumaAvgMBWAllocatableMap(metricsFetcher types.MetricsFetcher, siblingNumaInfo *machine.SiblingNumaInfo, numaMBWCapacityMap map[int]int64) map[int]int64 {
-	var allocatableRate float64
-	cpuCodeName := GetCpuCodeName(metricsFetcher)
-
-	if val, ok := siblingNumaInfo.SiblingNumaAvgMBWAllocatableRateMap[cpuCodeName]; ok {
-		allocatableRate = val
-	} else {
-		allocatableRate = siblingNumaInfo.SiblingNumaDefaultMBWAllocatableRate
-	}
+	allocatableRate := GetMemBDWAllocRate(metricsFetcher, siblingNumaInfo)
 
 	numaMBWAllocatableMap := make(map[int]int64)
 	for numaID, capacity := range numaMBWCapacityMap {
 		numaMBWAllocatableMap[numaID] = int64(float64(capacity) * allocatableRate)
 	}
 	return numaMBWAllocatableMap
+}
+
+func GetMemBDWAllocRate(metricsFetcher types.MetricsFetcher, siblingNumaInfo *machine.SiblingNumaInfo) float64 {
+	cpuCodeName := GetCpuCodeName(metricsFetcher)
+	if val, ok := siblingNumaInfo.SiblingNumaAvgMBWAllocatableRateMap[cpuCodeName]; ok {
+		return val
+	}
+
+	return siblingNumaInfo.SiblingNumaDefaultMBWAllocatableRate
 }

@@ -25,6 +25,7 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/reader"
 	"github.com/kubewharf/katalyst-core/pkg/config"
+	"github.com/kubewharf/katalyst-core/pkg/metaserver/agent/metric/helper"
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
 )
 
@@ -49,7 +50,9 @@ func NewGenericPolicy(agentCtx *agent.GenericContext, conf *config.Configuration
 		return false, nil, nil
 	}
 
-	defaultMBDomainCapacity := int(agentCtx.KatalystMachineInfo.SiblingNumaMBWAllocatable) / 1024 / 1024
+	// determine the allocatable capacity of mem bandwidth for one 'physical' numa (i.e. domain)
+	allocRate := helper.GetMemBDWAllocRate(agentCtx.MetricsFetcher, agentCtx.KatalystMachineInfo.SiblingNumaInfo)
+	defaultMBDomainCapacity := int(float64(agentCtx.KatalystMachineInfo.SiblingNumaMBWCapacity)*allocRate) / 1024 / 1024
 	if defaultMBDomainCapacity < minMBCapacity {
 		general.Infof("[mbm] invalid domain mb capacity %d as configured; not to enable mbm", defaultMBDomainCapacity)
 		return false, nil, nil
@@ -63,7 +66,7 @@ func NewGenericPolicy(agentCtx *agent.GenericContext, conf *config.Configuration
 		}
 	}
 
-	general.Infof("[mbm] config: default mb domain capacity %d MB (machineInfo SiblingNumaMBWAllocatable)",
+	general.Infof("[mbm] config: default mb domain allocatable capacity %d MB (alloc part of machineInfo SiblingNumaMBWCapacity)",
 		defaultMBDomainCapacity)
 	general.Infof("[mbm] config: group customized capacities %v", conf.DomainGroupAwareCapacity)
 	general.Infof("[mbm] config: min ccd mb %d MB", conf.MinCCDMB)
