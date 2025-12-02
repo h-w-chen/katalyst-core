@@ -106,7 +106,7 @@ func applyDiscount(cpuQuantity resource.Quantity, discount float64) resource.Qua
 func (d *discountDecorator) GetHeadroom() (resource.Quantity, map[int]resource.Quantity, error) {
 	currentDiscount, err := d.discounter.GetDiscount()
 	if err != nil {
-		general.Warningf("unable to determine current discount; apply no discount instead")
+		general.Warningf("unable to determine current discount; apply no discount instead: %s", err)
 		return d.inner.GetHeadroom()
 	}
 
