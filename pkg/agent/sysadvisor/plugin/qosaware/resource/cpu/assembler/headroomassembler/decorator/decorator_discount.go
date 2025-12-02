@@ -50,6 +50,7 @@ func NewAssemblerDiscountDecorator(inner headroomassembler.HeadroomAssembler,
 			conf:        conf,
 			discounts:   discounts,
 		},
+		emitter: emitter,
 	}
 }
 
@@ -109,17 +110,20 @@ func (d *discountDecorator) GetHeadroom() (resource.Quantity, map[int]resource.Q
 		general.Warningf("unable to determine current discount; apply no discount instead: %s", err)
 		return d.inner.GetHeadroom()
 	}
+	general.InfofV(6, "headroom discount=%f", currentDiscount)
 
 	headroom, numaHeadrooms, err := d.inner.GetHeadroom()
 	if err != nil || currentDiscount >= 1.0 {
 		return headroom, numaHeadrooms, err
 	}
+	general.InfofV(6, "headroom original %v, %v", headroom, numaHeadrooms)
 
 	discountHeadroom := applyDiscount(headroom, currentDiscount)
 	discountNumaHeadrooms := make(map[int]resource.Quantity)
 	for numa, numaHeadroom := range numaHeadrooms {
 		discountNumaHeadrooms[numa] = applyDiscount(numaHeadroom, currentDiscount)
 	}
+	general.InfofV(6, "headroom discount %v, %v", discountHeadroom, discountHeadroom)
 
 	// calc headroom loss and emit metrics
 	lossHeadroomMilli := headroom.MilliValue() - discountHeadroom.MilliValue()
