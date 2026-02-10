@@ -52,6 +52,7 @@ type MBOptions struct {
 	CrossDomainGroups              []string
 	ResetResctrlOnly               bool
 	LocalIsVictimAndTotalIsAllRead bool
+	EqGroupsEnhancedAdvisor        bool
 }
 
 func NewMBOptions() *MBOptions {
@@ -62,6 +63,7 @@ func NewMBOptions() *MBOptions {
 		MBCapLimitPercent:        defaultMBCapLimitPercent,
 		ActiveTrafficMBThreshold: defaultMinActiveMB,
 		MaxIncomingRemoteMB:      defaultMaxIncomingRemoteMB,
+		EqGroupsEnhancedAdvisor:  true,
 	}
 }
 
@@ -89,6 +91,8 @@ func (o *MBOptions) AddFlags(fss *cliflag.NamedFlagSets) {
 		o.ResetResctrlOnly, "not to run mb plugin really, and only reset to ensure resctrl FS in default status")
 	fs.BoolVar(&o.LocalIsVictimAndTotalIsAllRead, "mb-local-is-victim",
 		o.LocalIsVictimAndTotalIsAllRead, "turn resctrl local as victim")
+	fs.BoolVar(&o.EqGroupsEnhancedAdvisor, "mb-enhanced-advisor",
+		o.EqGroupsEnhancedAdvisor, "use equality groups enhanced mb advisor")
 }
 
 func (o *MBOptions) ApplyTo(conf *qrm.MBQRMPluginConfig) error {
@@ -103,5 +107,6 @@ func (o *MBOptions) ApplyTo(conf *qrm.MBQRMPluginConfig) error {
 	conf.DomainGroupAwareCapacityPCT = o.DomainGroupAwareCapacityPCT
 	conf.ResetResctrlOnly = o.ResetResctrlOnly
 	conf.LocalIsVictimAndTotalIsAllRead = o.LocalIsVictimAndTotalIsAllRead
+	conf.EqGroupsEnhancedAdvisor = o.EqGroupsEnhancedAdvisor
 	return nil
 }

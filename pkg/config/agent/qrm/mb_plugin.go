@@ -38,6 +38,7 @@ type MBQRMPluginConfig struct {
 	ResetResctrlOnly bool
 
 	LocalIsVictimAndTotalIsAllRead bool
+	EqGroupsEnhancedAdvisor        bool
 }
 
 func NewMBQRMPluginConfig() *MBQRMPluginConfig {

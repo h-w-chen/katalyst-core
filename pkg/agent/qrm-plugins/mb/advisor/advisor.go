@@ -10,8 +10,10 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/metrics"
 )
 
+// EnhancedAdvisor is the advisor that treats resctrl groups of identical priority as if a logical group distributing
+// the ccd mb quotas among the real groups. It targets the scenarios where the groups of same priority don't share ccd.
 type EnhancedAdvisor struct {
-	inner domainAdvisor
+	inner Advisor
 }
 
 func (d *EnhancedAdvisor) GetPlan(ctx context.Context, domainsMon *monitor.DomainStats) (*plan.MBPlan, error) {
@@ -78,9 +80,12 @@ func NewEnhancedAdvisor(emitter metrics.MetricEmitter, domains domain.Domains, c
 	capPercent int, XDomGroups []string, groupNeverThrottles []string,
 	groupCapacity map[string]int,
 ) Advisor {
-	return NewDomainAdvisor(emitter, domains,
-		ccdMaxMB, ccdMaxMB,
+	innerAdvisor := NewDomainAdvisor(emitter, domains,
+		ccdMinMB, ccdMaxMB,
 		defaultDomainCapacity, capPercent,
 		XDomGroups, groupNeverThrottles,
 		groupCapacity)
+	return &EnhancedAdvisor{
+		inner: innerAdvisor,
+	}
 }

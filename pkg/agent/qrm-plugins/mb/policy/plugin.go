@@ -120,7 +120,19 @@ func (m *MBPlugin) Start() (err error) {
 	}
 
 	// initializing advisor field is deferred as qos group mb capacities is known now
-	m.advisor = advisor.NewEnhancedAdvisor(m.emitter, m.domains,
+	var advisorBuilder func(emitter metrics.MetricEmitter, domains domain.Domains, ccdMinMB, ccdMaxMB int, defaultDomainCapacity int,
+		capPercent int, XDomGroups []string, groupNeverThrottles []string,
+		groupCapacity map[string]int,
+	) advisor.Advisor
+	if m.conf.EqGroupsEnhancedAdvisor {
+		advisorBuilder = advisor.NewEnhancedAdvisor
+		general.Infof("mbm: use enhanced advior")
+	} else {
+		advisorBuilder = advisor.NewDomainAdvisor
+		general.Infof("mbm: use traditional advior")
+	}
+
+	m.advisor = advisorBuilder(m.emitter, m.domains,
 		m.conf.MinCCDMB, m.conf.MaxCCDMB,
 		defaultMBDomainCapacity, m.conf.MBCapLimitPercent,
 		m.conf.CrossDomainGroups, m.conf.MBQRMPluginConfig.NoThrottleGroups,
