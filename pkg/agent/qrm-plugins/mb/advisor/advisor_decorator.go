@@ -1,20 +1,37 @@
+/*
+Copyright 2022 The Katalyst Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package advisor
 
 import (
 	"context"
 	"strings"
 
-	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/domain"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/plan"
-	"github.com/kubewharf/katalyst-core/pkg/metrics"
 )
 
-type EnhancedAdvisor struct {
-	inner domainAdvisor
+// priorityGroupDecorator adapts with resctrl groups of identical priority as if a logical group.
+// It targets the scenarios where the groups of same priority don't share ccd.
+// todo: enhance to handle multiple groups of same priority sharing ccd
+type priorityGroupDecorator struct {
+	inner Advisor
 }
 
-func (d *EnhancedAdvisor) GetPlan(ctx context.Context, domainsMon *monitor.DomainStats) (*plan.MBPlan, error) {
+func (d *priorityGroupDecorator) GetPlan(ctx context.Context, domainsMon *monitor.DomainStats) (*plan.MBPlan, error) {
 	domainStats, groupInfos, err := d.combinedDomainStats(domainsMon)
 	if err != nil {
 		return nil, err
@@ -26,7 +43,7 @@ func (d *EnhancedAdvisor) GetPlan(ctx context.Context, domainsMon *monitor.Domai
 	return d.splitPlan(mbPlan, groupInfos), nil
 }
 
-func (d *EnhancedAdvisor) combinedDomainStats(domainsMon *monitor.DomainStats) (*monitor.DomainStats, *monitor.GroupInfo, error) {
+func (d *priorityGroupDecorator) combinedDomainStats(domainsMon *monitor.DomainStats) (*monitor.DomainStats, *monitor.GroupInfo, error) {
 	domainStats := &monitor.DomainStats{
 		Incomings:            make(map[int]monitor.DomainMonStat),
 		Outgoings:            make(map[int]monitor.DomainMonStat),
@@ -52,7 +69,7 @@ func (d *EnhancedAdvisor) combinedDomainStats(domainsMon *monitor.DomainStats) (
 	return domainStats, groupInfos, nil
 }
 
-func (d *EnhancedAdvisor) splitPlan(mbPlan *plan.MBPlan, groupInfos *monitor.GroupInfo) *plan.MBPlan {
+func (d *priorityGroupDecorator) splitPlan(mbPlan *plan.MBPlan, groupInfos *monitor.GroupInfo) *plan.MBPlan {
 	for groupKey, ccdPlan := range mbPlan.MBGroups {
 		if !strings.Contains(groupKey, "combined-") {
 			continue
@@ -74,13 +91,8 @@ func (d *EnhancedAdvisor) splitPlan(mbPlan *plan.MBPlan, groupInfos *monitor.Gro
 	return mbPlan
 }
 
-func NewEnhancedAdvisor(emitter metrics.MetricEmitter, domains domain.Domains, ccdMinMB, ccdMaxMB int, defaultDomainCapacity int,
-	capPercent int, XDomGroups []string, groupNeverThrottles []string,
-	groupCapacity map[string]int,
-) Advisor {
-	return NewDomainAdvisor(emitter, domains,
-		ccdMaxMB, ccdMaxMB,
-		defaultDomainCapacity, capPercent,
-		XDomGroups, groupNeverThrottles,
-		groupCapacity)
+func DecorateByPriorityGroup(advisor Advisor) Advisor {
+	return &priorityGroupDecorator{
+		inner: advisor,
+	}
 }

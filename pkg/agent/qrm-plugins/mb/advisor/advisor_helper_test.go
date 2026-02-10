@@ -22,10 +22,15 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/sets"
 
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/advisor/priority"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/advisor/resource"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/plan"
 )
+
+func init() {
+	priority.GetInstance().AddWeight("machine", 9_000)
+}
 
 func Test_maskPlanWithNoThrottles(t *testing.T) {
 	t.Parallel()
@@ -276,6 +281,8 @@ func Test_preProcessGroupInfo(t *testing.T) {
 				"combined-9000": {
 					0: {LocalMB: 10_000, RemoteMB: 5_000, TotalMB: 15_000},
 					1: {LocalMB: 8_000, RemoteMB: 4_000, TotalMB: 12_000},
+				},
+				"system": {
 					2: {LocalMB: 6_000, RemoteMB: 3_000, TotalMB: 9_000},
 				},
 			},
@@ -283,7 +290,6 @@ func Test_preProcessGroupInfo(t *testing.T) {
 				"combined-9000": {
 					"dedicated": {0: struct{}{}},
 					"machine":   {1: struct{}{}},
-					"system":    {2: struct{}{}},
 				},
 			},
 			wantErr: false,
@@ -425,8 +431,12 @@ func Test_preProcessGroupSumStat(t *testing.T) {
 			},
 			want: map[string][]monitor.MBInfo{
 				"combined-9000": {
-					{LocalMB: 10_000, RemoteMB: 5_000, TotalMB: 15_000},
-					{LocalMB: 7_000, RemoteMB: 3_500, TotalMB: 10_500},
+					{LocalMB: 8_000, RemoteMB: 4_000, TotalMB: 12_000},
+					{LocalMB: 6_000, RemoteMB: 3_000, TotalMB: 9_000},
+				},
+				"system": {
+					{LocalMB: 2_000, RemoteMB: 1_000, TotalMB: 3_000},
+					{LocalMB: 1_000, RemoteMB: 500, TotalMB: 1_500},
 				},
 			},
 		},
