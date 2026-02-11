@@ -112,6 +112,9 @@ func (d *domainAdvisor) GetPlan(ctx context.Context, domainsMon *monitor.DomainS
 	// finalize plan with never-throttle groups and ccb mb checks
 	checkedPlan := applyPlanCCDBoundsChecks(rawPlan, d.ccdMinMB, d.ccdMaxMB)
 	updatePlan := maskPlanWithNoThrottles(checkedPlan, d.groupNeverThrottles, d.getNoThrottleMB())
+	if klog.V(6).Enabled() {
+		general.InfofV(6, "[mbm] [advisor] mb plan update: %s", updatePlan)
+	}
 	d.emitUpdatePlan(updatePlan)
 
 	return updatePlan, nil
