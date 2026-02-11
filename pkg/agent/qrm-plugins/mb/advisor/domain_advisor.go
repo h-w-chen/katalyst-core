@@ -106,7 +106,13 @@ func (d *domainAdvisor) GetPlan(ctx context.Context, domainsMon *monitor.DomainS
 
 	// split outgoing mb to ccd level
 	groupedCCDOutgoingQuotas := d.distributeToCCDs(ctx, groupedDomainOutgoingQuotas, domainsMon.Outgoings)
+	if klog.V(6).Enabled() {
+		general.InfofV(6, "[mbm] [advisor] group-ccd outgoing quotas: %v", groupedCCDOutgoingQuotas)
+	}
 	rawPlan := convertToPlan(groupedCCDOutgoingQuotas)
+	if klog.V(6).Enabled() {
+		general.InfofV(6, "[mbm] [advisor] raw plan: %s", rawPlan)
+	}
 	d.emitRawPlan(rawPlan)
 
 	// finalize plan with never-throttle groups and ccb mb checks
