@@ -64,7 +64,6 @@ func NewMBOptions() *MBOptions {
 		MBCapLimitPercent:        defaultMBCapLimitPercent,
 		ActiveTrafficMBThreshold: defaultMinActiveMB,
 		MaxIncomingRemoteMB:      defaultMaxIncomingRemoteMB,
-		EnhancedAdvisor:          true,
 	}
 }
 
