@@ -64,6 +64,7 @@ func NewMBOptions() *MBOptions {
 		MBCapLimitPercent:        defaultMBCapLimitPercent,
 		ActiveTrafficMBThreshold: defaultMinActiveMB,
 		MaxIncomingRemoteMB:      defaultMaxIncomingRemoteMB,
+		EnhancedAdvisor:          true,
 	}
 }
 
@@ -91,8 +92,8 @@ func (o *MBOptions) AddFlags(fss *cliflag.NamedFlagSets) {
 		o.ResetResctrlOnly, "not to run mb plugin really, and only reset to ensure resctrl FS in default status")
 	fs.BoolVar(&o.LocalIsVictimAndTotalIsAllRead, "mb-local-is-victim",
 		o.LocalIsVictimAndTotalIsAllRead, "turn resctrl local as victim")
-	fs.BoolVar(&o.LocalIsVictimAndTotalIsAllRead, "mb-enhanced-advisor",
-		o.LocalIsVictimAndTotalIsAllRead, "use enhanced mb advisor")
+	fs.BoolVar(&o.EnhancedAdvisor, "mb-enhanced-advisor",
+		o.EnhancedAdvisor, "use enhanced mb advisor")
 }
 
 func (o *MBOptions) ApplyTo(conf *qrm.MBQRMPluginConfig) error {
