@@ -79,7 +79,7 @@ func NewEnhancedAdvisor(emitter metrics.MetricEmitter, domains domain.Domains, c
 	groupCapacity map[string]int,
 ) Advisor {
 	innerAdvisor := NewDomainAdvisor(emitter, domains,
-		ccdMaxMB, ccdMaxMB,
+		ccdMinMB, ccdMaxMB,
 		defaultDomainCapacity, capPercent,
 		XDomGroups, groupNeverThrottles,
 		groupCapacity)
