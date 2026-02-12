@@ -271,6 +271,10 @@ func (d *domainAdvisor) domainDistributeGroup(domID int, group string,
 		weights[ccd] = stat.TotalMB
 	}
 	domCCDQuotas := d.ccdDistribute.Distribute(domTotal, weights)
+	if klog.V(6).Enabled() {
+		general.InfofV(6, "[mbm] [advisor] domain %d, group %s, total %v, weights %v, distribute to ccd quotas: %v",
+			domID, group, domTotal, weights, domCCDQuotas)
+	}
 	result := map[int]int{}
 	for ccd, v := range domCCDQuotas {
 		result[ccd] = v
