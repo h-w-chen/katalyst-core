@@ -39,6 +39,7 @@ type MBQRMPluginConfig struct {
 
 	LocalIsVictimAndTotalIsAllRead bool
 	EqGroupsEnhancedAdvisor        bool
+	ExtraGroupPriorities           map[string]int
 }
 
 func NewMBQRMPluginConfig() *MBQRMPluginConfig {

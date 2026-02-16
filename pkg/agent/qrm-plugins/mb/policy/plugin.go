@@ -32,6 +32,7 @@ import (
 
 	"github.com/kubewharf/katalyst-core/cmd/katalyst-agent/app/agent"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/advisor"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/advisor/priority"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/allocator"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/domain"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
@@ -119,11 +120,14 @@ func (m *MBPlugin) Start() (err error) {
 		return nil
 	}
 
+	// ensure the extra resctrl groups registered with their priorities
+	for group, weight := range m.conf.ExtraGroupPriorities {
+		general.Infof("mbm: registering extra group %s, priority %d", group, weight)
+		priority.GetInstance().AddWeight(group, weight)
+	}
+
 	// initializing advisor field is deferred as qos group mb capacities is known now
-	var advisorBuilder func(emitter metrics.MetricEmitter, domains domain.Domains, ccdMinMB, ccdMaxMB int, defaultDomainCapacity int,
-		capPercent int, XDomGroups []string, groupNeverThrottles []string,
-		groupCapacity map[string]int,
-	) advisor.Advisor
+	var advisorBuilder advisor.Builder
 	if m.conf.EqGroupsEnhancedAdvisor {
 		advisorBuilder = advisor.NewEnhancedAdvisor
 		general.Infof("mbm: use enhanced advior")
