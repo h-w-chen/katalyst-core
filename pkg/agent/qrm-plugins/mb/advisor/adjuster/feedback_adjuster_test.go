@@ -65,3 +65,33 @@ func TestFeedbackAdjuster_AdjustOutgoingTargets(t *testing.T) {
 		})
 	}
 }
+
+func Test_feedback(t *testing.T) {
+	type args struct {
+		x0 int
+		x1 int
+		y1 int
+	}
+	tests := []struct {
+		name   string
+		args   args
+		wantY0 int
+	}{
+		{
+			name: "fixed-target feedback",
+			args: args{
+				x0: 306,
+				x1: 220,
+				y1: 306, // 306 as the fixed target
+			},
+			wantY0: 425,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if gotY0 := feedback(tt.args.x0, tt.args.x1, tt.args.y1); gotY0 != tt.wantY0 {
+				t.Errorf("feedback() = %v, want %v", gotY0, tt.wantY0)
+			}
+		})
+	}
+}

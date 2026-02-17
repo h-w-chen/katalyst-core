@@ -16,12 +16,14 @@ limitations under the License.
 
 package adjuster
 
+import "github.com/kubewharf/katalyst-core/pkg/util/general"
+
 type feedbackAdjuster struct {
 	prevValues []int
 }
 
 func feedback(x0, x1, y1 int) (y0 int) {
-	// assuming x0:y0 == x1:y1 to calculate y0 = (y1/x1) * x0
+	// assuming x0:x1 == y0:y1 to calculate y0 = (y1/x1) * x0
 	// where x[i] is the effective value to set, and y[i] the resultant usage being controlled by x[i]
 	if x1 == 0 || x0 == 0 {
 		return y1
@@ -35,9 +37,11 @@ func (f *feedbackAdjuster) AdjustOutgoingTargets(targets []int, currents []int) 
 	}
 
 	result := append([]int{}, targets...)
+	general.InfofV(6, "mbm:feedback prevValue %v, targets %v, currents %v", f.prevValues, targets, currents)
 	if len(f.prevValues) != 0 && len(f.prevValues) == len(currents) && len(targets) == len(currents) {
 		for i := range targets {
 			v := feedback(f.prevValues[i], currents[i], targets[i])
+			general.InfofV(6, "mbm:feedback i=%v, v=%v", i, v)
 			result[i] = v
 		}
 	}
