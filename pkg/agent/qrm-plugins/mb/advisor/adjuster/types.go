@@ -16,7 +16,7 @@ limitations under the License.
 
 package adjuster
 
-const minCapPercent = 25 // at least 25% as mb value cap
+const minCapPercent = 125 // at most 25% as mb value cap
 
 type Adjuster interface {
 	// AdjustOutgoingTargets yields the value to set in order to have the target for each domain,

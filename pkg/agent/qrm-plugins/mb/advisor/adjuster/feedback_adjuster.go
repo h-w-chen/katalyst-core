@@ -37,11 +37,10 @@ func (f *feedbackAdjuster) AdjustOutgoingTargets(targets []int, currents []int) 
 	}
 
 	result := append([]int{}, targets...)
-	general.InfofV(6, "mbm:feedback prevValue %v, targets %v, currents %v", f.prevValues, targets, currents)
 	if len(f.prevValues) != 0 && len(f.prevValues) == len(currents) && len(targets) == len(currents) {
 		for i := range targets {
 			v := feedback(f.prevValues[i], currents[i], targets[i])
-			general.InfofV(6, "mbm:feedback i=%v, v=%v, x0=%v, x1=%v, y1=%v", i, v, f.prevValues[i], currents[i], targets[i])
+			general.InfofV(6, "mbm:feedback domain=%v, quota=%v, prev_quota=%v, observed_usage=%v, target_usage=%v", i, v, f.prevValues[i], currents[i], targets[i])
 			result[i] = v
 		}
 	}

@@ -25,7 +25,7 @@ type capAdjuster struct {
 func (p *capAdjuster) AdjustOutgoingTargets(targets []int, currents []int) []int {
 	results := p.inner.AdjustOutgoingTargets(targets, currents)
 	for i := range results {
-		if results[i] < targets[i]*p.percentProportionLimit/100 {
+		if results[i] > targets[i]*p.percentProportionLimit/100 {
 			results[i] = targets[i] * p.percentProportionLimit / 100
 		}
 	}
