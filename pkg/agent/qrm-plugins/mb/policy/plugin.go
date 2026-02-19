@@ -32,6 +32,7 @@ import (
 
 	"github.com/kubewharf/katalyst-core/cmd/katalyst-agent/app/agent"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/advisor"
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/advisor/combined"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/advisor/priority"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/allocator"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/domain"
@@ -129,7 +130,7 @@ func (m *MBPlugin) Start() (err error) {
 	// initializing advisor field is deferred as qos group mb capacities is known now
 	var advisorBuilder advisor.Builder
 	if m.conf.EqGroupsEnhancedAdvisor {
-		advisorBuilder = advisor.NewEnhancedAdvisor
+		advisorBuilder = combined.NewEnhancedAdvisor
 		general.Infof("mbm: use enhanced advior")
 	} else {
 		advisorBuilder = advisor.NewDomainAdvisor

@@ -14,12 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package advisor
+package combined
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
+	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/advisor"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/domain"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/plan"
@@ -29,11 +31,11 @@ import (
 // EnhancedAdvisor is the advisor that treats resctrl groups of identical priority as if a logical group distributing
 // the ccd mb quotas among the real groups. It targets the scenarios where the groups of same priority don't share ccd.
 type EnhancedAdvisor struct {
-	inner Advisor
+	inner advisor.Advisor
 }
 
 func (d *EnhancedAdvisor) GetPlan(ctx context.Context, domainsMon *monitor.DomainStats) (*plan.MBPlan, error) {
-	domainStats, groupInfos, err := d.combinedDomainStats(domainsMon)
+	domainStats, groupInfos, err := d.combineDomainStats(domainsMon)
 	if err != nil {
 		return nil, err
 	}
@@ -44,30 +46,34 @@ func (d *EnhancedAdvisor) GetPlan(ctx context.Context, domainsMon *monitor.Domai
 	return d.splitPlan(mbPlan, groupInfos), nil
 }
 
-func (d *EnhancedAdvisor) combinedDomainStats(domainsMon *monitor.DomainStats) (*monitor.DomainStats, *monitor.GroupInfo, error) {
-	domainStats := &monitor.DomainStats{
+func (d *EnhancedAdvisor) combineDomainStats(domainsMon *monitor.DomainStats) (*monitor.DomainStats, *monitor.GroupInfo, error) {
+	combinedDomainStats := &monitor.DomainStats{
 		Incomings:            make(map[int]monitor.DomainMonStat),
 		Outgoings:            make(map[int]monitor.DomainMonStat),
 		OutgoingGroupSumStat: make(map[string][]monitor.MBInfo),
 	}
-	groupInfos := &monitor.GroupInfo{
+	combinedGroupInfo := &monitor.GroupInfo{
 		DomainGroups: make(map[int]monitor.DomainGroupMapping),
 	}
 	var err error
+
 	for id, domainMon := range domainsMon.Incomings {
-		domainStats.Incomings[id], groupInfos.DomainGroups[id], err = preProcessGroupInfo(domainMon)
+		combinedDomainStats.Incomings[id], combinedGroupInfo.DomainGroups[id], err = preProcessGroupInfo(domainMon)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, fmt.Errorf("failed to preProcessGroupInfo for incoming domain %d: %w", id, err)
 		}
 	}
+
 	for id, domainMon := range domainsMon.Outgoings {
-		domainStats.Outgoings[id], _, err = preProcessGroupInfo(domainMon)
+		combinedDomainStats.Outgoings[id], _, err = preProcessGroupInfo(domainMon)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, fmt.Errorf("failed to preProcessGroupInfo for incoming domain %d: %w", id, err)
 		}
 	}
-	domainStats.OutgoingGroupSumStat = preProcessGroupSumStat(domainsMon.OutgoingGroupSumStat)
-	return domainStats, groupInfos, nil
+
+	combinedDomainStats.OutgoingGroupSumStat = preProcessGroupSumStat(domainsMon.OutgoingGroupSumStat)
+
+	return combinedDomainStats, combinedGroupInfo, nil
 }
 
 func (d *EnhancedAdvisor) splitPlan(mbPlan *plan.MBPlan, groupInfos *monitor.GroupInfo) *plan.MBPlan {
@@ -95,8 +101,8 @@ func (d *EnhancedAdvisor) splitPlan(mbPlan *plan.MBPlan, groupInfos *monitor.Gro
 func NewEnhancedAdvisor(emitter metrics.MetricEmitter, domains domain.Domains, ccdMinMB, ccdMaxMB int, defaultDomainCapacity int,
 	capPercent int, XDomGroups []string, groupNeverThrottles []string,
 	groupCapacity map[string]int,
-) Advisor {
-	innerAdvisor := NewDomainAdvisor(emitter, domains,
+) advisor.Advisor {
+	innerAdvisor := advisor.NewDomainAdvisor(emitter, domains,
 		ccdMinMB, ccdMaxMB,
 		defaultDomainCapacity, capPercent,
 		XDomGroups, groupNeverThrottles,
