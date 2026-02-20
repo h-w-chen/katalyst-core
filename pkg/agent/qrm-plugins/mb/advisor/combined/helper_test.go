@@ -99,8 +99,8 @@ func Test_preProcessGroupInfo(t *testing.T) {
 			},
 			wantGroupInfos: monitor.DomainGroupMapping{
 				"combined-9000": {
-					"dedicated": {0: struct{}{}},
-					"machine":   {1: struct{}{}},
+					"dedicated": map[int]float64{0: 1.0},
+					"machine":   map[int]float64{1: 1.0},
 				},
 			},
 			wantErr: false,
@@ -129,8 +129,8 @@ func Test_preProcessGroupInfo(t *testing.T) {
 			},
 			wantGroupInfos: monitor.DomainGroupMapping{
 				"combined-9000": {
-					"dedicated": {0: struct{}{}},
-					"machine":   {1: struct{}{}},
+					"dedicated": map[int]float64{0: 1.0},
+					"machine":   map[int]float64{1: 1.0},
 				},
 			},
 			wantErr: false,
@@ -159,8 +159,31 @@ func Test_preProcessGroupInfo(t *testing.T) {
 			},
 			wantGroupInfos: monitor.DomainGroupMapping{
 				"combined-9000": {
-					"dedicated": {0: struct{}{}},
-					"machine":   {1: struct{}{}},
+					"dedicated": map[int]float64{0: 1.0},
+					"machine":   map[int]float64{1: 1.0},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "same weight, overlapped ccds",
+			stats: monitor.GroupMBStats{
+				"dedicated": {
+					0: {LocalMB: 10_000, RemoteMB: 5_000, TotalMB: 15_000},
+				},
+				"machine": {
+					0: {LocalMB: 8_000, RemoteMB: 4_000, TotalMB: 12_000},
+				},
+			},
+			wantResult: monitor.GroupMBStats{
+				"combined-9000": {
+					0: {LocalMB: 18_000, RemoteMB: 9_000, TotalMB: 27_000},
+				},
+			},
+			wantGroupInfos: monitor.DomainGroupMapping{
+				"combined-9000": {
+					"dedicated": map[int]float64{0: 0.55},
+					"machine":   map[int]float64{0: 0.44},
 				},
 			},
 			wantErr: false,

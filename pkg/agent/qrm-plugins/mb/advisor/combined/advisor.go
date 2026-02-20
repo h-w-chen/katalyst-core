@@ -83,12 +83,12 @@ func (d *EnhancedAdvisor) splitPlan(mbPlan *plan.MBPlan, groupInfos *monitor.Gro
 		}
 		for _, domainGroupInfos := range groupInfos.DomainGroups {
 			for group, groupInfo := range domainGroupInfos[groupKey] {
-				for ccd := range groupInfo {
+				for ccd, weight := range groupInfo {
 					if _, exists := ccdPlan[ccd]; exists {
 						if mbPlan.MBGroups[group] == nil {
 							mbPlan.MBGroups[group] = make(plan.GroupCCDPlan)
 						}
-						mbPlan.MBGroups[group][ccd] = ccdPlan[ccd]
+						mbPlan.MBGroups[group][ccd] = int(float64(ccdPlan[ccd]) * weight)
 					}
 				}
 			}

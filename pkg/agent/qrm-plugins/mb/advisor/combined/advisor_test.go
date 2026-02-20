@@ -186,8 +186,8 @@ func Test_EnhancedAdvisor_combinedDomainStats(t *testing.T) {
 				DomainGroups: map[int]monitor.DomainGroupMapping{
 					0: {
 						"combined-9000": {
-							"dedicated": {0: struct{}{}},
-							"machine":   {1: struct{}{}},
+							"dedicated": map[int]float64{0: 1.0},
+							"machine":   map[int]float64{1: 1.0},
 						},
 					},
 				},
@@ -284,14 +284,14 @@ func Test_EnhancedAdvisor_combinedDomainStats(t *testing.T) {
 				DomainGroups: map[int]monitor.DomainGroupMapping{
 					0: {
 						"combined-9000": {
-							"dedicated-60": {0: struct{}{}},
-							"machine-60":   {1: struct{}{}},
+							"dedicated-60": map[int]float64{0: 1.0},
+							"machine-60":   map[int]float64{1: 1.0},
 						},
 					},
 					1: {
 						"combined-9000": {
-							"dedicated-60": {2: struct{}{}},
-							"machine-60":   {3: struct{}{}},
+							"dedicated-60": map[int]float64{2: 1.0},
+							"machine-60":   map[int]float64{3: 1.0},
 						},
 					},
 				},
@@ -375,8 +375,8 @@ func Test_EnhancedAdvisor_combinedDomainStats(t *testing.T) {
 				DomainGroups: map[int]monitor.DomainGroupMapping{
 					0: {
 						"combined-9000": {
-							"dedicated-60": {0: struct{}{}},
-							"machine-60":   {1: struct{}{}},
+							"dedicated-60": map[int]float64{0: 1.0},
+							"machine-60":   map[int]float64{1: 1.0},
 						},
 					},
 				},
@@ -444,8 +444,8 @@ func Test_EnhancedAdvisor_splitPlan(t *testing.T) {
 				DomainGroups: map[int]monitor.DomainGroupMapping{
 					0: {
 						"combined-9000": {
-							"dedicated-60": {0: struct{}{}},
-							"machine-60":   {1: struct{}{}},
+							"dedicated-60": map[int]float64{0: 1.0},
+							"machine-60":   map[int]float64{1: 1.0},
 						},
 					},
 				},
@@ -469,8 +469,8 @@ func Test_EnhancedAdvisor_splitPlan(t *testing.T) {
 				DomainGroups: map[int]monitor.DomainGroupMapping{
 					0: {
 						"combined-9000": {
-							"dedicated-60": {0: struct{}{}},
-							"machine-60":   {1: struct{}{}},
+							"dedicated-60": map[int]float64{0: 1.0},
+							"machine-60":   map[int]float64{1: 1.0},
 						},
 					},
 				},
@@ -494,14 +494,14 @@ func Test_EnhancedAdvisor_splitPlan(t *testing.T) {
 				DomainGroups: map[int]monitor.DomainGroupMapping{
 					0: {
 						"combined-9000": {
-							"dedicated-60": {0: struct{}{}},
-							"machine-60":   {1: struct{}{}},
+							"dedicated-60": map[int]float64{0: 1.0},
+							"machine-60":   map[int]float64{1: 1.0},
 						},
 					},
 					1: {
 						"combined-9000": {
-							"dedicated-60": {2: struct{}{}},
-							"machine-60":   {3: struct{}{}},
+							"dedicated-60": map[int]float64{2: 1.0},
+							"machine-60":   map[int]float64{3: 1.0},
 						},
 					},
 				},
@@ -524,8 +524,8 @@ func Test_EnhancedAdvisor_splitPlan(t *testing.T) {
 				DomainGroups: map[int]monitor.DomainGroupMapping{
 					0: {
 						"combined-9000": {
-							"dedicated-60": {0: struct{}{}},
-							"machine-60":   {1: struct{}{}},
+							"dedicated-60": map[int]float64{0: 1.0},
+							"machine-60":   map[int]float64{1: 1.0},
 						},
 					},
 				},
@@ -549,12 +549,12 @@ func Test_EnhancedAdvisor_splitPlan(t *testing.T) {
 				DomainGroups: map[int]monitor.DomainGroupMapping{
 					0: {
 						"combined-9000": {
-							"dedicated-60": {0: struct{}{}},
-							"machine-60":   {1: struct{}{}},
+							"dedicated-60": map[int]float64{0: 1.0},
+							"machine-60":   map[int]float64{1: 1.0},
 						},
 						"combined-1050": {
-							"share-50":     {2: struct{}{}},
-							"share-alt-50": {3: struct{}{}},
+							"share-50":     map[int]float64{2: 1.0},
+							"share-alt-50": map[int]float64{3: 1.0},
 						},
 					},
 				},
@@ -593,9 +593,9 @@ func Test_EnhancedAdvisor_splitPlan(t *testing.T) {
 				DomainGroups: map[int]monitor.DomainGroupMapping{
 					0: {
 						"combined-9000": {
-							"dedicated-60": {0: struct{}{}},
-							"machine-60":   {1: struct{}{}},
-							"system-60":    {2: struct{}{}},
+							"dedicated-60": map[int]float64{0: 1.0},
+							"machine-60":   map[int]float64{1: 1.0},
+							"system-60":    map[int]float64{2: 1.0},
 						},
 					},
 				},
@@ -605,6 +605,30 @@ func Test_EnhancedAdvisor_splitPlan(t *testing.T) {
 					"dedicated-60": {0: 5_000},
 					"machine-60":   {1: 4_000},
 					"system-60":    {2: 3_500},
+				},
+			},
+		},
+		{
+			name: "groups sharing-ccd get proper portions",
+			mbPlan: &plan.MBPlan{
+				MBGroups: map[string]plan.GroupCCDPlan{
+					"combined-9000": {1: 10_000},
+				},
+			},
+			groupInfos: &monitor.GroupInfo{
+				DomainGroups: map[int]monitor.DomainGroupMapping{
+					1: {
+						"combined-9000": {
+							"dedicated-60": map[int]float64{1: 0.55},
+							"machine-60":   map[int]float64{1: 0.44},
+						},
+					},
+				},
+			},
+			want: &plan.MBPlan{
+				MBGroups: map[string]plan.GroupCCDPlan{
+					"dedicated-60": {1: 5_500},
+					"machine-60":   {1: 4_400},
 				},
 			},
 		},

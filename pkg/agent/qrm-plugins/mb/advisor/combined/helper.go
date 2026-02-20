@@ -82,8 +82,10 @@ func combineGroupMBStats(stats monitor.GroupMBStats, combinedGroups map[string]s
 				continue
 			}
 			for ccd, mbInfo := range groupMB {
-				if mbInfo.TotalMB > combinedCCDMB[ccd].TotalMB {
-					combinedCCDMB[ccd] = mbInfo
+				combinedCCDMB[ccd] = monitor.MBInfo{
+					LocalMB:  combinedCCDMB[ccd].LocalMB + mbInfo.LocalMB,
+					RemoteMB: combinedCCDMB[ccd].RemoteMB + mbInfo.RemoteMB,
+					TotalMB:  combinedCCDMB[ccd].TotalMB + mbInfo.TotalMB,
 				}
 			}
 		}
@@ -93,24 +95,24 @@ func combineGroupMBStats(stats monitor.GroupMBStats, combinedGroups map[string]s
 	return combinedStats
 }
 
-func locateGroupCCDs(combinedGroupStats monitor.GroupMB, groups sets.String, groupStats monitor.GroupMBStats) map[string]sets.Int {
-	groupCCDs := make(map[string]sets.Int)
+// locateGroupCCDs locates the CCD set that groups dominate, i.e. one ccd could only of one group
+func locateGroupCCDs(combinedGroupStats monitor.GroupMB, groups sets.String, groupStats monitor.GroupMBStats) map[string]map[int]float64 {
+	groupCCDs := make(map[string]map[int]float64)
 
 	for ccd, mbInfo := range combinedGroupStats {
-		var maxGroup string
 		for group := range groups {
-			if groupStats[group][ccd].TotalMB == mbInfo.TotalMB {
-				maxGroup = group
+			if groupMBInfo, ok := groupStats[group][ccd]; ok {
+				weight := groupMBInfo.TotalMB * 100 / mbInfo.TotalMB
+				if weight == 0 {
+					continue
+				}
+
+				if _, exist := groupCCDs[group]; !exist {
+					groupCCDs[group] = make(map[int]float64)
+				}
+				groupCCDs[group][ccd] = 0.01 * float64(weight)
 			}
 		}
-
-		if len(maxGroup) == 0 {
-			continue
-		}
-		if _, exist := groupCCDs[maxGroup]; !exist {
-			groupCCDs[maxGroup] = make(sets.Int)
-		}
-		groupCCDs[maxGroup].Insert(ccd)
 	}
 
 	return groupCCDs
@@ -125,8 +127,8 @@ func preProcessGroupInfo(stats monitor.GroupMBStats) (monitor.GroupMBStats, moni
 	for combinedGroup, realGroups := range combinedGroups {
 		combinedGroupStat := combinedStats[combinedGroup]
 		combinedGroupCCDs[combinedGroup] = make(monitor.CombinedGroupMapping)
-		for group, ccds := range locateGroupCCDs(combinedGroupStat, realGroups, stats) {
-			combinedGroupCCDs[combinedGroup][group] = monitor.CCDSet(ccds)
+		for group, ccdWeights := range locateGroupCCDs(combinedGroupStat, realGroups, stats) {
+			combinedGroupCCDs[combinedGroup][group] = ccdWeights
 		}
 	}
 

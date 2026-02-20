@@ -52,7 +52,7 @@ type DomainGroupMapping map[string]CombinedGroupMapping
 type CombinedGroupMapping map[string]CCDSet
 
 // CCDSet represents a set of CCD IDs
-type CCDSet sets.Int
+type CCDSet map[int]float64
 
 // NewDomainStats splits group-style outgoing mb stat (as from resctrl mon-data) into corresponding domains,
 // and attributes incoming traffic from outgoings for the cross-domain groups
