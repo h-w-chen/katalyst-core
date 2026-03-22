@@ -387,7 +387,7 @@ func (m *EvictionManger) sync(ctx context.Context) {
 
 func (m *EvictionManger) collectEvictionResult(ctx context.Context, pods []*v1.Pod) (*evictionRespCollector, error) {
 	dynamicConfig := m.conf.GetDynamicConfiguration()
-	collector := newEvictionRespCollector(dynamicConfig.DryRun, m.conf, m.emitter)
+	collector := newEvictionRespCollector(dynamicConfig.AdminQoSConfiguration.DryRun, m.conf, m.emitter)
 	var errList []error
 
 	m.endpointLock.RLock()
@@ -405,7 +405,7 @@ func (m *EvictionManger) collectEvictionResult(ctx context.Context, pods []*v1.P
 			general.Errorf(" calling GetEvictPods of plugin: %s and getting nil resp", pluginName)
 		} else {
 			general.Infof(" GetEvictPods of plugin: %s with %d pods to evict", pluginName, len(getEvictResp.EvictPods))
-			collector.collectEvictPods(dynamicConfig.DryRun, pluginName, getEvictResp)
+			collector.collectEvictPods(dynamicConfig.AdminQoSConfiguration.DryRun, pluginName, getEvictResp)
 		}
 
 		metResp, err := ep.ThresholdMet(ctx, &pluginapi.GetThresholdMetRequest{
@@ -420,7 +420,7 @@ func (m *EvictionManger) collectEvictionResult(ctx context.Context, pods []*v1.P
 			continue
 		}
 
-		collector.collectMetThreshold(dynamicConfig.DryRun, pluginName, metResp)
+		collector.collectMetThreshold(dynamicConfig.AdminQoSConfiguration.DryRun, pluginName, metResp)
 	}
 	m.endpointLock.RUnlock()
 
@@ -497,9 +497,9 @@ func (m *EvictionManger) collectEvictionResult(ctx context.Context, pods []*v1.P
 		}
 
 		if forceEvict {
-			collector.collectTopEvictionPods(dynamicConfig.DryRun, pluginName, threshold, resp)
+			collector.collectTopEvictionPods(dynamicConfig.AdminQoSConfiguration.DryRun, pluginName, threshold, resp)
 		} else {
-			collector.collectTopSoftEvictionPods(dynamicConfig.DryRun, pluginName, threshold, resp)
+			collector.collectTopSoftEvictionPods(dynamicConfig.AdminQoSConfiguration.DryRun, pluginName, threshold, resp)
 		}
 
 	}

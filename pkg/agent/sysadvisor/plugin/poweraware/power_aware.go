@@ -33,6 +33,7 @@ import (
 	evictserver "github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/evictor/server"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/reader"
 	"github.com/kubewharf/katalyst-core/pkg/config"
+	"github.com/kubewharf/katalyst-core/pkg/config/agent/dynamic/crd"
 	"github.com/kubewharf/katalyst-core/pkg/config/agent/sysadvisor/poweraware"
 	"github.com/kubewharf/katalyst-core/pkg/metaserver"
 	metricspool "github.com/kubewharf/katalyst-core/pkg/metrics/metrics-pool"
@@ -78,9 +79,38 @@ func NewPowerAwarePlugin(
 ) (plugin.SysAdvisorPlugin, error) {
 	emitter := emitterPool.GetDefaultMetricsEmitter().WithTags(metricName)
 
+	// Add PowerAware dynamic config watcher
+	if err := metaServer.ConfigurationManager.AddConfigWatcher(crd.PowerAwareConfigurationGVR); err != nil {
+		return nil, err
+	}
+
+	// Get dynamic configuration
+	dynamicConfig := conf.GetDynamicConfiguration()
+	powerAwareConfig := dynamicConfig.PowerAwareConfiguration
+
+	// Use dynamic config for runtime-adjustable fields
+	dryRun := powerAwareConfig.DryRun
+	disablePowerPressureEvict := powerAwareConfig.DisablePowerPressureEvict
+	disablePowerCapping := powerAwareConfig.DisablePowerCapping
+
+	// Fall back to static config if dynamic config fields are not set
+	if !dryRun && conf.PowerAwarePluginConfiguration.DryRun {
+		dryRun = conf.PowerAwarePluginConfiguration.DryRun
+	}
+	if !disablePowerPressureEvict && conf.DisablePowerPressureEvict {
+		disablePowerPressureEvict = conf.DisablePowerPressureEvict
+	}
+	if !disablePowerCapping && conf.DisablePowerCapping {
+		disablePowerCapping = conf.DisablePowerCapping
+	}
+
+	// Static config fields (not dynamically configurable)
+	annotationKeyPrefix := conf.PowerAwarePluginConfiguration.AnnotationKeyPrefix
+	dvfsIndication := conf.PowerAwarePluginConfiguration.DVFSIndication
+
 	var err error
 	var podEvictor evictor.PodEvictor
-	if conf.DisablePowerPressureEvict {
+	if disablePowerPressureEvict {
 		podEvictor = evictor.NewNoopPodEvictor()
 	} else {
 		if podEvictor, err = evictserver.NewPowerPressureEvictionServer(conf, emitter); err != nil {
@@ -89,7 +119,7 @@ func NewPowerAwarePlugin(
 	}
 
 	var powerCapper capper.PowerCapper
-	if conf.DisablePowerCapping {
+	if disablePowerCapping {
 		powerCapper = capper.NewNoopCapper()
 	} else {
 		if powerCapper, err = capserver.NewPowerCapPlugin(conf, emitter); err != nil {
@@ -98,7 +128,7 @@ func NewPowerAwarePlugin(
 	}
 
 	var assessor assess.Assessor
-	if conf.PowerAwarePluginConfiguration.DVFSIndication == poweraware.DVFSIndicationPower {
+	if dvfsIndication == poweraware.DVFSIndicationPower {
 		general.Infof("pap: power as dvfs indication")
 		assessor = assess.NewPowerChangeAssessor(0, 0)
 	} else {
@@ -109,10 +139,10 @@ func NewPowerAwarePlugin(
 	powerReader := reader.NewMetricStorePowerReader(metaServer)
 	percentageEvictor := evictor.NewPowerLoadEvict(conf.QoSConfiguration, emitter, metaServer.PodFetcher, podEvictor)
 	powerStrategy := strategy.NewEvictFirstStrategy(emitter, percentageEvictor, metaServer, powerCapper, assessor)
-	reconciler := advisor.NewReconciler(conf.PowerAwarePluginConfiguration.DryRun, emitter,
+	reconciler := advisor.NewReconciler(dryRun, emitter,
 		percentageEvictor, powerCapper, powerStrategy)
-	powerAdvisor := advisor.NewAdvisor(conf.PowerAwarePluginConfiguration.DryRun,
-		conf.PowerAwarePluginConfiguration.AnnotationKeyPrefix,
+	powerAdvisor := advisor.NewAdvisor(dryRun,
+		annotationKeyPrefix,
 		podEvictor,
 		emitter,
 		metaServer.NodeFetcher,
