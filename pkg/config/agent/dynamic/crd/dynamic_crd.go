@@ -23,8 +23,9 @@ import (
 )
 
 const (
-	ResourceKindAdminQoSConfiguration = "AdminQoSConfiguration"
-	ResourceKindAuthConfiguration     = "AuthConfiguration"
+	ResourceKindAdminQoSConfiguration   = "AdminQoSConfiguration"
+	ResourceKindAuthConfiguration       = "AuthConfiguration"
+	ResourceKindPowerAwareConfiguration = "PowerAwareConfiguration"
 )
 
 // DynamicConfigCRD records all those configurations defined by CRD
@@ -37,6 +38,7 @@ type DynamicConfigCRD struct {
 	TransparentMemoryOffloadingConfiguration *v1alpha1.TransparentMemoryOffloadingConfiguration
 	StrategyGroup                            *v1alpha1.StrategyGroup
 	IRQTuningConfiguration                   *v1alpha1.IRQTuningConfiguration
+	PowerAwareConfiguration                  *v1alpha1.PowerAwareConfiguration
 }
 
 var (
@@ -50,4 +52,6 @@ var (
 	StrategyGroupGVR = metav1.GroupVersionResource(v1alpha1.SchemeGroupVersion.WithResource(v1alpha1.ResourceNameStrategyGroups))
 	// IRQTuningConfigurationGVR is the group version resource for IRQTuningConfiguration
 	IRQTuningConfigurationGVR = metav1.GroupVersionResource(v1alpha1.SchemeGroupVersion.WithResource(v1alpha1.ResourceNameIRQTuningConfigurations))
+	// PowerAwareConfigurationGVR is the group version resource for PowerAwareConfiguration
+	PowerAwareConfigurationGVR = metav1.GroupVersionResource(v1alpha1.SchemeGroupVersion.WithResource(v1alpha1.ResourceNamePowerAwareConfigurations))
 )
