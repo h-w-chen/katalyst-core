@@ -24,6 +24,6 @@ import (
 )
 
 func IsPluginInDryRun(pluginName string, dynamicConf *dynamic.DynamicAgentConfiguration) bool {
-	dryRunPlugins := dynamicConf.GetDynamicConfiguration().DryRun
+	dryRunPlugins := dynamicConf.GetDynamicConfiguration().AdminQoSConfiguration.DryRun
 	return general.IsNameEnabled(pluginName, sets.String{}, dryRunPlugins)
 }
