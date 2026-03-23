@@ -70,7 +70,7 @@ func (p powerAwarePlugin) Run(ctx context.Context) {
 
 	dynamicConfig := _conf.GetDynamicConfiguration()
 	powerAwareConfig := dynamicConfig.PowerAwareConfiguration
-	general.InfofV(6, "pap: NewPowerAwarePlugin: powerAwareConfig=%v", powerAwareConfig)
+	general.InfofV(6, "pap: Run: powerAwareConfig=%v", powerAwareConfig)
 
 	p.advisor.Run(ctx)
 	general.Infof("pap ran and finished")
@@ -92,8 +92,9 @@ func NewPowerAwarePlugin(
 	}
 
 	// Get dynamic configuration
-	// todo: replace this var to other means
+	// todo: replace vars to other means
 	_conf = conf
+	advisor.PAPConf = conf
 	dynamicConfig := _conf.GetDynamicConfiguration()
 	powerAwareConfig := dynamicConfig.PowerAwareConfiguration
 	general.InfofV(6, "pap: NewPowerAwarePlugin: powerAwareConfig=%v", powerAwareConfig)
