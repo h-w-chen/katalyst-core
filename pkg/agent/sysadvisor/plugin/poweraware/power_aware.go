@@ -42,6 +42,8 @@ import (
 
 const metricName = "poweraware-advisor-plugin"
 
+var _conf *config.Configuration
+
 type powerAwarePlugin struct {
 	name    string
 	dryRun  bool
@@ -65,6 +67,11 @@ func (p powerAwarePlugin) Init() error {
 
 func (p powerAwarePlugin) Run(ctx context.Context) {
 	general.Infof("pap running")
+
+	dynamicConfig := _conf.GetDynamicConfiguration()
+	powerAwareConfig := dynamicConfig.PowerAwareConfiguration
+	general.InfofV(6, "pap: NewPowerAwarePlugin: powerAwareConfig=%v", powerAwareConfig)
+
 	p.advisor.Run(ctx)
 	general.Infof("pap ran and finished")
 }
@@ -85,8 +92,11 @@ func NewPowerAwarePlugin(
 	}
 
 	// Get dynamic configuration
-	dynamicConfig := conf.GetDynamicConfiguration()
+	// todo: replace this var to other means
+	_conf = conf
+	dynamicConfig := _conf.GetDynamicConfiguration()
 	powerAwareConfig := dynamicConfig.PowerAwareConfiguration
+	general.InfofV(6, "pap: NewPowerAwarePlugin: powerAwareConfig=%v", powerAwareConfig)
 
 	// Use dynamic config for runtime-adjustable fields
 	dryRun := powerAwareConfig.DryRun
