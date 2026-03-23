@@ -18,6 +18,7 @@ package advisor
 
 import (
 	"context"
+	"github.com/kubewharf/katalyst-core/pkg/config"
 	"time"
 
 	"github.com/pkg/errors"
@@ -122,7 +123,13 @@ func (p *powerAwareAdvisor) cleanup() {
 	}
 }
 
+var PAPConf *config.Configuration
+
 func (p *powerAwareAdvisor) run(ctx context.Context) {
+	dynamicConfig := PAPConf.GetDynamicConfiguration()
+	powerAwareConfig := dynamicConfig.PowerAwareConfiguration
+	general.InfofV(6, "pap: powerAwareAdvisor: run: powerAwareConfig=%v", powerAwareConfig)
+
 	powerSpec, err := p.specFetcher.GetPowerSpec(ctx)
 	if err != nil {
 		p.emitErrorCode(powermetric.ErrorCodePowerSpecFormat)
