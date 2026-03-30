@@ -20,6 +20,8 @@ import (
 	"context"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/util/sets"
+
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/plan"
 )
@@ -30,6 +32,20 @@ import (
 type priorityGroupDecorator struct {
 	inner Advisor
 }
+
+// groupInfo stores the mapping of groups and their CCDs for each domain
+type groupInfo struct { // DomainGroups maps domain ID -> combined group key -> original group key -> CCD IDs
+	DomainGroups map[int]domainGroupMapping
+}
+
+// domainGroupMapping maps combined group keys to their original groups
+type domainGroupMapping map[string]combinedGroupMapping
+
+// combinedGroupMapping maps original group keys to their CCD IDs
+type combinedGroupMapping map[string]ccdSet
+
+// ccdSet represents a set of CCD IDs
+type ccdSet = sets.Int
 
 func (d *priorityGroupDecorator) GetPlan(ctx context.Context, domainsMon *monitor.DomainStats) (*plan.MBPlan, error) {
 	domainStats, groupInfos, err := d.combinedDomainStats(domainsMon)
@@ -43,14 +59,14 @@ func (d *priorityGroupDecorator) GetPlan(ctx context.Context, domainsMon *monito
 	return d.splitPlan(mbPlan, groupInfos), nil
 }
 
-func (d *priorityGroupDecorator) combinedDomainStats(domainsMon *monitor.DomainStats) (*monitor.DomainStats, *monitor.GroupInfo, error) {
+func (d *priorityGroupDecorator) combinedDomainStats(domainsMon *monitor.DomainStats) (*monitor.DomainStats, *groupInfo, error) {
 	domainStats := &monitor.DomainStats{
 		Incomings:            make(map[int]monitor.DomainMonStat),
 		Outgoings:            make(map[int]monitor.DomainMonStat),
 		OutgoingGroupSumStat: make(map[string][]monitor.MBInfo),
 	}
-	groupInfos := &monitor.GroupInfo{
-		DomainGroups: make(map[int]monitor.DomainGroupMapping),
+	groupInfos := &groupInfo{
+		DomainGroups: make(map[int]domainGroupMapping),
 	}
 	var err error
 	for id, domainMon := range domainsMon.Incomings {
@@ -69,7 +85,7 @@ func (d *priorityGroupDecorator) combinedDomainStats(domainsMon *monitor.DomainS
 	return domainStats, groupInfos, nil
 }
 
-func (d *priorityGroupDecorator) splitPlan(mbPlan *plan.MBPlan, groupInfos *monitor.GroupInfo) *plan.MBPlan {
+func (d *priorityGroupDecorator) splitPlan(mbPlan *plan.MBPlan, groupInfos *groupInfo) *plan.MBPlan {
 	for groupKey, ccdPlan := range mbPlan.MBGroups {
 		if !strings.Contains(groupKey, "combined-") {
 			continue

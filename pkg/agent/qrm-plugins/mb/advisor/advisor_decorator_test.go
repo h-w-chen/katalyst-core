@@ -25,14 +25,14 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/plan"
 )
 
-func Test_EnhancedAdvisor_combinedDomainStats(t *testing.T) {
+func Test_priorityGroupDecorator_combinedDomainStats(t *testing.T) {
 	t.Parallel()
 	priority.GetInstance().AddWeight("machine", 9_000)
 	tests := []struct {
 		name          string
 		domainsMon    *monitor.DomainStats
 		wantStats     *monitor.DomainStats
-		wantGroupInfo *monitor.GroupInfo
+		wantGroupInfo *groupInfo
 		wantErr       bool
 	}{
 		{
@@ -113,8 +113,8 @@ func Test_EnhancedAdvisor_combinedDomainStats(t *testing.T) {
 					},
 				},
 			},
-			wantGroupInfo: &monitor.GroupInfo{
-				DomainGroups: map[int]monitor.DomainGroupMapping{
+			wantGroupInfo: &groupInfo{
+				DomainGroups: map[int]domainGroupMapping{
 					0: {},
 					1: {},
 				},
@@ -176,8 +176,8 @@ func Test_EnhancedAdvisor_combinedDomainStats(t *testing.T) {
 					},
 				},
 			},
-			wantGroupInfo: &monitor.GroupInfo{
-				DomainGroups: map[int]monitor.DomainGroupMapping{
+			wantGroupInfo: &groupInfo{
+				DomainGroups: map[int]domainGroupMapping{
 					0: {
 						"combined-9000": {
 							"dedicated": {0: struct{}{}},
@@ -209,12 +209,12 @@ func Test_EnhancedAdvisor_combinedDomainStats(t *testing.T) {
 	}
 }
 
-func Test_EnhancedAdvisor_splitPlan(t *testing.T) {
+func Test_priorityGroupDecorator_splitPlan(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
 		name       string
 		mbPlan     *plan.MBPlan
-		groupInfos *monitor.GroupInfo
+		groupInfos *groupInfo
 		want       *plan.MBPlan
 	}{
 		{
@@ -225,8 +225,8 @@ func Test_EnhancedAdvisor_splitPlan(t *testing.T) {
 					"machine-60":   {2: 6_000, 3: 5_500},
 				},
 			},
-			groupInfos: &monitor.GroupInfo{
-				DomainGroups: map[int]monitor.DomainGroupMapping{
+			groupInfos: &groupInfo{
+				DomainGroups: map[int]domainGroupMapping{
 					0: {},
 					1: {},
 				},
@@ -245,8 +245,8 @@ func Test_EnhancedAdvisor_splitPlan(t *testing.T) {
 					"combined-9000": {0: 5_000, 1: 4_000},
 				},
 			},
-			groupInfos: &monitor.GroupInfo{
-				DomainGroups: map[int]monitor.DomainGroupMapping{
+			groupInfos: &groupInfo{
+				DomainGroups: map[int]domainGroupMapping{
 					0: {
 						"combined-9000": {
 							"dedicated-60": {0: struct{}{}},
