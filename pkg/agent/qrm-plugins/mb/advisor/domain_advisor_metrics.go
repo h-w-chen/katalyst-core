@@ -37,7 +37,7 @@ const (
 	namePlanUpdate                = "mbm_plan_update"
 )
 
-func (d *domainAdvisor) emitDomIncomingStatSummaryMetrics(domLimits map[int]*resource.MBGroupIncomingStat) {
+func (d *basicAdvisor) emitDomIncomingStatSummaryMetrics(domLimits map[int]*resource.MBGroupIncomingStat) {
 	for domID, limit := range domLimits {
 		tags := map[string]string{
 			"domain": fmt.Sprintf("%d", domID),
@@ -48,20 +48,20 @@ func (d *domainAdvisor) emitDomIncomingStatSummaryMetrics(domLimits map[int]*res
 	}
 }
 
-func (d *domainAdvisor) emitStatsMtrics(domainsMon *monitor.DomainStats) {
+func (d *basicAdvisor) emitStatsMtrics(domainsMon *monitor.DomainStats) {
 	d.emitOutgoingStats(domainsMon.Outgoings)
 	d.emitIncomingStats(domainsMon.Incomings)
 }
 
-func (d *domainAdvisor) emitIncomingStats(incomings map[int]monitor.DomainMonStat) {
+func (d *basicAdvisor) emitIncomingStats(incomings map[int]monitor.DomainMonStat) {
 	d.emitStat(incomings, nameMBMIncomingStat)
 }
 
-func (d *domainAdvisor) emitOutgoingStats(outgoings map[int]monitor.DomainMonStat) {
+func (d *basicAdvisor) emitOutgoingStats(outgoings map[int]monitor.DomainMonStat) {
 	d.emitStat(outgoings, nameMBMOutgoingStat)
 }
 
-func (d *domainAdvisor) emitStat(stats map[int]monitor.DomainMonStat, metricName string) {
+func (d *basicAdvisor) emitStat(stats map[int]monitor.DomainMonStat, metricName string) {
 	for domId, monStat := range stats {
 		for group, ccdMBs := range monStat {
 			dom := fmt.Sprintf("%d", domId)
@@ -77,27 +77,27 @@ func (d *domainAdvisor) emitStat(stats map[int]monitor.DomainMonStat, metricName
 	}
 }
 
-func (d *domainAdvisor) emitIncomingTargets(groupedDomIncomingTargets map[string][]int) {
+func (d *basicAdvisor) emitIncomingTargets(groupedDomIncomingTargets map[string][]int) {
 	emitNamedGroupTargets(d.emitter, nameMBMIncomingTarget, groupedDomIncomingTargets)
 }
 
-func (d *domainAdvisor) emitOutgoingTargets(groupedDomOutgoingTargets map[string][]int) {
+func (d *basicAdvisor) emitOutgoingTargets(groupedDomOutgoingTargets map[string][]int) {
 	emitNamedGroupTargets(d.emitter, nameMBMOutgoingTarget, groupedDomOutgoingTargets)
 }
 
-func (d *domainAdvisor) emitAdjustedOutgoingTargets(groupedDomOutgoingTargets map[string][]int) {
+func (d *basicAdvisor) emitAdjustedOutgoingTargets(groupedDomOutgoingTargets map[string][]int) {
 	emitNamedGroupTargets(d.emitter, nameMBMAdjustedOutgoingTarget, groupedDomOutgoingTargets)
 }
 
-func (d *domainAdvisor) emitRawPlan(plan *plan.MBPlan) {
+func (d *basicAdvisor) emitRawPlan(plan *plan.MBPlan) {
 	d.emitPlanWithMetricName(plan, namePlanRaw)
 }
 
-func (d *domainAdvisor) emitUpdatePlan(plan *plan.MBPlan) {
+func (d *basicAdvisor) emitUpdatePlan(plan *plan.MBPlan) {
 	d.emitPlanWithMetricName(plan, namePlanUpdate)
 }
 
-func (d *domainAdvisor) emitPlanWithMetricName(plan *plan.MBPlan, metricName string) {
+func (d *basicAdvisor) emitPlanWithMetricName(plan *plan.MBPlan, metricName string) {
 	if plan == nil || len(plan.MBGroups) == 0 {
 		return
 	}
