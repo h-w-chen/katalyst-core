@@ -35,7 +35,8 @@ type pControllerAdvisor struct {
 	inner              Advisor
 	emitter            metrics.MetricEmitter
 
-	groupStates map[string]*groupPCtrlState
+	groupStates             map[string]*groupPCtrlState
+	lastCCDLimitSuppression map[int]map[string]map[int]string
 }
 
 type groupPCtrlState struct {
@@ -53,11 +54,33 @@ func (p *pControllerAdvisor) GetPlan(ctx context.Context, domainsMon *monitor.Do
 		p.restrictGroupCCDCap(group, state, domainsMon, result)
 	}
 
+	p.lastCCDLimitSuppression = p.getCCDLimitSuppression(domainsMon)
 	if p.emitter != nil {
-		emitCCDSuppressionTypes(p.emitter, p.getCCDLimitSuppression(domainsMon))
+		emitCCDSuppressionTypes(p.emitter, p.lastCCDLimitSuppression)
 	}
 
 	return result, nil
+}
+
+func (p *pControllerAdvisor) GetSuppressedCCDs() []SuppressedCCD {
+	innerSuppressed := p.inner.GetSuppressedCCDs()
+
+	var result []SuppressedCCD
+	for domID, groupCCDTypes := range p.lastCCDLimitSuppression {
+		for group, ccdTypes := range groupCCDTypes {
+			for ccdID, suppressionType := range ccdTypes {
+				result = append(result, SuppressedCCD{
+					DomID:           domID,
+					Group:           group,
+					CCDID:           ccdID,
+					SuppressionType: suppressionType,
+				})
+			}
+		}
+	}
+	result = append(result, innerSuppressed...)
+
+	return result
 }
 
 func (p *pControllerAdvisor) restrictGroupCCDCap(group string, groupState *groupPCtrlState,
