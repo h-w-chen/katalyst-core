@@ -268,6 +268,9 @@ func (m *MBPlugin) buildCCDToPodsMap() map[int]map[string]*corev1.Pod {
 
 	ccdToPods := make(map[int]map[string]*corev1.Pod)
 	podIndexer := make(map[string]*corev1.Pod)
+	if klog.V(6).Enabled() {
+		general.Infof("[mbm] cpuState.GetPodEntries(): %v", cpuState.GetPodEntries())
+	}
 	for podUID, containerEntries := range cpuState.GetPodEntries() {
 		for _, allocationInfo := range containerEntries {
 			if allocationInfo == nil {
@@ -325,7 +328,7 @@ func (m *MBPlugin) emitSuppressedPodsMetrics(suppressedCCDs []advisor.Suppressed
 func (m *MBPlugin) emitLoadSuppressionMetrics() {
 	suppressedCCDs := m.advisor.GetSuppressedCCDs()
 	if klog.V(6).Enabled() {
-		general.InfoS("[mbm] suppressed ccds: %v", suppressedCCDs)
+		general.Infof("[mbm] suppressed ccds: %v", suppressedCCDs)
 	}
 	if len(suppressedCCDs) == 0 {
 		return
@@ -333,7 +336,7 @@ func (m *MBPlugin) emitLoadSuppressionMetrics() {
 
 	ccdToPods := m.buildCCDToPodsMap()
 	if klog.V(6).Enabled() {
-		general.InfoS("[mbm] ccd to pod mappings: %v", ccdToPods)
+		general.Infof("[mbm] ccd to pod mappings: %v", ccdToPods)
 	}
 	if ccdToPods == nil {
 		return
