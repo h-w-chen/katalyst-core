@@ -324,11 +324,17 @@ func (m *MBPlugin) emitSuppressedPodsMetrics(suppressedCCDs []advisor.Suppressed
 
 func (m *MBPlugin) emitLoadSuppressionMetrics() {
 	suppressedCCDs := m.advisor.GetSuppressedCCDs()
+	if klog.V(6).Enabled() {
+		general.InfoS("[mbm] suppressed ccds: %v", suppressedCCDs)
+	}
 	if len(suppressedCCDs) == 0 {
 		return
 	}
 
 	ccdToPods := m.buildCCDToPodsMap()
+	if klog.V(6).Enabled() {
+		general.InfoS("[mbm] ccd to pod mappings: %v", ccdToPods)
+	}
 	if ccdToPods == nil {
 		return
 	}
