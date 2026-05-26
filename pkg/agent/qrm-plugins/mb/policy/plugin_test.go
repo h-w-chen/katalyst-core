@@ -31,6 +31,9 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/plan"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/reader"
+	"github.com/kubewharf/katalyst-core/pkg/config"
+	"github.com/kubewharf/katalyst-core/pkg/config/agent"
+	"github.com/kubewharf/katalyst-core/pkg/config/agent/eviction"
 	"github.com/kubewharf/katalyst-core/pkg/metrics"
 )
 
@@ -208,11 +211,20 @@ func TestEmitSuppressedPodsMetrics(t *testing.T) {
 				"namespace": "ns2",
 				"pod_name":  "pod-b",
 				"type":      "ccd_limit",
-				"psm":       "-",
 			})
 		})).Return(nil)
 
-	m := &MBPlugin{emitter: emitter}
+	conf := &config.Configuration{
+		AgentConfiguration: &agent.AgentConfiguration{
+			GenericAgentConfiguration: &agent.GenericAgentConfiguration{
+				GenericEvictionConfiguration: &eviction.GenericEvictionConfiguration{
+					PodMetricLabels: sets.NewString("psm"),
+				},
+			},
+		},
+	}
+
+	m := &MBPlugin{emitter: emitter, conf: conf}
 	m.emitSuppressedPodsMetrics(suppressedCCDs, ccdToPods)
 
 	mock.AssertExpectationsForObjects(t, emitter)
