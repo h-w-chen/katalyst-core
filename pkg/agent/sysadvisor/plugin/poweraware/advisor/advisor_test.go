@@ -26,8 +26,7 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/evictor"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/reader"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/spec"
-	"github.com/kubewharf/katalyst-core/pkg/config"
-	agentconf "github.com/kubewharf/katalyst-core/pkg/config/agent"
+	"github.com/kubewharf/katalyst-core/pkg/config/agent/dynamic"
 	"github.com/kubewharf/katalyst-core/pkg/metrics"
 	metricspool "github.com/kubewharf/katalyst-core/pkg/metrics/metrics-pool"
 )
@@ -107,11 +106,11 @@ type ctxKey string
 
 const ctxKeyTest ctxKey = "test"
 
-func testConf() *config.Configuration {
-	conf := &config.Configuration{
-		AgentConfiguration: agentconf.NewAgentConfiguration(),
-	}
-	conf.GetDynamicConfiguration().DisablePowerAdvisor = false
+func testConf() *dynamic.DynamicAgentConfiguration {
+	conf := dynamic.NewDynamicAgentConfiguration()
+	c := conf.GetDynamicConfiguration()
+	c.DisablePowerAdvisor = false
+	conf.SetDynamicConfiguration(c)
 	return conf
 }
 

@@ -111,7 +111,7 @@ func NewPowerAwarePlugin(
 	powerStrategy := strategy.NewEvictFirstStrategy(emitter, percentageEvictor, metaServer, powerCapper, assessor)
 	reconciler := advisor.NewReconciler(conf.PowerAwarePluginConfiguration.DryRun, emitter,
 		percentageEvictor, powerCapper, powerStrategy)
-	powerAdvisor := advisor.NewAdvisor(conf,
+	powerAdvisor := advisor.NewAdvisor(conf.DynamicAgentConfiguration,
 		conf.PowerAwarePluginConfiguration.DryRun,
 		conf.PowerAwarePluginConfiguration.AnnotationKeyPrefix,
 		podEvictor,

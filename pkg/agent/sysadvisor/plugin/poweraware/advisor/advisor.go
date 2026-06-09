@@ -29,7 +29,7 @@ import (
 	powermetric "github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/metric"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/reader"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/spec"
-	"github.com/kubewharf/katalyst-core/pkg/config"
+	"github.com/kubewharf/katalyst-core/pkg/config/agent/dynamic"
 	"github.com/kubewharf/katalyst-core/pkg/metaserver/agent/node"
 	"github.com/kubewharf/katalyst-core/pkg/metrics"
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
@@ -50,7 +50,7 @@ type PowerAwareAdvisor interface {
 }
 
 type powerAwareAdvisor struct {
-	conf        *config.Configuration
+	conf        *dynamic.DynamicAgentConfiguration
 	emitter     metrics.MetricEmitter
 	specFetcher spec.SpecFetcher
 	powerReader reader.PowerReader
@@ -126,6 +126,7 @@ func (p *powerAwareAdvisor) cleanup() {
 
 func (p *powerAwareAdvisor) run(ctx context.Context) {
 	if p.conf.GetDynamicConfiguration().DisablePowerAdvisor {
+		klog.V(6).Infof("pap: power advisor is disabled, skipping run")
 		return
 	}
 
@@ -179,7 +180,7 @@ func (p *powerAwareAdvisor) run(ctx context.Context) {
 	}
 }
 
-func NewAdvisor(conf *config.Configuration,
+func NewAdvisor(conf *dynamic.DynamicAgentConfiguration,
 	dryRun bool,
 	annotationKeyPrefix string,
 	podEvictor evictor.PodEvictor,
