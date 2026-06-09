@@ -77,6 +77,7 @@ func Test_powerAwarePlugin_Name(t *testing.T) {
 	)
 
 	stubAdvisor := advisor.NewAdvisor(
+		nil,
 		expectedDryRun,
 		"foo",
 		evictor.NewNoopPodEvictor(),
@@ -164,7 +165,7 @@ func Test_powerAwarePlugin_Init(t *testing.T) {
 			p := powerAwarePlugin{
 				name:   tt.fields.name,
 				dryRun: tt.fields.dryRun,
-				advisor: advisor.NewAdvisor(false,
+				advisor: advisor.NewAdvisor(nil, false,
 					"bar",
 					evictor.NewNoopPodEvictor(),
 					dummyEmitter,

@@ -29,6 +29,7 @@ import (
 	powermetric "github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/metric"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/reader"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/spec"
+	"github.com/kubewharf/katalyst-core/pkg/config"
 	"github.com/kubewharf/katalyst-core/pkg/metaserver/agent/node"
 	"github.com/kubewharf/katalyst-core/pkg/metrics"
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
@@ -49,6 +50,7 @@ type PowerAwareAdvisor interface {
 }
 
 type powerAwareAdvisor struct {
+	conf        *config.Configuration
 	emitter     metrics.MetricEmitter
 	specFetcher spec.SpecFetcher
 	powerReader reader.PowerReader
@@ -123,6 +125,10 @@ func (p *powerAwareAdvisor) cleanup() {
 }
 
 func (p *powerAwareAdvisor) run(ctx context.Context) {
+	if p.conf.GetDynamicConfiguration().DisablePowerAdvisor {
+		return
+	}
+
 	powerSpec, err := p.specFetcher.GetPowerSpec(ctx)
 	if err != nil {
 		p.emitErrorCode(powermetric.ErrorCodePowerSpecFormat)
@@ -173,7 +179,8 @@ func (p *powerAwareAdvisor) run(ctx context.Context) {
 	}
 }
 
-func NewAdvisor(dryRun bool,
+func NewAdvisor(conf *config.Configuration,
+	dryRun bool,
 	annotationKeyPrefix string,
 	podEvictor evictor.PodEvictor,
 	emitter metrics.MetricEmitter,
@@ -183,6 +190,7 @@ func NewAdvisor(dryRun bool,
 	reconciler PowerReconciler,
 ) PowerAwareAdvisor {
 	return &powerAwareAdvisor{
+		conf:        conf,
 		emitter:     emitter,
 		specFetcher: spec.NewFetcher(nodeFetcher, annotationKeyPrefix),
 		powerReader: reader,
