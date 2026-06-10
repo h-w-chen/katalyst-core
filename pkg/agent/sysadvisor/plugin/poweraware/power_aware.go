@@ -105,7 +105,7 @@ func NewPowerAwarePlugin(
 
 	powerReader := reader.NewMetricStorePowerReader(metaServer)
 	percentageEvictor := evictor.NewPowerLoadEvict(conf.QoSConfiguration, emitter, metaServer.PodFetcher, podEvictor)
-	powerStrategy := strategy.NewEvictFirstStrategy(emitter, percentageEvictor, metaServer, powerCapper, assessor)
+	powerStrategy := strategy.NewEvictFirstStrategy(emitter, percentageEvictor, metaServer, powerCapper, assessor, conf.DynamicAgentConfiguration)
 	reconciler := advisor.NewReconciler(conf.PowerAwarePluginConfiguration.DryRun, emitter,
 		percentageEvictor, powerCapper, powerStrategy)
 	powerAdvisor := advisor.NewAdvisor(conf.DynamicAgentConfiguration,

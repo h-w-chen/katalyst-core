@@ -27,6 +27,7 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/advisor/action"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/advisor/action/strategy/assess"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/spec"
+	"github.com/kubewharf/katalyst-core/pkg/config/agent/dynamic"
 	"github.com/kubewharf/katalyst-core/pkg/metrics"
 )
 
@@ -237,6 +238,7 @@ func Test_evictFirstStrategy_RecommendAction(t *testing.T) {
 					dvfsAccumEffect: tt.fields.dvfsUsed,
 					isEffectCurrent: tt.fields.effectCurrent,
 					assessor:        assess.NewPowerChangeAssessor(tt.fields.dvfsUsed, 0),
+					conf:            dynamic.NewDynamicAgentConfiguration(),
 				},
 				metricsReader: nil,
 			}

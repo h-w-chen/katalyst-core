@@ -28,6 +28,7 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/reader"
 	"github.com/kubewharf/katalyst-core/pkg/config"
 	agentconf "github.com/kubewharf/katalyst-core/pkg/config/agent"
+	"github.com/kubewharf/katalyst-core/pkg/config/agent/dynamic"
 	"github.com/kubewharf/katalyst-core/pkg/config/agent/sysadvisor"
 	"github.com/kubewharf/katalyst-core/pkg/config/agent/sysadvisor/poweraware"
 	"github.com/kubewharf/katalyst-core/pkg/config/generic"
@@ -68,6 +69,7 @@ func Test_powerAwarePlugin_Name(t *testing.T) {
 		nil,
 		nil,
 		assess.NewPowerChangeAssessor(0, 0),
+		dynamic.NewDynamicAgentConfiguration(),
 	)
 	reconciler := advisor.NewReconciler(expectedDryRun,
 		dummyEmitterPool.GetDefaultMetricsEmitter(),
@@ -155,6 +157,7 @@ func Test_powerAwarePlugin_Init(t *testing.T) {
 				nil,
 				nil,
 				assess.NewPowerChangeAssessor(0, 0),
+				dynamic.NewDynamicAgentConfiguration(),
 			)
 			reconciler := advisor.NewReconciler(false,
 				dummyEmitter,

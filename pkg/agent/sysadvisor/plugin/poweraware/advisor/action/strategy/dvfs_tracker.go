@@ -20,12 +20,13 @@ import (
 	"errors"
 
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/advisor/action/strategy/assess"
+	"github.com/kubewharf/katalyst-core/pkg/config/agent/dynamic"
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
 )
 
 // DVFS: Dynamic Voltage Frequency Scaling, is a technique servers use to manage the power consumption.
 // the limit of dvfs effect a voluntary dvfs plan is allowed
-const voluntaryDVFSEffectMaximum = 10
+const defaultDVFSMaxEffect = 10
 
 // dvfsTracker keeps track and accumulates the effect lowering power or cpu frequency by means of dvfs
 type dvfsTracker struct {
@@ -35,10 +36,15 @@ type dvfsTracker struct {
 
 	capperProber CapperProber
 	assessor     assess.Assessor
+	conf         *dynamic.DynamicAgentConfiguration
 }
 
 func (d *dvfsTracker) getDVFSAllowPercent() int {
-	leftPercentage := voluntaryDVFSEffectMaximum - d.dvfsAccumEffect
+	maximum := defaultDVFSMaxEffect
+	if ratio := d.conf.GetDynamicConfiguration().PowerReductionRatio; ratio >= 0 {
+		maximum = ratio
+	}
+	leftPercentage := maximum - d.dvfsAccumEffect
 	if leftPercentage < 0 {
 		leftPercentage = 0
 	}
@@ -61,6 +67,9 @@ func (d *dvfsTracker) adjustTargetWatt(actualWatt, desiredWatt int) (int, error)
 }
 
 func (d *dvfsTracker) isCapperAvailable() bool {
+	if d.conf.GetDynamicConfiguration().DisablePowerCapping {
+		return false
+	}
 	return d.capperProber != nil && d.capperProber.IsCapperReady()
 }
 
@@ -84,12 +93,17 @@ func (d *dvfsTracker) update(currPower int) {
 }
 
 func (d *dvfsTracker) updateTrackedEffect(currPower int) {
+	if !d.isCapperAvailable() {
+		d.clear()
+		return
+	}
+
 	if !d.isInitialized() {
 		d.tryInit()
 		return
 	}
 
-	val, err := d.assessor.AssessEffect(currPower, d.inDVFS, d.isCapperAvailable())
+	val, err := d.assessor.AssessEffect(currPower, d.inDVFS, true)
 	if err != nil {
 		general.Errorf("pap: failed to assess effect: %v", err)
 		d.isEffectCurrent = false
