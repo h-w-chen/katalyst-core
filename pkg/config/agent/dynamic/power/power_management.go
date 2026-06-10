@@ -18,6 +18,7 @@ package power
 
 import (
 	"github.com/kubewharf/katalyst-core/pkg/config/agent/dynamic/crd"
+	"github.com/kubewharf/katalyst-core/pkg/util/general"
 )
 
 type PowerManagementConfiguration struct {
@@ -42,6 +43,8 @@ func (c *PowerManagementConfiguration) ApplyConfiguration(conf *crd.DynamicConfi
 	if conf == nil {
 		return
 	}
+
+	general.InfofV(6, "pap-kcc: get newer conf w/ pmc %v", *conf.PowerManagementConfiguration)
 
 	pmc := conf.PowerManagementConfiguration
 	if pmc == nil {

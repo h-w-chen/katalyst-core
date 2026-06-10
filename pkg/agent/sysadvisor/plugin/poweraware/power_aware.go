@@ -96,7 +96,9 @@ func NewPowerAwarePlugin(
 	powerCapper = capper.NewDynamicPowerCapper(conf.DynamicAgentConfiguration, powerCapper)
 
 	// add watcher for power management dynamic config
-	metaServer.ConfigurationManager.AddConfigWatcher(crd.PowerManagementConfigurationGVR)
+	if err := metaServer.ConfigurationManager.AddConfigWatcher(crd.PowerManagementConfigurationGVR); err != nil {
+		return nil, errors.Wrap(err, "pap: failed to watch for pmc")
+	}
 
 	var assessor assess.Assessor
 	if conf.PowerAwarePluginConfiguration.DVFSIndication == poweraware.DVFSIndicationPower {
