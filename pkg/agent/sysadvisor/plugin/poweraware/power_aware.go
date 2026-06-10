@@ -33,6 +33,7 @@ import (
 	evictserver "github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/evictor/server"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/reader"
 	"github.com/kubewharf/katalyst-core/pkg/config"
+	"github.com/kubewharf/katalyst-core/pkg/config/agent/dynamic/crd"
 	"github.com/kubewharf/katalyst-core/pkg/config/agent/sysadvisor/poweraware"
 	"github.com/kubewharf/katalyst-core/pkg/metaserver"
 	metricspool "github.com/kubewharf/katalyst-core/pkg/metrics/metrics-pool"
@@ -93,6 +94,9 @@ func NewPowerAwarePlugin(
 		return nil, errors.Wrap(err, "pap: failed to create power aware plugin")
 	}
 	powerCapper = capper.NewDynamicPowerCapper(conf.DynamicAgentConfiguration, powerCapper)
+
+	// add watcher for power management dynamic config
+	metaServer.ConfigurationManager.AddConfigWatcher(crd.PowerManagementConfigurationGVR)
 
 	var assessor assess.Assessor
 	if conf.PowerAwarePluginConfiguration.DVFSIndication == poweraware.DVFSIndicationPower {
