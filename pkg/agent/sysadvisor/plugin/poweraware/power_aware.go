@@ -88,14 +88,11 @@ func NewPowerAwarePlugin(
 		}
 	}
 
-	var powerCapper capper.PowerCapper
-	if conf.DisablePowerCapping {
-		powerCapper = capper.NewNoopCapper()
-	} else {
-		if powerCapper, err = capserver.NewPowerCapPlugin(conf, emitter); err != nil {
-			return nil, errors.Wrap(err, "pap: failed to create power aware plugin")
-		}
+	powerCapper, err := capserver.NewPowerCapPlugin(conf, emitter)
+	if err != nil {
+		return nil, errors.Wrap(err, "pap: failed to create power aware plugin")
 	}
+	powerCapper = capper.NewDynamicPowerCapper(conf.DynamicAgentConfiguration, powerCapper)
 
 	var assessor assess.Assessor
 	if conf.PowerAwarePluginConfiguration.DVFSIndication == poweraware.DVFSIndicationPower {
