@@ -44,7 +44,7 @@ func (c *PowerManagementConfiguration) ApplyConfiguration(conf *crd.DynamicConfi
 		return
 	}
 
-	general.InfofV(6, "pap-kcc: get newer conf w/ pmc %v", *conf.PowerManagementConfiguration)
+	general.InfofV(6, "pap-kcc: get newer conf w/ pmc %v", conf.PowerManagementConfiguration.Spec.Config)
 
 	pmc := conf.PowerManagementConfiguration
 	if pmc == nil {
@@ -62,4 +62,6 @@ func (c *PowerManagementConfiguration) ApplyConfiguration(conf *crd.DynamicConfi
 	if disablePowerCapping := pmc.Spec.Config.DisablePowerCapping; disablePowerCapping != nil {
 		c.DisablePowerCapping = *disablePowerCapping
 	}
+
+	general.InfofV(6, "pap-kcc: pmc => %v", c)
 }
