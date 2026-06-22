@@ -30,6 +30,7 @@ const (
 	AdvisorPluginNameInference       = "inference"
 	AdvisorPluginNameOvercommitAware = "overcommit_aware"
 	AdvisorPluginNamePowerAware      = "power_aware"
+	AdvisorPluginNameGPUPowerAware   = "gpu_power_aware"
 )
 
 // QoSResourceName describes different resources under qos aware control
