@@ -264,8 +264,7 @@ func newGPUPowerCapService(emitter metrics.MetricEmitter) *powerCapService {
 func newGPUPowerCapServiceSuite(conf *config.Configuration, emitter metrics.MetricEmitter) (*powerCapService, *grpcServer, error) {
 	gpuPowerCapSvc := newGPUPowerCapService(emitter)
 
-	//	socketPath := conf.PowerAwarePluginConfiguration.GPUPowerCappingAdvisorSocketAbsPath
-	socketPath := "/tmp/gpu-x.socket"
+	socketPath := conf.GPUPowerAwarePluginConfiguration.GPUPowerCappingAdvisorSocketAbsPath
 	if err := os.Remove(socketPath); err != nil && !os.IsNotExist(err) {
 		return nil, nil, errors.Wrap(err, "failed to clean up the residue file")
 	}
