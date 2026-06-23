@@ -89,6 +89,10 @@ func (g *gpuAdvisor) start() error {
 		return errors.Wrap(err, "pap-gpu start failed")
 	}
 
+	if err := g.capper.Start(); err != nil {
+		return errors.Wrap(err, "pap-gpu start failed")
+	}
+
 	return nil
 }
 
@@ -96,6 +100,11 @@ func (g *gpuAdvisor) close() {
 	// to impl
 }
 
-func New() (Advisor, error) {
-	return &gpuAdvisor{}, nil
+func New(specFetcher spec.SpecFetcher, powerCapper capper.PowerCapper) (Advisor, error) {
+	return &gpuAdvisor{
+		specFetcher: specFetcher,
+		powerReader: reader.New(),
+		planner:     plan.New(),
+		capper:      powerCapper,
+	}, nil
 }

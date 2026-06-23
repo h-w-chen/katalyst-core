@@ -28,23 +28,3 @@ type PowerCapper interface {
 	// level can be "infer", "train", or "all".
 	CapWithLevel(ctx context.Context, targetWatts, currWatt int, level Level)
 }
-
-// noopCapper is placeholder for disabled GPU power capping server
-type noopCapper struct{}
-
-func (n noopCapper) Init() error { return nil }
-
-func (n noopCapper) Start() error { return nil }
-
-func (n noopCapper) Stop() error { return nil }
-
-func (n noopCapper) Reset() {}
-
-func (n noopCapper) Cap(ctx context.Context, targetWatts, currWatt int) {}
-
-func (n noopCapper) CapWithLevel(ctx context.Context, targetWatts, currWatt int, level Level) {
-}
-
-func NewNoopCapper() PowerCapper {
-	return &noopCapper{}
-}

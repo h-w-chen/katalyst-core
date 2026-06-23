@@ -7,6 +7,8 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/metacache"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/gpupoweraware/advisor"
+	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/gpupoweraware/capper/server"
+	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/spec"
 	"github.com/kubewharf/katalyst-core/pkg/config"
 	"github.com/kubewharf/katalyst-core/pkg/metaserver"
 	"github.com/kubewharf/katalyst-core/pkg/metrics"
@@ -46,7 +48,16 @@ func NewGPUPowerAwarePlugin(
 	emitter := emitterPool.GetDefaultMetricsEmitter().WithTags(metricName)
 
 	// todo: build gpuAdvisor
-	gpuAdvisor, err := advisor.New()
+	specPrefix := conf.PowerAwarePluginConfiguration.AnnotationKeyPrefix
+	nodeFetcher := metaServer.NodeFetcher
+	specFetcher := spec.NewFetcher(nodeFetcher, specPrefix)
+
+	capper, err := server.NewCapper(conf, emitter)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create advisor")
+	}
+
+	gpuAdvisor, err := advisor.New(specFetcher, capper)
 	if err != nil {
 		return nil, errors.Wrap(err, "[gpu-pap] failed to create gpu advisor")
 	}

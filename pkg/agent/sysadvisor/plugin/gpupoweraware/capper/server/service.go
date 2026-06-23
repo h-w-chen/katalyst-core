@@ -284,9 +284,9 @@ func newGPUPowerCapServiceSuite(conf *config.Configuration, emitter metrics.Metr
 	return gpuPowerCapSvc, newGRPCServer(server, sock), nil
 }
 
-// NewPlugin creates a GPU power capping plugin.
+// NewCapper creates a GPU power capping plugin.
 // It implements PowerCapper with GPU-specific CapWithLevel method.
-func NewPlugin(conf *config.Configuration, emitter metrics.MetricEmitter) (capper2.PowerCapper, error) {
+func NewCapper(conf *config.Configuration, emitter metrics.MetricEmitter) (capper2.PowerCapper, error) {
 	gpuPowerCapAdvisor, grpcServer, err := newGPUPowerCapServiceSuite(conf, emitter)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create gpu power capping server")
