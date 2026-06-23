@@ -32,9 +32,7 @@ type gpuAdvisor struct {
 
 func (g *gpuAdvisor) Init() error {
 	// todo: build gpu power reader
-
-	//TODO implement me
-	panic("implement me")
+	return nil
 }
 
 func (g *gpuAdvisor) Run(ctx context.Context) {
