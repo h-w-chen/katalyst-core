@@ -16,9 +16,22 @@ type linearPlanner struct {
 	kp float32
 }
 
-func (l linearPlanner) GetPlan(spec *spec.PowerSpec, level string, currTotalPower int) (PowerPlan, error) {
-	//TODO implement me
-	panic("implement me")
+func (l *linearPlanner) GetPlan(spec *spec.PowerSpec, level string, currTotalPower int) (PowerPlan, error) {
+	if spec == nil || len(spec.Alert) == 0 {
+		return PowerPlan{
+			Op:     "reset",
+			Level:  level,
+			Target: 0,
+		}, nil
+	}
+
+	delta := float32(spec.Budget - currTotalPower)
+	target := currTotalPower + int(delta*l.kp)
+	return PowerPlan{
+		Op:     "target",
+		Level:  level,
+		Target: target,
+	}, nil
 }
 
 func New() Planner {
