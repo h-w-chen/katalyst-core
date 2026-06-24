@@ -26,5 +26,5 @@ type PowerCapper interface {
 	capper.PowerCapper
 	// CapWithLevel sends a GPU power capping instruction with the specified level.
 	// level can be "infer", "train", or "all".
-	CapWithLevel(ctx context.Context, targetWatts, currWatt int, level Level)
+	CapWithLevel(ctx context.Context, level Level, targetWatts, currWatt int)
 }

@@ -7,15 +7,15 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 
+	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/gpupoweraware/capper"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/gpupoweraware/plan"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/gpupoweraware/reader"
-	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/capper"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/spec"
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
 )
 
 const (
-	intervalRunOnce = time.Second * 5
+	intervalRunOnce = time.Second * 3
 )
 
 type Advisor interface {
@@ -51,7 +51,7 @@ func (g *gpuAdvisor) Run(ctx context.Context) {
 }
 
 func (g *gpuAdvisor) runOnce(ctx context.Context) {
-	general.Infof("pap-gpu: runOnce once begin")
+	general.InfofV(6, "pap-gpu: runOnce once begin")
 
 	powerSpec, err := g.specFetcher.GetPowerSpec(ctx)
 	if err != nil {
@@ -75,8 +75,8 @@ func (g *gpuAdvisor) runOnce(ctx context.Context) {
 	general.InfofV(6, "pap-gpu: get current total power %v", totalPower)
 	general.InfofV(6, "pap-gpu: decide power plan %v", powerPlan)
 
-	// todo: execute power plan via capper
-	// g.capper.Cap()
+	// todo: choose proper op level
+	g.capper.CapWithLevel(ctx, capper.LevelAll, powerPlan.Target, totalPower)
 
 	general.InfofV(6, "pap-gpu: runOnce once end")
 }

@@ -74,6 +74,10 @@ type powerCapService struct {
 	longPoller *longPoller
 }
 
+func (g *powerCapService) Cap(ctx context.Context, targetWatts, currWatt int) {
+	panic("not to use")
+}
+
 func (g *powerCapService) hadReset() bool {
 	g.RLock()
 	defer g.RUnlock()
@@ -222,15 +226,10 @@ func (g *powerCapService) requestReset() {
 }
 
 // Cap sends a GPU power capping instruction with level "all" (default).
-// This satisfies the capper.PowerCapper interface.
-func (g *powerCapService) Cap(ctx context.Context, targetWatts, currWatt int) {
-	g.CapWithLevel(ctx, targetWatts, currWatt, capper2.LevelAll)
-}
-
-// CapWithLevel sends a GPU power capping instruction with the specified level.
+// It sends a GPU power capping instruction with the specified level.
 // level can be "infer", "train", or "all".
-func (g *powerCapService) CapWithLevel(ctx context.Context, targetWatts, currWatt int, level capper2.Level) {
-	capInst, err := capper2.NewInstruction(targetWatts, currWatt, level)
+func (g *powerCapService) CapWithLevel(ctx context.Context, oplevel capper2.Level, targetWatts, currWatt int) {
+	capInst, err := capper2.NewInstruction(targetWatts, currWatt, oplevel)
 	if err != nil {
 		klog.Warningf("invalid gpu cap request: %v", err)
 		g.emitErrorCode(powermetric.ErrorCodeOther)
