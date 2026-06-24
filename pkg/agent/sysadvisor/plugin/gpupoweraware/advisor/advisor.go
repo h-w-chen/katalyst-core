@@ -37,12 +37,12 @@ func (g *gpuAdvisor) Init() error {
 
 func (g *gpuAdvisor) Run(ctx context.Context) {
 	if err := g.start(); err != nil {
-		general.Errorf("pap-gpu: failed to start gpu advisor: %v", err)
+		general.Errorf("pap-gpu: advisor Run failed to start: %v", err)
 		return
 	}
-
 	defer g.close()
 
+	general.Infof("pap-gpu: advisor Run started")
 	wait.Until(func() { g.run(ctx) }, intervalRunOnce, ctx.Done())
 	general.Infof("pap-gpu: advisor Run exited")
 }
@@ -80,15 +80,11 @@ func (g *gpuAdvisor) run(ctx context.Context) {
 
 func (g *gpuAdvisor) start() error {
 	if err := g.capper.Start(); err != nil {
-		return errors.Wrap(err, "pap-gpu start failed")
+		return errors.Wrap(err, "power capper start failed")
 	}
 
 	if err := g.powerReader.Start(); err != nil {
-		return errors.Wrap(err, "pap-gpu start failed")
-	}
-
-	if err := g.capper.Start(); err != nil {
-		return errors.Wrap(err, "pap-gpu start failed")
+		return errors.Wrap(err, "power reader start failed")
 	}
 
 	return nil
