@@ -138,9 +138,9 @@ func getGPUInstructionFromCalcInfo(info *advisorsvc.CalculationInfo) (*Instructi
 }
 
 func NewInstruction(targetWatts, currWatt int, level Level) (*Instruction, error) {
-	if targetWatts >= currWatt {
-		return nil, errors.New("invalid gpu power cap request")
-	}
+	// if targetWatts >= currWatt {
+	// 	return nil, errors.New("invalid gpu power cap request")
+	// }
 
 	return &Instruction{
 		OpCode:          capper.OpCap,
