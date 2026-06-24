@@ -27,17 +27,15 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/pkg/errors"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
-	"k8s.io/klog/v2"
-
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/advisorsvc"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/capper"
 	powermetric "github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/metric"
 	"github.com/kubewharf/katalyst-core/pkg/config"
 	"github.com/kubewharf/katalyst-core/pkg/metrics"
 	"github.com/kubewharf/katalyst-core/pkg/util/general"
+	"github.com/pkg/errors"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
 const (
@@ -189,6 +187,7 @@ func (g *powerCapService) getAdvice(_ context.Context, _ *advisorsvc.GetAdviceRe
 		return &advisorsvc.GetAdviceResponse{}, nil
 	}
 
+	general.InfofV(6, "pap-gpu: cap service reply %v", *capInst)
 	resp := capInst.ToAdviceResponse()
 	return resp, nil
 }
@@ -231,7 +230,7 @@ func (g *powerCapService) requestReset() {
 func (g *powerCapService) CapWithLevel(ctx context.Context, oplevel capper2.Level, targetWatts, currWatt int) {
 	capInst, err := capper2.NewInstruction(targetWatts, currWatt, oplevel)
 	if err != nil {
-		klog.Warningf("invalid gpu cap request: %v", err)
+		general.Warningf("invalid gpu cap request: %v", err)
 		g.emitErrorCode(powermetric.ErrorCodeOther)
 		return
 	}
