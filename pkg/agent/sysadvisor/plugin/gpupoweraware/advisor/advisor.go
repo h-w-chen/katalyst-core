@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	intervalRunOnce = time.Second * 3
+	intervalRunOnce = time.Second * 5
 )
 
 type Advisor interface {
@@ -46,28 +46,28 @@ func (g *gpuAdvisor) Run(ctx context.Context) {
 
 	defer g.close()
 
-	wait.Until(func() { g.run(ctx) }, intervalRunOnce, ctx.Done())
+	wait.Until(func() { g.runOnce(ctx) }, intervalRunOnce, ctx.Done())
 	general.Infof("pap-gpu: advisor Run exited")
 }
 
-func (g *gpuAdvisor) run(ctx context.Context) {
-	general.InfofV(6, "pap-gpu: run once begin")
+func (g *gpuAdvisor) runOnce(ctx context.Context) {
+	general.Infof("pap-gpu: runOnce once begin")
 
 	powerSpec, err := g.specFetcher.GetPowerSpec(ctx)
 	if err != nil {
-		general.Warningf("pap-gpu: failed to run once: %v", err)
+		general.Warningf("pap-gpu: failed to runOnce once: %v", err)
 		return
 	}
 
 	totalPower, err := g.powerReader.GetTotalPower(ctx)
 	if err != nil {
-		general.Warningf("pap-gpu: failed to run once: %v", err)
+		general.Warningf("pap-gpu: failed to runOnce once: %v", err)
 		return
 	}
 
 	powerPlan, err := g.planner.GetPlan(powerSpec, "default", totalPower)
 	if err != nil {
-		general.Warningf("pap-gpu: failed to run once: %v", err)
+		general.Warningf("pap-gpu: failed to runOnce once: %v", err)
 		return
 	}
 
@@ -78,7 +78,7 @@ func (g *gpuAdvisor) run(ctx context.Context) {
 	// todo: execute power plan via capper
 	// g.capper.Cap()
 
-	general.InfofV(6, "pap-gpu: run once end")
+	general.InfofV(6, "pap-gpu: runOnce once end")
 }
 
 func (g *gpuAdvisor) start() error {
