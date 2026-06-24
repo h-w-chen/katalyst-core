@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/errors"
 	cliflag "k8s.io/component-base/cli/flag"
 
+	gpupowerawareopts "github.com/kubewharf/katalyst-core/cmd/katalyst-agent/app/options/sysadvisor/gpupoweraware"
 	"github.com/kubewharf/katalyst-core/cmd/katalyst-agent/app/options/sysadvisor/inference"
 	"github.com/kubewharf/katalyst-core/cmd/katalyst-agent/app/options/sysadvisor/metacache"
 	metricemitter "github.com/kubewharf/katalyst-core/cmd/katalyst-agent/app/options/sysadvisor/metric-emitter"
@@ -97,6 +98,7 @@ type SysAdvisorPluginsOptions struct {
 	*inference.InferencePluginOptions
 	*overcommit.OvercommitAwarePluginOptions
 	*poweraware.PowerAwarePluginOptions
+	GPUPowerAwarePluginOptions *gpupowerawareopts.PowerAwarePluginOptions
 }
 
 // NewSysAdvisorPluginsOptions creates a new Options with a default config.
@@ -108,6 +110,7 @@ func NewSysAdvisorPluginsOptions() *SysAdvisorPluginsOptions {
 		InferencePluginOptions:       inference.NewInferencePluginOptions(),
 		OvercommitAwarePluginOptions: overcommit.NewOvercommitAwarePluginOptions(),
 		PowerAwarePluginOptions:      poweraware.NewPowerAwarePluginOptions(),
+		GPUPowerAwarePluginOptions:   gpupowerawareopts.NewPowerAwarePluginOptions(),
 	}
 }
 
@@ -119,6 +122,7 @@ func (o *SysAdvisorPluginsOptions) AddFlags(fss *cliflag.NamedFlagSets) {
 	o.InferencePluginOptions.AddFlags(fss)
 	o.OvercommitAwarePluginOptions.AddFlags(fss)
 	o.PowerAwarePluginOptions.AddFlags(fss)
+	o.GPUPowerAwarePluginOptions.AddFlags(fss)
 }
 
 // ApplyTo fills up config with options
@@ -130,6 +134,7 @@ func (o *SysAdvisorPluginsOptions) ApplyTo(c *sysadvisor.SysAdvisorPluginsConfig
 	errList = append(errList, o.InferencePluginOptions.ApplyTo(c.InferencePluginConfiguration))
 	errList = append(errList, o.OvercommitAwarePluginOptions.ApplyTo(c.OvercommitAwarePluginConfiguration))
 	errList = append(errList, o.PowerAwarePluginOptions.ApplyTo(c.PowerAwarePluginConfiguration))
+	errList = append(errList, o.GPUPowerAwarePluginOptions.ApplyTo(c.GPUPowerAwarePluginConfiguration))
 	return errors.NewAggregate(errList)
 }
 
