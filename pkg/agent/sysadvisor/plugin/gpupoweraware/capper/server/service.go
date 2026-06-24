@@ -19,13 +19,14 @@ package server
 import (
 	"context"
 	"fmt"
-	capper2 "github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/gpupoweraware/capper"
 	"net"
 	"os"
 	"path/filepath"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	capper2 "github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/gpupoweraware/capper"
 
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/advisorsvc"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/capper"
@@ -110,14 +111,18 @@ func (g *powerCapService) Start() error {
 	defer g.Unlock()
 
 	if g.started {
+		general.Infof("gpu-pap: powerCapService.Start() already started, skipping")
 		return nil
 	}
 
+	general.Infof("gpu-pap: powerCapService.Start() called, starting grpc server...")
 	g.started = true
 	g.grpcServer.Run()
+	general.Infof("gpu-pap: grpcServer.Run() called")
 
 	// reset gpu power capping to prevent accumulative effect
 	g.requestReset()
+	general.Infof("gpu-pap: powerCapService.Start() done")
 
 	return nil
 }
@@ -260,24 +265,38 @@ func newGPUPowerCapService(emitter metrics.MetricEmitter) *powerCapService {
 }
 
 func newGPUPowerCapServiceSuite(conf *config.Configuration, emitter metrics.MetricEmitter) (*powerCapService, *grpcServer, error) {
+	general.Infof("gpu-pap: newGPUPowerCapServiceSuite called")
 	gpuPowerCapSvc := newGPUPowerCapService(emitter)
 
 	socketPath := conf.GPUPowerAwarePluginConfiguration.GPUPowerCappingAdvisorSocketAbsPath
+	general.Infof("gpu-pap: socketPath=%s", socketPath)
+
+	general.Infof("gpu-pap: removing old socket file if exists...")
 	if err := os.Remove(socketPath); err != nil && !os.IsNotExist(err) {
+		general.Errorf("gpu-pap: failed to remove old socket file: %v", err)
 		return nil, nil, errors.Wrap(err, "failed to clean up the residue file")
 	}
+	general.Infof("gpu-pap: old socket file cleaned up")
 
-	if err := os.MkdirAll(filepath.Dir(socketPath), 0o755); err != nil {
+	socketDir := filepath.Dir(socketPath)
+	general.Infof("gpu-pap: creating socket dir: %s", socketDir)
+	if err := os.MkdirAll(socketDir, 0o755); err != nil {
+		general.Errorf("gpu-pap: failed to create socket dir: %v", err)
 		return nil, nil, errors.Wrap(err, "failed to create folders to unix sock file")
 	}
+	general.Infof("gpu-pap: socket dir created/verified")
 
+	general.Infof("gpu-pap: listening on unix socket: %s", socketPath)
 	sock, err := net.Listen("unix", socketPath)
 	if err != nil {
+		general.Errorf("gpu-pap: net.Listen failed: %v", err)
 		return nil, nil, fmt.Errorf("%v listen %s failed: %v", gpuPowerCapSvc.Name(), socketPath, err)
 	}
+	general.Infof("gpu-pap: net.Listen succeeded, socket created at %s", socketPath)
 
 	server := grpc.NewServer()
 	advisorsvc.RegisterAdvisorServiceServer(server, gpuPowerCapSvc)
+	general.Infof("gpu-pap: AdvisorServiceServer registered")
 
 	return gpuPowerCapSvc, newGRPCServer(server, sock), nil
 }
@@ -285,11 +304,14 @@ func newGPUPowerCapServiceSuite(conf *config.Configuration, emitter metrics.Metr
 // NewCapper creates a GPU power capping plugin.
 // It implements PowerCapper with GPU-specific CapWithLevel method.
 func NewCapper(conf *config.Configuration, emitter metrics.MetricEmitter) (capper2.PowerCapper, error) {
+	general.Infof("gpu-pap: NewCapper called")
 	gpuPowerCapAdvisor, grpcServer, err := newGPUPowerCapServiceSuite(conf, emitter)
 	if err != nil {
+		general.Errorf("gpu-pap: newGPUPowerCapServiceSuite failed: %v", err)
 		return nil, errors.Wrap(err, "failed to create gpu power capping server")
 	}
 
 	gpuPowerCapAdvisor.grpcServer = grpcServer
+	general.Infof("gpu-pap: NewCapper done")
 	return gpuPowerCapAdvisor, nil
 }

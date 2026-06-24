@@ -29,9 +29,12 @@ type grpcServer struct {
 	listener net.Listener
 }
 
-func (gs grpcServer) Run() {
+func (gs *grpcServer) Run() {
+	general.Infof("gpu-pap: grpcServer.Run() starting Serve in goroutine...")
 	go func() {
+		general.Infof("gpu-pap: grpcServer.Serve() listening on %v", gs.listener.Addr())
 		_ = gs.server.Serve(gs.listener)
+		general.Infof("gpu-pap: grpcServer.Serve() returned")
 		defer func(lis net.Listener) {
 			err := lis.Close()
 			if err != nil {
@@ -39,6 +42,7 @@ func (gs grpcServer) Run() {
 			}
 		}(gs.listener)
 	}()
+	general.Infof("gpu-pap: grpcServer.Run() goroutine launched")
 }
 
 func newGRPCServer(server *grpc.Server, lis net.Listener) *grpcServer {

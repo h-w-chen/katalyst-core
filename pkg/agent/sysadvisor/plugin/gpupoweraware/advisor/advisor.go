@@ -82,14 +82,21 @@ func (g *gpuAdvisor) runOnce(ctx context.Context) {
 }
 
 func (g *gpuAdvisor) start() error {
+	general.Infof("gpu-pap: gpuAdvisor.start() calling capper.Start()...")
 	if err := g.capper.Start(); err != nil {
+		general.Errorf("gpu-pap: capper.Start() failed: %v", err)
 		return errors.Wrap(err, "power capper start failed")
 	}
+	general.Infof("gpu-pap: capper.Start() succeeded")
 
+	general.Infof("gpu-pap: gpuAdvisor.start() calling powerReader.Start()...")
 	if err := g.powerReader.Start(); err != nil {
+		general.Errorf("gpu-pap: powerReader.Start() failed: %v", err)
 		return errors.Wrap(err, "power reader start failed")
 	}
+	general.Infof("gpu-pap: powerReader.Start() succeeded")
 
+	general.Infof("gpu-pap: gpuAdvisor.start() done")
 	return nil
 }
 
