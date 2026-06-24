@@ -36,13 +36,16 @@ func (g *gpuAdvisor) Init() error {
 }
 
 func (g *gpuAdvisor) Run(ctx context.Context) {
+	general.Infof("pap-gpu: advisor Run")
+
 	if err := g.start(); err != nil {
 		general.Errorf("pap-gpu: advisor Run failed to start: %v", err)
 		return
 	}
+	general.Infof("pap-gpu: advisor Run started")
+
 	defer g.close()
 
-	general.Infof("pap-gpu: advisor Run started")
 	wait.Until(func() { g.run(ctx) }, intervalRunOnce, ctx.Done())
 	general.Infof("pap-gpu: advisor Run exited")
 }
