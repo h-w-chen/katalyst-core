@@ -18,6 +18,7 @@ package capper
 
 import (
 	"context"
+
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/capper"
 )
 

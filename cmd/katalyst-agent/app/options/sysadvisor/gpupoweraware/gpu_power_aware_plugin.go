@@ -15,7 +15,7 @@ func (p *PowerAwarePluginOptions) AddFlags(fss *cliflag.NamedFlagSets) {
 	fs.StringVar(&p.GPUPowerCappingAdvisorSocketAbsPath,
 		"gpu-power-capping-advisor-sock-abs-path",
 		p.GPUPowerCappingAdvisorSocketAbsPath,
-		"absolute path of unix socket file for power capping advisor served in sys-advisor")
+		"absolute path of unix socket file for gpu power capping advisor served in sys-advisor")
 }
 
 func (p *PowerAwarePluginOptions) ApplyTo(o *gpupoweraware.GPUPowerAwarePluginConfiguration) error {
@@ -25,6 +25,6 @@ func (p *PowerAwarePluginOptions) ApplyTo(o *gpupoweraware.GPUPowerAwarePluginCo
 
 func NewPowerAwarePluginOptions() *PowerAwarePluginOptions {
 	return &PowerAwarePluginOptions{
-		GPUPowerCappingAdvisorSocketAbsPath: "/tmp/gpu-x.socket",
+		GPUPowerCappingAdvisorSocketAbsPath: "/root/tce/sysadvisor/sys-advisor/node_gpu_power_cap.sock",
 	}
 }

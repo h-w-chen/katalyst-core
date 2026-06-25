@@ -35,7 +35,7 @@ func (g gpuPowerPlugin) Init() error {
 }
 
 func (g gpuPowerPlugin) Run(ctx context.Context) {
-	general.Infof("gpu-pap: gpuPowerPlugin.Run() calling advisor.Run()...")
+	general.Infof("pap-gpu: gpuPowerPlugin.Run() calling advisor.Run()...")
 	g.advisor.Run(ctx)
 }
 
@@ -47,37 +47,34 @@ func NewGPUPowerAwarePlugin(
 	metaServer *metaserver.MetaServer,
 	_ metacache.MetaCache,
 ) (plugin.SysAdvisorPlugin, error) {
-	general.Infof("gpu-pap: NewGPUPowerAwarePlugin called, pluginName=%s", pluginName)
-	general.Infof("gpu-pap: socket path config: %s", conf.GPUPowerAwarePluginConfiguration.GPUPowerCappingAdvisorSocketAbsPath)
+	general.Infof("pap-gpu: NewGPUPowerAwarePlugin called, pluginName=%s", pluginName)
+	general.Infof("pap-gpu: socket path config: %s", conf.GPUPowerAwarePluginConfiguration.GPUPowerCappingAdvisorSocketAbsPath)
 
 	emitter := emitterPool.GetDefaultMetricsEmitter().WithTags(metricName)
 
-	// todo: build gpuAdvisor
 	specPrefix := conf.PowerAwarePluginConfiguration.AnnotationKeyPrefix
 	nodeFetcher := metaServer.NodeFetcher
 	specFetcher := spec.NewFetcher(nodeFetcher, specPrefix)
 
-	general.Infof("gpu-pap: creating capper via server.NewCapper...")
+	general.Infof("pap-gpu: capper service: creating capper via server.NewCapper...")
 	capper, err := server.NewCapper(conf, emitter)
 	if err != nil {
-		general.Errorf("gpu-pap: server.NewCapper failed: %v", err)
 		return nil, errors.Wrap(err, "failed to create advisor")
 	}
-	general.Infof("gpu-pap: server.NewCapper succeeded")
+	general.Infof("pap-gpu: capper service: capper server created")
 
 	gpuAdvisor, err := advisor.New(specFetcher, capper)
 	if err != nil {
-		general.Errorf("gpu-pap: advisor.New failed: %v", err)
-		return nil, errors.Wrap(err, "[gpu-pap] failed to create gpu advisor")
+		return nil, errors.Wrap(err, "failed to create gpu advisor")
 	}
-	general.Infof("gpu-pap: advisor.New succeeded")
+	general.Infof("pap-gpu: advisor: advisor created")
 
 	plugin, err := newPluginWithAdvisor(pluginName, conf, emitter, gpuAdvisor)
 	if err != nil {
-		general.Errorf("gpu-pap: newPluginWithAdvisor failed: %v", err)
+		general.Errorf("pap-gpu: plugin: newPluginWithAdvisor failed: %v", err)
 		return nil, err
 	}
-	general.Infof("gpu-pap: NewGPUPowerAwarePlugin done, plugin=%v", plugin)
+	general.Infof("pap-gpu: plugin: NewGPUPowerAwarePlugin done, plugin=%v", plugin)
 	return plugin, nil
 }
 

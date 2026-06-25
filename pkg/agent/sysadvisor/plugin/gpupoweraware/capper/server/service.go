@@ -111,18 +111,18 @@ func (g *powerCapService) Start() error {
 	defer g.Unlock()
 
 	if g.started {
-		general.Infof("gpu-pap: powerCapService.Start() already started, skipping")
+		general.Infof("pap-gpu: svc: powerCapService.Start() already started, skipping")
 		return nil
 	}
 
-	general.Infof("gpu-pap: powerCapService.Start() called, starting grpc server...")
+	general.Infof("pap-gpu: svc: powerCapService.Start() called, starting grpc server...")
 	g.started = true
 	g.grpcServer.Run()
-	general.Infof("gpu-pap: grpcServer.Run() called")
+	general.Infof("pap-gpu: svc: grpcServer.Run() called")
 
 	// reset gpu power capping to prevent accumulative effect
 	g.requestReset()
-	general.Infof("gpu-pap: powerCapService.Start() done")
+	general.Infof("pap-gpu: svc: powerCapService.Start() done")
 
 	return nil
 }
@@ -152,7 +152,7 @@ func (g *powerCapService) getAdviceWithClientReadySignal(ctx context.Context, re
 	defer atomic.AddInt32(&g.activeGetAdvices, -1)
 
 	powermetric.EmitGetAdviceCalled(g.emitter)
-	general.InfofV(6, "gpu-pap: get advice request: %v", general.ToString(request))
+	general.InfofV(6, "gpu-pap: svc: get advice request: %v", general.ToString(request))
 
 	if md, ok := metadata.FromIncomingContext(ctx); ok {
 		toApplyPreviousReset := md.Get(MetadataApplyPreviousReset)
@@ -181,7 +181,7 @@ func (g *powerCapService) getAdviceWithClientReadySignal(ctx context.Context, re
 	case <-serverCtx.Done():
 		return &advisorsvc.GetAdviceResponse{}, nil
 	case <-ctx.Done():
-		general.Warningf("gpu-pap: get advice aborted by either client disconnection or timeout")
+		general.Warningf("pap-gpu: svc: get advice aborted by either client disconnection or timeout")
 		return nil, errors.New("client disconnected or canceled")
 	}
 }
@@ -192,7 +192,7 @@ func (g *powerCapService) getAdvice(_ context.Context, _ *advisorsvc.GetAdviceRe
 		return &advisorsvc.GetAdviceResponse{}, nil
 	}
 
-	general.InfofV(6, "pap-gpu: cap service reply %v", *capInst)
+	general.InfofV(6, "gpu-gpu: svc: cap service reply %v", *capInst)
 	resp := capInst.ToAdviceResponse()
 	return resp, nil
 }
@@ -215,7 +215,7 @@ func (g *powerCapService) Reset() {
 	defer g.Unlock()
 
 	if !g.started {
-		general.Warningf("gpu-pap: gpu power capping service is unavailable")
+		general.Warningf("pap-gpu: svc: gpu power capping service is unavailable")
 		g.emitErrorCode(powermetric.ErrorCodePowerCapperUnavailable)
 		return
 	}
@@ -235,7 +235,7 @@ func (g *powerCapService) requestReset() {
 func (g *powerCapService) CapWithLevel(ctx context.Context, oplevel capper2.Level, targetWatts, currWatt int) {
 	capInst, err := capper2.NewInstruction(targetWatts, currWatt, oplevel)
 	if err != nil {
-		general.Warningf("invalid gpu cap request: %v", err)
+		general.Warningf("pap-gpu: svc: invalid gpu cap request: %v", err)
 		g.emitErrorCode(powermetric.ErrorCodeOther)
 		return
 	}
@@ -244,7 +244,7 @@ func (g *powerCapService) CapWithLevel(ctx context.Context, oplevel capper2.Leve
 	defer g.Unlock()
 
 	if !g.started {
-		general.Warningf("gpu-pap: gpu power capping service is unavailable")
+		general.Warningf("pap-gpu: svc: gpu power capping service is unavailable")
 		g.emitErrorCode(powermetric.ErrorCodePowerCapperUnavailable)
 		return
 	}
@@ -265,38 +265,38 @@ func newGPUPowerCapService(emitter metrics.MetricEmitter) *powerCapService {
 }
 
 func newGPUPowerCapServiceSuite(conf *config.Configuration, emitter metrics.MetricEmitter) (*powerCapService, *grpcServer, error) {
-	general.Infof("gpu-pap: newGPUPowerCapServiceSuite called")
+	general.Infof("pap-gpu: svc: newGPUPowerCapServiceSuite called")
 	gpuPowerCapSvc := newGPUPowerCapService(emitter)
 
 	socketPath := conf.GPUPowerAwarePluginConfiguration.GPUPowerCappingAdvisorSocketAbsPath
-	general.Infof("gpu-pap: socketPath=%s", socketPath)
+	general.Infof("pap-gpu: svc: socketPath=%s", socketPath)
 
-	general.Infof("gpu-pap: removing old socket file if exists...")
+	general.Infof("pap-gpu: svc: removing old socket file if exists...")
 	if err := os.Remove(socketPath); err != nil && !os.IsNotExist(err) {
-		general.Errorf("gpu-pap: failed to remove old socket file: %v", err)
+		general.Errorf("pap-gpu: svc: failed to remove old socket file: %v", err)
 		return nil, nil, errors.Wrap(err, "failed to clean up the residue file")
 	}
-	general.Infof("gpu-pap: old socket file cleaned up")
+	general.Infof("pap-gpu: svc: old socket file cleaned up")
 
 	socketDir := filepath.Dir(socketPath)
-	general.Infof("gpu-pap: creating socket dir: %s", socketDir)
+	general.Infof("pap-gpu: svc: creating socket dir: %s", socketDir)
 	if err := os.MkdirAll(socketDir, 0o755); err != nil {
-		general.Errorf("gpu-pap: failed to create socket dir: %v", err)
+		general.Errorf("pap-gpu: svc: failed to create socket dir: %v", err)
 		return nil, nil, errors.Wrap(err, "failed to create folders to unix sock file")
 	}
-	general.Infof("gpu-pap: socket dir created/verified")
+	general.Infof("pap-gpu: svc: socket dir created/verified")
 
-	general.Infof("gpu-pap: listening on unix socket: %s", socketPath)
+	general.Infof("pap-gpu: svc: listening on unix socket: %s", socketPath)
 	sock, err := net.Listen("unix", socketPath)
 	if err != nil {
-		general.Errorf("gpu-pap: net.Listen failed: %v", err)
+		general.Errorf("pap-gpu: svc: net.Listen failed: %v", err)
 		return nil, nil, fmt.Errorf("%v listen %s failed: %v", gpuPowerCapSvc.Name(), socketPath, err)
 	}
-	general.Infof("gpu-pap: net.Listen succeeded, socket created at %s", socketPath)
+	general.Infof("pap-gpu: svc: net.Listen succeeded, socket created at %s", socketPath)
 
 	server := grpc.NewServer()
 	advisorsvc.RegisterAdvisorServiceServer(server, gpuPowerCapSvc)
-	general.Infof("gpu-pap: AdvisorServiceServer registered")
+	general.Infof("pap-gpu: avc: AdvisorServiceServer registered")
 
 	return gpuPowerCapSvc, newGRPCServer(server, sock), nil
 }
@@ -304,14 +304,14 @@ func newGPUPowerCapServiceSuite(conf *config.Configuration, emitter metrics.Metr
 // NewCapper creates a GPU power capping plugin.
 // It implements PowerCapper with GPU-specific CapWithLevel method.
 func NewCapper(conf *config.Configuration, emitter metrics.MetricEmitter) (capper2.PowerCapper, error) {
-	general.Infof("gpu-pap: NewCapper called")
+	general.Infof("pap-gpu: NewCapper called")
 	gpuPowerCapAdvisor, grpcServer, err := newGPUPowerCapServiceSuite(conf, emitter)
 	if err != nil {
-		general.Errorf("gpu-pap: newGPUPowerCapServiceSuite failed: %v", err)
+		general.Errorf("pap-gpu: newGPUPowerCapServiceSuite failed: %v", err)
 		return nil, errors.Wrap(err, "failed to create gpu power capping server")
 	}
 
 	gpuPowerCapAdvisor.grpcServer = grpcServer
-	general.Infof("gpu-pap: NewCapper done")
+	general.Infof("pap-gpu: NewCapper done")
 	return gpuPowerCapAdvisor, nil
 }

@@ -34,6 +34,7 @@ type PowerReader interface {
 // execFunc is the function signature for executing commands, swappable for testing.
 type execFunc func(name string, arg ...string) ([]byte, error)
 
+// todo: replace with a more efficient gpu reader
 type nvidiaSmiPowerReader struct {
 	execCommand execFunc
 }

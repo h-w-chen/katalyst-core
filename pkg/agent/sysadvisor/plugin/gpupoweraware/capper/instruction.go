@@ -18,9 +18,6 @@ package capper
 
 import (
 	"fmt"
-	"strconv"
-
-	"github.com/pkg/errors"
 
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/advisorsvc"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/capper"
@@ -62,10 +59,7 @@ func (g Instruction) ToAdviceResponse() *advisorsvc.GetAdviceResponse {
 }
 
 func (g Instruction) ToListAndWatchResponse() *advisorsvc.ListAndWatchResponse {
-	return &advisorsvc.ListAndWatchResponse{
-		PodEntries:   nil,
-		ExtraEntries: []*advisorsvc.CalculationInfo{wrapGPUInst(g)},
-	}
+	panic("not to use")
 }
 
 func wrapGPUInst(g Instruction) *advisorsvc.CalculationInfo {
@@ -85,58 +79,7 @@ func wrapGPUInst(g Instruction) *advisorsvc.CalculationInfo {
 	}
 }
 
-func getGPUInstructionFromCalcInfo(info *advisorsvc.CalculationInfo) (*Instruction, error) {
-	if info == nil {
-		return nil, errors.New("invalid data of nil CalculationInfo")
-	}
-
-	calcRes := info.CalculationResult
-	if calcRes == nil {
-		return nil, errors.New("invalid data of nil CalculationResult")
-	}
-
-	values := calcRes.GetValues()
-	if len(values) == 0 {
-		return nil, errors.New("invalid data of empty Values map")
-	}
-
-	opCode, ok := values["op-code"]
-	if !ok {
-		return nil, errors.New("op-code not found")
-	}
-
-	opCurrValue := values["current-value"]
-	opTargetValue := values["target-value"]
-
-	var err error
-	currValue := 0
-	if len(opCurrValue) > 0 {
-		currValue, err = strconv.Atoi(opCurrValue)
-		if err != nil {
-			return nil, errors.New("current value format error")
-		}
-	}
-
-	targetValue := 0
-	if len(opTargetValue) > 0 {
-		targetValue, err = strconv.Atoi(opTargetValue)
-		if err != nil {
-			return nil, errors.New("target value format error")
-		}
-	}
-
-	level := Level(values[keyOpLevel])
-
-	return &Instruction{
-		OpCode:          capper.PowerCapOpCode(opCode),
-		OpCurrentValue:  opCurrValue,
-		OpTargetValue:   opTargetValue,
-		RawCurrentValue: currValue,
-		RawTargetValue:  targetValue,
-		Level:           level,
-	}, nil
-}
-
+// todo: have meaningful instruction validation
 func NewInstruction(targetWatts, currWatt int, level Level) (*Instruction, error) {
 	// if targetWatts >= currWatt {
 	// 	return nil, errors.New("invalid gpu power cap request")
