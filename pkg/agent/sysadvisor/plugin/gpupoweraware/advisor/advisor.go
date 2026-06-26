@@ -76,7 +76,6 @@ func (g *gpuAdvisor) runOnce(ctx context.Context) {
 	general.InfofV(6, "pap-gpu: advisor: get current total power %v", totalPower)
 	general.InfofV(6, "pap-gpu: advisor: decide power plan %v", powerPlan)
 
-	// todo: choose proper op level
 	g.capper.CapWithLevel(ctx, powerPlan.Level, powerPlan.Target, totalPower)
 
 	general.InfofV(6, "pap-gpu: advisor: runOnce once end")

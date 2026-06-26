@@ -3,7 +3,10 @@ package plan
 import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/gpupoweraware/capper"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/poweraware/spec"
+	"github.com/kubewharf/katalyst-core/pkg/util/general"
 )
+
+const defaultKp = 0.02
 
 type PowerPlan struct {
 	Op     string
@@ -12,33 +15,67 @@ type PowerPlan struct {
 }
 
 type Planner interface {
-	GetPlan(spec *spec.PowerSpec, levelHint capper.Level, currTotalPower int) (PowerPlan, error)
+	GetPlan(spec *spec.PowerSpec, levelHint capper.Level, currTotalPower int) (*PowerPlan, error)
 }
 
 type linearPlanner struct {
-	kp float32
+	kp float64
 }
 
-func (l *linearPlanner) GetPlan(spec *spec.PowerSpec, levelHint capper.Level, currTotalPower int) (PowerPlan, error) {
+func (l *linearPlanner) GetPlan(spec *spec.PowerSpec, levelHint capper.Level, currTotalPower int) (*PowerPlan, error) {
 	if spec == nil || len(spec.Alert) == 0 {
-		return PowerPlan{
-			Op:     "reset",
-			Level:  capper.LevelAll,
-			Target: 0,
-		}, nil
+		return l.getResetPlan(), nil
 	}
 
-	delta := float32(spec.Budget - currTotalPower)
-	target := currTotalPower + int(delta*l.kp)
-	return PowerPlan{
+	if spec.Budget < currTotalPower {
+		return l.getThrottlePlan(spec.Budget, currTotalPower, levelHint), nil
+	}
+
+	general.InfofV(6, "already below budget, no need to throttle")
+	return nil, nil
+}
+
+func (l *linearPlanner) getThrottlePlan(budget, current int, levelHint capper.Level) *PowerPlan {
+	delta := float64(budget - current)
+	target := current + int(delta*l.kp)
+	return &PowerPlan{
 		Op:     "target",
 		Level:  levelHint,
 		Target: target,
-	}, nil
+	}
+}
+
+func (l *linearPlanner) getResetPlan() *PowerPlan {
+	return &PowerPlan{
+		Op:     "reset",
+		Level:  capper.LevelAll,
+		Target: 0,
+	}
+}
+
+type persistentPlanner struct {
+	innerPlanner Planner
+	priorPlan    *PowerPlan
+}
+
+func (p *persistentPlanner) GetPlan(spec *spec.PowerSpec, levelHint capper.Level, currTotalPower int) (*PowerPlan, error) {
+	if spec == nil || len(spec.Alert) == 0 {
+		if p.priorPlan != nil && p.priorPlan.Op == "reset" {
+			return nil, nil
+		}
+	}
+
+	powerPlan, err := p.innerPlanner.GetPlan(spec, levelHint, currTotalPower)
+	if err == nil {
+		p.priorPlan = powerPlan
+	}
+	return powerPlan, err
 }
 
 func New() Planner {
-	return &linearPlanner{
-		kp: 0.02,
+	return &persistentPlanner{
+		innerPlanner: &linearPlanner{
+			kp: defaultKp,
+		},
 	}
 }
