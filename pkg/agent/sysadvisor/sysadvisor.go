@@ -27,6 +27,7 @@ import (
 
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/metacache"
 	pkgplugin "github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin"
+	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/gpupoweraware"
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/inference"
 	metacacheplugin "github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/metacache"
 	metricemitter "github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/plugin/metric-emitter"
@@ -50,6 +51,7 @@ func init() {
 	pkgplugin.RegisterAdvisorPlugin(types.AdvisorPluginNameInference, inference.NewInferencePlugin)
 	pkgplugin.RegisterAdvisorPlugin(types.AdvisorPluginNameOvercommitAware, overcommitmentaware.NewOvercommitmentAwarePlugin)
 	pkgplugin.RegisterAdvisorPlugin(types.AdvisorPluginNamePowerAware, poweraware.NewPowerAwarePlugin)
+	pkgplugin.RegisterAdvisorPlugin(types.AdvisorPluginNameGPUPowerAware, gpupoweraware.NewGPUPowerAwarePlugin)
 }
 
 // AdvisorAgent for sysadvisor

@@ -17,6 +17,7 @@ limitations under the License.
 package sysadvisor
 
 import (
+	"github.com/kubewharf/katalyst-core/pkg/config/agent/sysadvisor/gpupoweraware"
 	"github.com/kubewharf/katalyst-core/pkg/config/agent/sysadvisor/inference"
 	"github.com/kubewharf/katalyst-core/pkg/config/agent/sysadvisor/metacache"
 	metricemitter "github.com/kubewharf/katalyst-core/pkg/config/agent/sysadvisor/metric-emitter"
@@ -47,6 +48,7 @@ type SysAdvisorPluginsConfiguration struct {
 	*inference.InferencePluginConfiguration
 	*overcommit.OvercommitAwarePluginConfiguration
 	*poweraware.PowerAwarePluginConfiguration
+	*gpupoweraware.GPUPowerAwarePluginConfiguration
 }
 
 // NewSysAdvisorPluginsConfiguration creates a new sysadvisor plugins configuration.
@@ -58,5 +60,6 @@ func NewSysAdvisorPluginsConfiguration() *SysAdvisorPluginsConfiguration {
 		InferencePluginConfiguration:       inference.NewInferencePluginConfiguration(),
 		OvercommitAwarePluginConfiguration: overcommit.NewOvercommitAwarePluginConfiguration(),
 		PowerAwarePluginConfiguration:      poweraware.NewPowerAwarePluginConfiguration(),
+		GPUPowerAwarePluginConfiguration:   gpupoweraware.NewPowerAwarePluginConfiguration(),
 	}
 }
