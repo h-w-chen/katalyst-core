@@ -2,6 +2,7 @@ package gpupoweraware
 
 import (
 	"context"
+
 	"github.com/pkg/errors"
 
 	"github.com/kubewharf/katalyst-core/pkg/agent/sysadvisor/metacache"
@@ -56,26 +57,26 @@ func NewGPUPowerAwarePlugin(
 	nodeFetcher := metaServer.NodeFetcher
 	specFetcher := spec.NewFetcher(nodeFetcher, specPrefix)
 
-	general.Infof("pap-gpu: capper service: creating capper via server.NewCapper...")
-	capper, err := server.NewCapper(conf, emitter)
+	general.Infof("pap-gpu: powerCapper service: creating powerCapper via server.NewCapper...")
+	powerCapper, err := server.NewCapper(conf, emitter)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create advisor")
 	}
-	general.Infof("pap-gpu: capper service: capper server created")
+	general.Infof("pap-gpu: powerCapper service: powerCapper server created")
 
-	gpuAdvisor, err := advisor.New(specFetcher, capper)
+	gpuAdvisor, err := advisor.New(specFetcher, powerCapper)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create gpu advisor")
 	}
 	general.Infof("pap-gpu: advisor: advisor created")
 
-	plugin, err := newPluginWithAdvisor(pluginName, conf, emitter, gpuAdvisor)
+	advisorPlugin, err := newPluginWithAdvisor(pluginName, conf, emitter, gpuAdvisor)
 	if err != nil {
-		general.Errorf("pap-gpu: plugin: newPluginWithAdvisor failed: %v", err)
+		general.Errorf("pap-gpu: advisorPlugin: newPluginWithAdvisor failed: %v", err)
 		return nil, err
 	}
-	general.Infof("pap-gpu: plugin: NewGPUPowerAwarePlugin done, plugin=%v", plugin)
-	return plugin, nil
+	general.Infof("pap-gpu: advisorPlugin: NewGPUPowerAwarePlugin done, advisorPlugin=%v", advisorPlugin)
+	return advisorPlugin, nil
 }
 
 func newPluginWithAdvisor(pluginName string, conf *config.Configuration, emitter metrics.MetricEmitter, advisor advisor.Advisor,

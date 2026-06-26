@@ -65,7 +65,8 @@ func (g *gpuAdvisor) runOnce(ctx context.Context) {
 		return
 	}
 
-	powerPlan, err := g.planner.GetPlan(powerSpec, "default", totalPower)
+	// todo: support arg-provided level hint
+	powerPlan, err := g.planner.GetPlan(powerSpec, capper.LevelDecode, totalPower)
 	if err != nil {
 		general.Warningf("pap-gpu: advisor: failed to runOnce once: %v", err)
 		return
@@ -76,7 +77,7 @@ func (g *gpuAdvisor) runOnce(ctx context.Context) {
 	general.InfofV(6, "pap-gpu: advisor: decide power plan %v", powerPlan)
 
 	// todo: choose proper op level
-	g.capper.CapWithLevel(ctx, capper.LevelAll, powerPlan.Target, totalPower)
+	g.capper.CapWithLevel(ctx, powerPlan.Level, powerPlan.Target, totalPower)
 
 	general.InfofV(6, "pap-gpu: advisor: runOnce once end")
 }

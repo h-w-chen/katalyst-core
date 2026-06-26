@@ -27,9 +27,8 @@ import (
 type Level string
 
 const (
-	LevelInfer Level = "infer"
-	LevelTrain Level = "train"
-	LevelAll   Level = "all"
+	LevelDecode Level = "decode"
+	LevelAll    Level = "all"
 
 	keyOpLevel = "op-level"
 )
