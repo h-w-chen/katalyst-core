@@ -37,9 +37,14 @@ func (l *linearPlanner) GetPlan(spec *spec.PowerSpec, levelHint capper.Level, cu
 
 func (l *linearPlanner) getThrottlePlan(budget, current int, levelHint capper.Level) *PowerPlan {
 	delta := float64(budget - current)
-	target := current + int(delta*l.kp)
+	toDecrease := int(delta * l.kp)
+	if toDecrease == 0 {
+		toDecrease = 1
+	}
+
+	target := current - toDecrease
 	return &PowerPlan{
-		Op:     "target",
+		Op:     "cap",
 		Level:  levelHint,
 		Target: target,
 	}
