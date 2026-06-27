@@ -321,3 +321,5 @@ func NewCheckpointState(
 
 	return sc, nil
 }
+
+var gAllocationResourcesMap AllocationResourcesMap

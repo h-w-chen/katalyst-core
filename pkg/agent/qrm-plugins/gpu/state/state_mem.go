@@ -51,6 +51,9 @@ func NewGPUPluginState(
 		return nil, fmt.Errorf("GenerateMachineState failed with error: %w", err)
 	}
 
+	// todo: protect properly
+	gAllocationResourcesMap = defaultMachineState
+
 	return &gpuPluginState{
 		qrmConf:                        conf,
 		machineState:                   defaultMachineState,
