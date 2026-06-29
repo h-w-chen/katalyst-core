@@ -486,6 +486,24 @@ func (p *StaticPolicy) Allocate(
 	}
 
 	resp, err = resourcePlugin.Allocate(ctx, req, nil)
+
+	//+++++CHW
+	machState := p.GetState().GetMachineState()
+	gpuDevState, ok := machState[gpuconsts.GPUDeviceType]
+	if !ok {
+		general.Infof("chw-debug: no gpu device state")
+	}
+	for devID, allocState := range gpuDevState {
+		podEntries := allocState.PodEntries
+		for podID, contEntries := range podEntries {
+			for contID, allocInfo := range contEntries {
+				general.Infof("che-debug: gpu alloc: dev %v, pod %v, container %v, role %v, detail %v", devID, podID, contID,
+					allocInfo.AllocationMeta.PodRole,
+					allocInfo.AllocationMeta.Labels)
+			}
+		}
+	}
+
 	return resp, err
 }
 
