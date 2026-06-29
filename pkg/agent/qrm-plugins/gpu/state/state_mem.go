@@ -18,6 +18,8 @@ package state
 
 import (
 	"fmt"
+	gpuconsts "github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/gpu/consts"
+	"github.com/kubewharf/katalyst-core/pkg/util/general"
 	"sync"
 
 	v1 "k8s.io/api/core/v1"
@@ -70,6 +72,21 @@ func (s *gpuPluginState) SetMachineState(allocationResourcesMap AllocationResour
 	s.machineState = allocationResourcesMap.Clone()
 	generalLog.InfoS("updated gpu plugin machine state",
 		"GPUMap", allocationResourcesMap.String())
+
+	gpuDevState, ok := s.machineState[gpuconsts.GPUDeviceType]
+	if !ok {
+		general.Infof("chw-debug: gpu state: no gpu device state")
+	}
+	for devID, allocState := range gpuDevState {
+		podEntries := allocState.PodEntries
+		for podID, contEntries := range podEntries {
+			for contID, allocInfo := range contEntries {
+				general.Infof("chw-debug: gpu state: dev %v, pod %v, container %v, role %v, detail %v", devID, podID, contID,
+					allocInfo.AllocationMeta.PodRole,
+					allocInfo.AllocationMeta.Labels)
+			}
+		}
+	}
 
 	var notifiers []func()
 	notifiers = append(notifiers, s.machineStateSyncNotifiers...)
