@@ -228,6 +228,7 @@ func (p *StaticPolicy) GetTopologyHints(
 	ctx context.Context,
 	req *pluginapi.ResourceRequest,
 ) (resp *pluginapi.ResourceHintsResponse, err error) {
+	general.Infof("chw-debug: gpu device: get topology hint")
 	general.InfofV(4, "called")
 	if req == nil {
 		return nil, fmt.Errorf("GetTopologyHints got nil req")
@@ -239,6 +240,8 @@ func (p *StaticPolicy) GetTopologyHints(
 
 	p.RLock()
 	defer p.RUnlock()
+
+	p.printGPUAllocInfo()
 
 	resourcePlugin := p.getResourcePlugin(req.ResourceName)
 	if resourcePlugin == nil {
@@ -488,6 +491,12 @@ func (p *StaticPolicy) Allocate(
 	resp, err = resourcePlugin.Allocate(ctx, req, nil)
 
 	//+++++CHW
+	p.printGPUAllocInfo()
+
+	return resp, err
+}
+
+func (p *StaticPolicy) printGPUAllocInfo() {
 	machState := p.GetState().GetMachineState()
 	gpuDevState, ok := machState[gpuconsts.GPUDeviceType]
 	if !ok {
@@ -497,14 +506,12 @@ func (p *StaticPolicy) Allocate(
 		podEntries := allocState.PodEntries
 		for podID, contEntries := range podEntries {
 			for contID, allocInfo := range contEntries {
-				general.Infof("che-debug: gpu alloc: dev %v, pod %v, container %v, role %v, detail %v", devID, podID, contID,
+				general.Infof("chw-debug: gpu alloc: dev %v, pod %v, container %v, role %v, detail %v", devID, podID, contID,
 					allocInfo.AllocationMeta.PodRole,
 					allocInfo.AllocationMeta.Labels)
 			}
 		}
 	}
-
-	return resp, err
 }
 
 // AllocateForPod is called during pod admit so that the resource
