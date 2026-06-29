@@ -81,9 +81,10 @@ func (s *gpuPluginState) SetMachineState(allocationResourcesMap AllocationResour
 		podEntries := allocState.PodEntries
 		for podID, contEntries := range podEntries {
 			for contID, allocInfo := range contEntries {
-				general.Infof("chw-debug: gpu state: dev %v, pod %v, container %v, role %v, detail %v", devID, podID, contID,
+				general.Infof("chw-debug: gpu state: dev %v, pod %v, container %v, role=%v, labels=%v, annotaions=%v", devID, podID, contID,
 					allocInfo.AllocationMeta.PodRole,
-					allocInfo.AllocationMeta.Labels)
+					allocInfo.AllocationMeta.Labels,
+					allocInfo.AllocationMeta.Annotations)
 			}
 		}
 	}
