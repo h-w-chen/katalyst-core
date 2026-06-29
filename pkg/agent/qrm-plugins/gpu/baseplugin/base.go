@@ -164,7 +164,7 @@ func (p *BasePlugin) registerNotifiers(state state.State) {
 // InitState initializes the state of the plugin.
 func (p *BasePlugin) InitState() error {
 	stateImpl, err := state.NewCheckpointState(p.Conf.StateDirectoryConfiguration, p.Conf.QRMPluginsConfiguration, GPUPluginStateFileName,
-		gpuconsts.GPUResourcePluginPolicyNameStatic, p.DefaultResourceStateGeneratorRegistry, p.Conf.SkipGPUStateCorruption, p.Emitter)
+		gpuconsts.GPUResourcePluginPolicyNameStatic, p.DefaultResourceStateGeneratorRegistry, p.Conf.SkipGPUStateCorruption, p.Emitter, p.MetaServer)
 	if err != nil {
 		return fmt.Errorf("NewCheckpointState failed with error: %v", err)
 	}

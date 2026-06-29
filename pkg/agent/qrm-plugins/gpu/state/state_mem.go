@@ -17,15 +17,20 @@ limitations under the License.
 package state
 
 import (
+	"context"
 	"fmt"
-	gpuconsts "github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/gpu/consts"
-	"github.com/kubewharf/katalyst-core/pkg/util/general"
 	"sync"
 
 	v1 "k8s.io/api/core/v1"
 
+	gpuconsts "github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/gpu/consts"
 	"github.com/kubewharf/katalyst-core/pkg/config/agent/qrm"
+	"github.com/kubewharf/katalyst-core/pkg/util/general"
 )
+
+type PodFetcher interface {
+	GetPod(ctx context.Context, podUID string) (*v1.Pod, error)
+}
 
 // gpuPluginState is an in-memory implementation of State;
 // everytime we want to read or write states, those requests will always
@@ -35,6 +40,7 @@ type gpuPluginState struct {
 
 	qrmConf                        *qrm.QRMPluginsConfiguration
 	defaultResourceStateGenerators *DefaultResourceStateGeneratorRegistry
+	podFetcher                     PodFetcher
 
 	machineState       AllocationResourcesMap
 	podResourceEntries PodResourceEntries
@@ -45,6 +51,7 @@ type gpuPluginState struct {
 func NewGPUPluginState(
 	conf *qrm.QRMPluginsConfiguration,
 	resourceStateGeneratorRegistry *DefaultResourceStateGeneratorRegistry,
+	podFetchers ...PodFetcher,
 ) (State, error) {
 	generalLog.InfoS("initializing new gpu plugin in-memory state store")
 
@@ -57,8 +64,18 @@ func NewGPUPluginState(
 		qrmConf:                        conf,
 		machineState:                   defaultMachineState,
 		defaultResourceStateGenerators: resourceStateGeneratorRegistry,
+		podFetcher:                     firstPodFetcher(podFetchers),
 		podResourceEntries:             make(PodResourceEntries),
 	}, nil
+}
+
+func firstPodFetcher(podFetchers []PodFetcher) PodFetcher {
+	for _, podFetcher := range podFetchers {
+		if podFetcher != nil {
+			return podFetcher
+		}
+	}
+	return nil
 }
 
 func (s *gpuPluginState) AddMachineStateSyncNotifier(notifier func()) {
@@ -80,6 +97,15 @@ func (s *gpuPluginState) SetMachineState(allocationResourcesMap AllocationResour
 	for devID, allocState := range gpuDevState {
 		podEntries := allocState.PodEntries
 		for podID, contEntries := range podEntries {
+			if s.podFetcher != nil {
+				pod, err := s.podFetcher.GetPod(context.Background(), podID)
+				if err != nil {
+					general.Warningf("chw-debug: get pod failed: pod %v, err=%v", podID, err)
+				} else if pod != nil {
+					general.Infof("chw-debug: pod labels: pod %v, labels=%v, annotaions=%v", podID, pod.Labels, pod.Annotations)
+				}
+			}
+
 			for contID, allocInfo := range contEntries {
 				general.Infof("chw-debug: gpu state: dev %v, pod %v, container %v, role=%v, labels=%v, annotaions=%v", devID, podID, contID,
 					allocInfo.AllocationMeta.PodRole,

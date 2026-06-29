@@ -291,11 +291,11 @@ func NewCheckpointState(
 	stateDirectoryConfig *statedirectory.StateDirectoryConfiguration,
 	conf *qrm.QRMPluginsConfiguration, checkpointName, policyName string,
 	defaultResourceStateGenerators *DefaultResourceStateGeneratorRegistry,
-	skipStateCorruption bool, emitter metrics.MetricEmitter,
+	skipStateCorruption bool, emitter metrics.MetricEmitter, podFetchers ...PodFetcher,
 ) (State, error) {
 	currentStateDir, otherStateDir := stateDirectoryConfig.GetCurrentAndPreviousStateFileDirectory()
 
-	defaultCache, err := NewGPUPluginState(conf, defaultResourceStateGenerators)
+	defaultCache, err := NewGPUPluginState(conf, defaultResourceStateGenerators, podFetchers...)
 	if err != nil {
 		generalLog.ErrorS(err, "NewGPUPluginState failed with error")
 		return nil, fmt.Errorf("NewGPUPluginState failed with error: %v", err)
