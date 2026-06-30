@@ -133,6 +133,36 @@ func (s *gpuPluginState) SetResourceState(resourceName v1.ResourceName, allocati
 		"resourceName", resourceName,
 		"allocationMap", allocationMap.String())
 
+	general.Infof("chw-debug: SetResourceState called, resourceName=%v", resourceName)
+	for devID, allocState := range allocationMap {
+		general.Infof("chw-debug: SetResourceState dev=%v, allocatable=%v, podCount=%v",
+			devID, allocState.Allocatable, len(allocState.PodEntries))
+		for podUID, contEntries := range allocState.PodEntries {
+			// try to fetch pod labels/annotations
+			if s.podFetcher != nil {
+				pod, err := s.podFetcher.GetPod(context.Background(), podUID)
+				if err != nil {
+					general.Warningf("chw-debug: SetResourceState get pod failed: pod=%v, err=%v", podUID, err)
+				} else if pod != nil {
+					general.Infof("chw-debug: SetResourceState pod=%v, labels=%v, annotations=%v", podUID, pod.Labels, pod.Annotations)
+				} else {
+					general.Warningf("chw-debug: SetResourceState pod not found: pod=%v", podUID)
+				}
+			}
+			for contName, allocInfo := range contEntries {
+				general.Infof("chw-debug: SetResourceState dev=%v, pod=%v, container=%v, deviceName=%v, quantity=%v, NUMA=%v, role=%v, labels=%v, annotations=%v, topologyAware=%v",
+					devID, podUID, contName,
+					allocInfo.DeviceName,
+					allocInfo.AllocatedAllocation.Quantity,
+					allocInfo.AllocatedAllocation.NUMANodes,
+					allocInfo.AllocationMeta.PodRole,
+					allocInfo.AllocationMeta.Labels,
+					allocInfo.AllocationMeta.Annotations,
+					len(allocInfo.TopologyAwareAllocations))
+			}
+		}
+	}
+
 	var notifiers []func()
 	notifiers = append(notifiers, s.machineStateSyncNotifiers...)
 	s.Unlock()
@@ -155,12 +185,16 @@ func (s *gpuPluginState) SetAllocationInfo(
 	s.Lock()
 	defer s.Unlock()
 
+	isNewPod := false
+	isNewContainer := false
 	if _, ok := s.podResourceEntries[resourceName]; !ok {
 		s.podResourceEntries[resourceName] = make(PodEntries)
 	}
-
 	if _, ok := s.podResourceEntries[resourceName][podUID]; !ok {
 		s.podResourceEntries[resourceName][podUID] = make(ContainerEntries)
+		isNewPod = true
+	} else if _, ok := s.podResourceEntries[resourceName][podUID][containerName]; !ok {
+		isNewContainer = true
 	}
 
 	s.podResourceEntries[resourceName][podUID][containerName] = allocationInfo.Clone()
@@ -168,6 +202,33 @@ func (s *gpuPluginState) SetAllocationInfo(
 		"podUID", podUID,
 		"containerName", containerName,
 		"allocationInfo", allocationInfo.String())
+
+	general.Infof("chw-debug: SetAllocationInfo called, resourceName=%v, podUID=%v, container=%v, isNewPod=%v, isNewContainer=%v",
+		resourceName, podUID, containerName, isNewPod, isNewContainer)
+	general.Infof("chw-debug: SetAllocationInfo deviceName=%v, quantity=%v, NUMA=%v, role=%v, labels=%v, annotations=%v, topologyAwareCount=%v",
+		allocationInfo.DeviceName,
+		allocationInfo.AllocatedAllocation.Quantity,
+		allocationInfo.AllocatedAllocation.NUMANodes,
+		allocationInfo.AllocationMeta.PodRole,
+		allocationInfo.AllocationMeta.Labels,
+		allocationInfo.AllocationMeta.Annotations,
+		len(allocationInfo.TopologyAwareAllocations))
+	for topoKey, topoAlloc := range allocationInfo.TopologyAwareAllocations {
+		general.Infof("chw-debug: SetAllocationInfo topologyAware[%v]: quantity=%v, NUMA=%v",
+			topoKey, topoAlloc.Quantity, topoAlloc.NUMANodes)
+	}
+
+	// try to fetch real pod labels/annotations from MetaServer
+	if s.podFetcher != nil {
+		pod, err := s.podFetcher.GetPod(context.Background(), podUID)
+		if err != nil {
+			general.Warningf("chw-debug: SetAllocationInfo get pod failed: pod=%v, err=%v", podUID, err)
+		} else if pod != nil {
+			general.Infof("chw-debug: SetAllocationInfo real pod labels=%v, annotations=%v", pod.Labels, pod.Annotations)
+		} else {
+			general.Warningf("chw-debug: SetAllocationInfo pod not found: pod=%v", podUID)
+		}
+	}
 }
 
 func (s *gpuPluginState) Delete(resourceName v1.ResourceName, podUID, containerName string, _ bool) {
