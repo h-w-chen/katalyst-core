@@ -51,6 +51,8 @@ import (
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/cpu/dynamicpolicy/state"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/cpu/dynamicpolicy/validator"
 	cpuutil "github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/cpu/util"
+	gpuconsts "github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/gpu/consts"
+	gpustate "github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/gpu/state"
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/util"
 	"github.com/kubewharf/katalyst-core/pkg/agent/utilcomponent/featuregatenegotiation"
 	"github.com/kubewharf/katalyst-core/pkg/agent/utilcomponent/periodicalhandler"
@@ -389,6 +391,8 @@ func (p *DynamicPolicy) Start() (err error) {
 		_ = p.emitter.StoreInt64(util.MetricNameHeartBeat, 1, metrics.MetricTypeNameRaw)
 	}, time.Second*30, p.stopCh)
 
+	go wait.Until(p.logGPUAllocation, time.Minute, p.stopCh)
+
 	err = periodicalhandler.RegisterPeriodicalHandlerWithHealthz(cpuconsts.ClearResidualState, general.HealthzCheckStateNotReady,
 		qrm.QRMCPUPluginPeriodicalHandlerGroupName, p.clearResidualState, stateCheckPeriod, healthCheckTolerationTimes)
 	if err != nil {
@@ -572,6 +576,46 @@ func (p *DynamicPolicy) Stop() error {
 	}
 
 	return nil
+}
+
+func (p *DynamicPolicy) logGPUAllocation() {
+	gpuState, err := gpustate.GetReadonlyState()
+	if err != nil {
+		general.Infof("chw-debug: [GPUAlloc] gpu readonly state not available: %v", err)
+		return
+	}
+
+	machineState := gpuState.GetMachineState()
+	gpuDevState, ok := machineState[gpuconsts.GPUDeviceType]
+	if !ok || len(gpuDevState) == 0 {
+		general.Infof("chw-debug: [GPUAlloc] no GPU device state found")
+		return
+	}
+
+	totalPods := 0
+	for devID, allocState := range gpuDevState {
+		general.Infof("chw-debug: [GPUAlloc] device=%v, allocatable=%v, podCount=%v",
+			devID, allocState.Allocatable, len(allocState.PodEntries))
+		for podUID, contEntries := range allocState.PodEntries {
+			totalPods++
+			// fetch real pod info from MetaServer
+			pod, podErr := p.metaServer.GetPod(context.Background(), podUID)
+			if podErr != nil || pod == nil {
+				general.Warningf("chw-debug: [GPUAlloc] device=%v, pod=%v, getPod failed: err=%v, podNil=%v",
+					devID, podUID, podErr, pod == nil)
+				continue
+			}
+			for contName, allocInfo := range contEntries {
+				general.Infof("chw-debug: [GPUAlloc] device=%v, pod=%v/%v, container=%v, labels=%v, annotations=%v, quantity=%v, NUMA=%v, role=%v",
+					devID, pod.Namespace, pod.Name, contName,
+					pod.Labels, pod.Annotations,
+					allocInfo.AllocatedAllocation.Quantity,
+					allocInfo.AllocatedAllocation.NUMANodes,
+					allocInfo.AllocationMeta.PodRole)
+			}
+		}
+	}
+	general.Infof("chw-debug: [GPUAlloc] summary: totalDevices=%v, totalPods=%v", len(gpuDevState), totalPods)
 }
 
 // GetResourcesAllocation returns allocation results of corresponding resources
