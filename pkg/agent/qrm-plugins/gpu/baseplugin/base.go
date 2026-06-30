@@ -173,6 +173,8 @@ func (p *BasePlugin) InitState() error {
 	p.state = stateImpl
 	p.mu.Unlock()
 
+	state.SetReadonlyState(stateImpl)
+
 	p.stateInitializedOnce.Do(func() {
 		p.registerNotifiers(stateImpl)
 		close(p.stateInitializedCh)
