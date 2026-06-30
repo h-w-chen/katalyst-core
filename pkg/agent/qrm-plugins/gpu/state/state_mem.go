@@ -90,6 +90,7 @@ func (s *gpuPluginState) SetMachineState(allocationResourcesMap AllocationResour
 	generalLog.InfoS("updated gpu plugin machine state",
 		"GPUMap", allocationResourcesMap.String())
 
+	general.Infof("chw-debug: gpu state: set machine state")
 	gpuDevState, ok := s.machineState[gpuconsts.GPUDeviceType]
 	if !ok {
 		general.Infof("chw-debug: gpu state: no gpu device state")
