@@ -27,6 +27,7 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/monitor"
+	mbconsts "github.com/kubewharf/katalyst-core/pkg/agent/qrm-plugins/mb/policy/consts"
 	"github.com/kubewharf/katalyst-core/pkg/consts"
 	malachitetypes "github.com/kubewharf/katalyst-core/pkg/metaserver/agent/metric/provisioner/malachite/types"
 	metrictypes "github.com/kubewharf/katalyst-core/pkg/metaserver/agent/metric/types"
@@ -38,7 +39,7 @@ const (
 	tolerationTime = 4 * time.Second
 
 	rootGroup     = "root"
-	maxCCDTotalMB = 60 * 1024
+	maxCCDTotalMB = 60 * 1024 * mbconsts.BytesPerMiB / mbconsts.BytesPerMB // 60 GiB in MB
 )
 
 // localIsVictimAndTotalIsAllRead indicates special settings of resctrl controlling reg1 & reg2 which yield
@@ -197,13 +198,13 @@ func calcGroupMBRate(newCounter, oldCounter []malachitetypes.MBCCDStat, msElapse
 				ccd, ccdCounter.MBTotalCounter, oldCCDCounter.MBTotalCounter)
 		}
 
-		rateLocalMB := int64(ccdCounter.MBLocalCounter-oldCCDCounter.MBLocalCounter) * 1000 / msElapsed / 1024 / 1024
+		rateLocalMB := toMB(int64(ccdCounter.MBLocalCounter-oldCCDCounter.MBLocalCounter) * 1000 / msElapsed)
 		if rateLocalMB < 0 {
 			return nil, fmt.Errorf("skip local mb cal: ccd %d, new %v, old %v",
 				ccd, ccdCounter.MBLocalCounter, oldCCDCounter.MBLocalCounter)
 		}
 
-		rateTotalMB := int64(ccdCounter.MBTotalCounter-oldCCDCounter.MBTotalCounter) * 1000 / msElapsed / 1024 / 1024
+		rateTotalMB := toMB(int64(ccdCounter.MBTotalCounter-oldCCDCounter.MBTotalCounter) * 1000 / msElapsed)
 		if rateTotalMB < 0 {
 			return nil, fmt.Errorf("skip total mb cal: ccd %v, new %v, old %v",
 				ccd, ccdCounter.MBTotalCounter, oldCCDCounter.MBTotalCounter)
@@ -224,6 +225,10 @@ func calcGroupMBRate(newCounter, oldCounter []malachitetypes.MBCCDStat, msElapse
 				ccd, rateTotalMB)
 		}
 
+		// Store in MB:
+		//   1) Avoid int32 overflow — 60 GB = 60000 MB fits within int.
+		//   2) Control simplicity — downstream plan/advisor all work in MB.
+		// Converted back to bytes when emitting metrics in advisor_metrics.go.
 		result[ccd] = monitor.MBInfo{
 			LocalMB:  int(rateLocalMB),
 			RemoteMB: int(rateTotalMB - rateLocalMB),
@@ -232,6 +237,10 @@ func calcGroupMBRate(newCounter, oldCounter []malachitetypes.MBCCDStat, msElapse
 	}
 
 	return result, nil
+}
+
+func toMB(value int64) int64 {
+	return value / mbconsts.BytesPerMB
 }
 
 func calcVictimTotalLocalMB(statTotal, statLocal int64) (total, local int64) {
