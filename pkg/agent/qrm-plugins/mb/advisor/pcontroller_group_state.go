@@ -36,15 +36,16 @@ func (g *groupPCtrlState) setCCDCapMB(cap int) {
 		if g.belowCount < g.belowThreshold {
 			return
 		}
-		ceiling := g.lowestObserved * 12 / 10
+		ceiling := g.lowestObserved * 51 / 50
 		if cap > ceiling {
 			cap = ceiling
 		}
 		g.ccdCapMB = cap
-		g.lowestObserved += (g.ccdCapMB - g.lowestObserved) / 100
-		if g.lowestObserved+1 <= g.lowestObserved {
-			g.lowestObserved++
+		delta := (g.ccdCapMB - g.lowestObserved) / 100
+		if delta < 1 {
+			delta = 1
 		}
+		g.lowestObserved += delta
 		return
 	}
 
