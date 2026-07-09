@@ -148,7 +148,9 @@ func TestPControllerAdvisor_GetPlan_May_Update_CCDCap(t *testing.T) {
 							kp:     0.1,
 							target: 24000,
 						},
-						ccdCapMB: 45000, // current dedicated group ccd cap
+						ccdCapMB:       45000, // current dedicated group ccd cap
+						lowestObserved: 45000,
+						belowThreshold: 30,
 					},
 				},
 			},
@@ -180,7 +182,10 @@ func TestPControllerAdvisor_GetPlan_May_Update_CCDCap(t *testing.T) {
 							kp:     0.1,
 							target: 24000,
 						},
-						ccdCapMB: 15000,
+						ccdCapMB:       15000,
+						lowestObserved: 15000,
+						belowCount:     29,
+						belowThreshold: 30,
 					},
 				},
 			},
@@ -190,11 +195,11 @@ func TestPControllerAdvisor_GetPlan_May_Update_CCDCap(t *testing.T) {
 				MBGroups: map[string]plan.GroupCCDPlan{
 					"dedicated": {
 						0: 9000,
-						1: 15500, // 15500 < new cap 15900, preserved (would have been clamped to 15000 under old cap)
+						1: 15300, // cap is raised gradually from the lowest observed value
 					},
 				},
 			},
-			wantDedicatedCCDCapMB: 15000 + 900, // 15000 + (24000 - 14000) * 0.1
+			wantDedicatedCCDCapMB: 15300,
 		},
 		{
 			name: "error from inner passed through",
@@ -208,7 +213,9 @@ func TestPControllerAdvisor_GetPlan_May_Update_CCDCap(t *testing.T) {
 							kp:     0.1,
 							target: 24000,
 						},
-						ccdCapMB: 12345,
+						ccdCapMB:       12345,
+						lowestObserved: 12345,
+						belowThreshold: 30,
 					},
 				},
 			},
@@ -229,7 +236,9 @@ func TestPControllerAdvisor_GetPlan_May_Update_CCDCap(t *testing.T) {
 							kp:     0.1,
 							target: 24000,
 						},
-						ccdCapMB: 21312,
+						ccdCapMB:       21312,
+						lowestObserved: 21312,
+						belowThreshold: 30,
 					},
 				},
 			},
@@ -345,4 +354,59 @@ func TestPControllerAdvisor_GetSuppressedCCDs(t *testing.T) {
 	assert.Len(t, got, 2)
 	assert.Contains(t, got, innerSuppressed[0])
 	assert.Contains(t, got, SuppressedCCD{DomID: 0, Group: "dedicated", CCDID: 4, SuppressionType: "ccd_limit"})
+
+	got = pCtrl.GetSuppressedCCDs()
+
+	assert.Len(t, got, 1)
+	assert.Contains(t, got, innerSuppressed[0])
+	assert.NotContains(t, got, SuppressedCCD{DomID: 0, Group: "dedicated", CCDID: 4, SuppressionType: "ccd_limit"})
+}
+
+func TestPControllerAdvisor_GetPlan_KeepsPendingCCDLimitSuppression(t *testing.T) {
+	t.Parallel()
+
+	domainsMon := monitor.DomainStats{
+		Outgoings: map[int]monitor.DomainMonStat{
+			0: {
+				"dedicated": {
+					4: {TotalMB: 500},
+				},
+			},
+		},
+	}
+	mbPlan := plan.MBPlan{
+		MBGroups: map[string]plan.GroupCCDPlan{
+			"dedicated": {
+				4: 1000,
+			},
+		},
+	}
+
+	mockInner := new(mockAdvisor)
+	mockInner.On("GetPlan", context.TODO(), &domainsMon).Return(&mbPlan, nil)
+	mockInner.On("GetSuppressedCCDs").Return([]SuppressedCCD{})
+
+	pCtrl := &pControllerAdvisor{
+		ccdMaxMB: 10000,
+		inner:    mockInner,
+		groupStates: map[string]*groupPCtrlState{
+			"dedicated": {
+				pCtrl:          pController{target: 1000},
+				ccdCapMB:       5000,
+				lowestObserved: 5000,
+				belowThreshold: 30,
+			},
+		},
+		lastCCDLimitSuppression: map[int]map[string]map[int]string{
+			0: {"dedicated": {4: "ccd_limit"}},
+		},
+	}
+
+	_, err := pCtrl.GetPlan(context.TODO(), &domainsMon)
+	assert.NoError(t, err)
+
+	got := pCtrl.GetSuppressedCCDs()
+
+	assert.Contains(t, got, SuppressedCCD{DomID: 0, Group: "dedicated", CCDID: 4, SuppressionType: "ccd_limit"})
+	mock.AssertExpectationsForObjects(t, pCtrl.inner)
 }

@@ -52,17 +52,19 @@ func (p *pControllerAdvisor) GetPlan(ctx context.Context, domainsMon *monitor.Do
 	}
 
 	suppression := computeCCDLimitSuppression(domainsMon, p.groupStates, p.ccdMaxMB)
-	p.lastCCDLimitSuppression = suppression
+	p.lastCCDLimitSuppression = mergeCCDLimitSuppression(p.lastCCDLimitSuppression, suppression)
 	p.mu.Unlock()
 
 	return result, nil
 }
 
 func (p *pControllerAdvisor) GetSuppressedCCDs() []SuppressedCCD {
-	p.mu.RLock()
-	innerSuppressed := p.inner.GetSuppressedCCDs()
+	p.mu.Lock()
 	lastSuppression := p.lastCCDLimitSuppression
-	p.mu.RUnlock()
+	p.lastCCDLimitSuppression = nil
+	p.mu.Unlock()
+
+	innerSuppressed := p.inner.GetSuppressedCCDs()
 
 	result := buildSuppressedCCDs(lastSuppression, innerSuppressed,
 		len(lastSuppression)+len(innerSuppressed),
@@ -71,6 +73,18 @@ func (p *pControllerAdvisor) GetSuppressedCCDs() []SuppressedCCD {
 	)
 
 	return result
+}
+
+func mergeCCDLimitSuppression(dst, src map[int]map[string]map[int]string) map[int]map[string]map[int]string {
+	for domID, groupCCDTypes := range src {
+		for group, ccdTypes := range groupCCDTypes {
+			for ccdID, suppressionType := range ccdTypes {
+				addQuadruplet(&dst, domID, group, ccdID, suppressionType)
+			}
+		}
+	}
+
+	return dst
 }
 
 func (p *pControllerAdvisor) restrictGroupCCDCap(group string, groupState *groupPCtrlState,
