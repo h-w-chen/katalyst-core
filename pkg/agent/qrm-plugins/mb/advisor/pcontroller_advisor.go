@@ -91,7 +91,7 @@ func (p *pControllerAdvisor) restrictGroupCCDCap(group string, groupState *group
 	domainsMon *monitor.DomainStats, plan *plan.MBPlan,
 ) {
 	maxObservedMB := p.maxObservedCCDMBForGroup(domainsMon.Outgoings, group)
-	groupState.setCCDCapMB(p.getGroupCapUpdate(groupState, maxObservedMB))
+	groupState.setCCDCapMB(group, p.getGroupCapUpdate(groupState, maxObservedMB), maxObservedMB)
 
 	ccdMBs, ok := plan.MBGroups[group]
 	if !ok {
