@@ -17,8 +17,11 @@ limitations under the License.
 package advisor
 
 type groupPCtrlState struct {
-	pCtrl    pController
-	ccdCapMB int
+	pCtrl          pController
+	ccdCapMB       int
+	lowestObserved int
+	belowCount     int
+	belowThreshold int
 }
 
 func (g *groupPCtrlState) getCapUpdate(maxObservedMB int) int {
@@ -28,12 +31,28 @@ func (g *groupPCtrlState) getCapUpdate(maxObservedMB int) int {
 }
 
 func (g *groupPCtrlState) setCCDCapMB(cap int) {
-	// todo: allow cap increase a bit
-	if cap > g.ccdCapMB {
+	if cap >= g.ccdCapMB {
+		g.belowCount++
+		if g.belowCount < g.belowThreshold {
+			return
+		}
+		ceiling := g.lowestObserved * 12 / 10
+		if cap > ceiling {
+			cap = ceiling
+		}
+		g.ccdCapMB = cap
+		g.lowestObserved += (g.ccdCapMB - g.lowestObserved) / 100
+		if g.lowestObserved+1 <= g.lowestObserved {
+			g.lowestObserved++
+		}
 		return
 	}
 
+	g.belowCount = 0
 	g.ccdCapMB = cap
+	if cap < g.lowestObserved {
+		g.lowestObserved = cap
+	}
 }
 
 func newGroupPCtrlState(Kp float64, target int, maxValue int) *groupPCtrlState {
@@ -42,7 +61,9 @@ func newGroupPCtrlState(Kp float64, target int, maxValue int) *groupPCtrlState {
 			kp:     Kp,
 			target: target,
 		},
-		ccdCapMB: maxValue,
+		ccdCapMB:       maxValue,
+		lowestObserved: maxValue,
+		belowThreshold: 30,
 	}
 }
 
