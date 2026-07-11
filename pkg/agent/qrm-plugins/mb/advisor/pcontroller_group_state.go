@@ -47,7 +47,11 @@ type reducedRecover struct {
 }
 
 func (r *reducedRecover) Moderate(raises int) (int, bool) {
-	return raises * r.reducerPCT / 100, true
+	moderated := raises * r.reducerPCT / 100
+	if raises > 0 && moderated == 0 {
+		moderated = 1
+	}
+	return moderated, true
 }
 
 type pipelineRecover struct {
@@ -69,10 +73,12 @@ func (p *pipelineRecover) Moderate(raises int) (int, bool) {
 const (
 	defaultCoolDowns  = 30
 	defaultReducerPCT = 2
+
+	recoveryModeSlowCoolDown = "slow-cool-down"
 )
 
 func newRecoverModerator(mode string) capRecoveryModerator {
-	if mode == "slow" {
+	if mode == recoveryModeSlowCoolDown {
 		return &pipelineRecover{
 			recovers: []capRecoveryModerator{
 				&coolDownRecover{coolDownThreshold: defaultCoolDowns},
@@ -81,6 +87,7 @@ func newRecoverModerator(mode string) capRecoveryModerator {
 		}
 	}
 
+	// default is full-recover
 	return fullCapRecover{}
 }
 

@@ -190,10 +190,11 @@ func NewPControllerAdvisor(Kp float64,
 	minValue, maxValue int,
 	groupTargets map[string]int,
 	inner Advisor,
+	recoveryMode string,
 ) Advisor {
 	groupStates := make(map[string]*groupPCtrlState, len(groupTargets))
 	for group, target := range groupTargets {
-		groupStates[group] = newGroupPCtrlState(Kp, target, maxValue, "default")
+		groupStates[group] = newGroupPCtrlState(Kp, target, maxValue, recoveryMode)
 	}
 
 	return &pControllerAdvisor{
