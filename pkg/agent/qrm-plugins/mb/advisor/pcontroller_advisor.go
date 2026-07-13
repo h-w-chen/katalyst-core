@@ -79,7 +79,7 @@ func (p *pControllerAdvisor) GetSuppressedCCDs() []SuppressedCCD {
 	return result
 }
 
-// accumulateCCDLimitSuppression merges the latest CCD limit suppressions into the advisor state.
+// accumulateCCDLimitSuppression merges the latest CCD limit suppression into the advisor state.
 func (p *pControllerAdvisor) accumulateCCDLimitSuppression(suppression map[int]map[string]map[int]string) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -195,7 +195,7 @@ func NewPControllerAdvisor(Kp float64,
 ) Advisor {
 	groupStates := make(map[string]*groupPCtrlState, len(groupTargets))
 	for group, target := range groupTargets {
-		groupStates[group] = newGroupPCtrlState(Kp, target, maxValue, recoveryMode)
+		groupStates[group] = newGroupPCtrlState(group, Kp, target, maxValue, recoveryMode)
 	}
 
 	return &pControllerAdvisor{

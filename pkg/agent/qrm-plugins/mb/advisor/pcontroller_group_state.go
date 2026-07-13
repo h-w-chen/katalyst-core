@@ -16,6 +16,12 @@ limitations under the License.
 
 package advisor
 
+import (
+	"k8s.io/klog/v2"
+
+	"github.com/kubewharf/katalyst-core/pkg/util/general"
+)
+
 type capRecoveryModerator interface {
 	Moderate(toRaise int) (int, bool)
 	Accept(newValue, currValue, target, observed int)
@@ -51,6 +57,7 @@ func (c *coolDown) countOneMore() {
 
 // lagRecover moderates cap raise in cool-down fashion
 type lagRecover struct {
+	group  string
 	cooler coolDown
 }
 
@@ -58,6 +65,9 @@ func (c *lagRecover) Accept(newValue, currValue, target, observed int) {
 	// turn on warm whenever observed not below target
 	if observed >= target {
 		c.cooler.reset()
+		if klog.V(6).Enabled() {
+			general.Infof("mbm: ccd-cap: lagRecover: group %s cool count reset, usage observed %v", c.group, observed)
+		}
 		return
 	}
 
@@ -89,6 +99,7 @@ func (r *reducedRecover) Moderate(toRaise int) (int, bool) {
 
 // lagAdjustedBaselineRecover allows limited raise above tracked baseline which is adjusted in cool-down pattern
 type lagAdjustedBaselineRecover struct {
+	group       string
 	cooler      coolDown
 	baseline    int
 	floatingPCT int
@@ -115,11 +126,17 @@ func (f *lagAdjustedBaselineRecover) Accept(newValue, currValue, target, observe
 	if newValue < f.baseline {
 		f.baseline = newValue
 		f.cooler.reset()
+		if klog.V(6).Enabled() {
+			general.Infof("mbm: ccd-cap: lagAdjustedBaselineRecover: group %s cap baseline lowered to %v", f.group, f.baseline)
+		}
 		return
 	}
 
 	if observed >= target {
 		f.cooler.reset()
+		if klog.V(6).Enabled() {
+			general.Infof("mbm: ccd-cap: lagAdjustedBaselineRecover: group %s cap cool count reset, usage observed %v", f.group, observed)
+		}
 		return
 	}
 
@@ -131,6 +148,7 @@ func (f *lagAdjustedBaselineRecover) Accept(newValue, currValue, target, observe
 	// now it is ok to raise the baseline once
 	f.baseline += f.getCeiling()
 	f.cooler.reset()
+	general.Infof("mbm: ccd-cap: lagAdjustedBaselineRecover: group %s cap baseline lifeted to %v", f.group, f.baseline)
 }
 
 type pipelineRecover struct {
@@ -163,12 +181,20 @@ const (
 	recoveryModeSlowCoolDown = "slow-cool-down"
 )
 
-func newRecoverModerator(mode string, maxValue int) capRecoveryModerator {
+func newRecoverModerator(group, mode string, maxValue int) capRecoveryModerator {
 	if mode == recoveryModeSlowCoolDown {
 		return &pipelineRecover{
 			recovers: []capRecoveryModerator{
-				&lagRecover{cooler: coolDown{coolDownThreshold: defaultCoolDowns}},
-				&lagAdjustedBaselineRecover{floatingPCT: defaultCeilPCT, baseline: maxValue, cooler: coolDown{coolDownThreshold: defaultCoolDowns}},
+				&lagRecover{
+					group:  group,
+					cooler: coolDown{coolDownThreshold: defaultCoolDowns},
+				},
+				&lagAdjustedBaselineRecover{
+					group:       group,
+					floatingPCT: defaultCeilPCT,
+					baseline:    maxValue,
+					cooler:      coolDown{coolDownThreshold: defaultCoolDowns},
+				},
 				&reducedRecover{reducerPCT: defaultReducerPCT},
 			},
 		}
@@ -179,6 +205,7 @@ func newRecoverModerator(mode string, maxValue int) capRecoveryModerator {
 }
 
 type groupPCtrlState struct {
+	group    string
 	pCtrl    pController
 	ccdCapMB int
 
@@ -194,23 +221,31 @@ func (g *groupPCtrlState) updateCCDCap(suggestedCap, observedMax int) {
 		if moderatedRaise, ok := g.recover.Moderate(suggestedCap - g.ccdCapMB); ok {
 			newCap = g.ccdCapMB + moderatedRaise
 		} else {
+			// not allowed to change cap
 			newCap = g.ccdCapMB
 		}
 	}
 	// make sure moderator update itself to reflect situation changes
 	g.recover.Accept(newCap, g.ccdCapMB, g.pCtrl.target, observedMax)
 
+	if klog.V(6).Enabled() {
+		if newCap != g.ccdCapMB {
+			general.Infof("mbm: ccd-cap: group %s cap %v -> %v, usage observed %v", g.group, g.ccdCapMB, newCap, observedMax)
+		}
+	}
+
 	g.ccdCapMB = newCap
 }
 
 // newGroupPCtrlState initializes P-controller state with the maximum CCD cap as the starting value.
-func newGroupPCtrlState(Kp float64, target, maxValue int, recoverMode string) *groupPCtrlState {
+func newGroupPCtrlState(name string, Kp float64, target, maxValue int, recoverMode string) *groupPCtrlState {
 	return &groupPCtrlState{
+		group: name,
 		pCtrl: pController{
 			kp:     Kp,
 			target: target,
 		},
 		ccdCapMB: maxValue,
-		recover:  newRecoverModerator(recoverMode, maxValue),
+		recover:  newRecoverModerator(name, recoverMode, maxValue),
 	}
 }
