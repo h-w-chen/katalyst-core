@@ -1,0 +1,84 @@
+pkg/agent/sysadvisor/plugin/gpupoweraware/advisor/advisor.go
+  s_b3424a4439813f::t_1502ee84f6400e 74-77,79,83-91
+pkg/agent/sysadvisor/plugin/gpupoweraware/advisor/advisor_test.go
+  s_b3424a4439813f::t_745e391fe0ca67 1-153
+pkg/agent/sysadvisor/plugin/gpupoweraware/capper/server/service_test.go
+  s_b3424a4439813f::t_bc7122c14dec5f 120,131,219,227 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a67dbe9837ce515f22e8014","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Single":120},{"Single":131},{"Single":219},{"Single":227}]}]}
+pkg/agent/sysadvisor/plugin/gpupoweraware/plan/plan.go
+  s_b3424a4439813f::t_d1ac2866458c83 11-15,56,64,77
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "80c132056d6ab1432ec9bff7b27ceb0f1c69ed6f",
+  "prompts": {},
+  "sessions": {
+    "s_b3424a4439813f": {
+      "agent_id": {
+        "tool": "trae",
+        "id": "6a67d2a9837ce515f22e7c2e",
+        "model": "gpt-5.5__dev"
+      },
+      "human_author": "Hongwei Chen <hongwei.chen@bytedance.com>"
+    }
+  },
+  "attestation_metadata": {
+    "pkg/agent/sysadvisor/plugin/gpupoweraware/capper/server/service_test.go": [
+      {
+        "hash": "s_b3424a4439813f::t_bc7122c14dec5f",
+        "line_ranges": [
+          {
+            "Single": 120
+          },
+          {
+            "Single": 131
+          },
+          {
+            "Single": 219
+          },
+          {
+            "Single": 227
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a67dbe9837ce515f22e8014",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Single": 120
+              },
+              {
+                "Single": 131
+              },
+              {
+                "Single": 219
+              },
+              {
+                "Single": 227
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "remote_transcripts": {
+    "s_b3424a4439813f": {
+      "tool": "trae",
+      "conversation_id": "6a67d2a9837ce515f22e7c2e",
+      "session_id": "6a67d2a9837ce515f22e7c2e",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_b3424a4439813f::t_bc7122c14dec5f": {
+      "tool": "trae",
+      "conversation_id": "6a67d2a9837ce515f22e7c2e",
+      "session_id": "6a67d2a9837ce515f22e7c2e",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    }
+  }
+}
