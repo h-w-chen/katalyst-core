@@ -23,7 +23,7 @@ type linearPlanner struct {
 }
 
 func (l *linearPlanner) GetPlan(spec *spec.PowerSpec, levelHint capper.Level, currTotalPower int) (*PowerPlan, error) {
-	if spec == nil || len(spec.Alert) == 0 {
+	if hasNoPowerAlert(spec) {
 		return l.getResetPlan(), nil
 	}
 
@@ -35,9 +35,13 @@ func (l *linearPlanner) GetPlan(spec *spec.PowerSpec, levelHint capper.Level, cu
 	return nil, nil
 }
 
+func hasNoPowerAlert(powerSpec *spec.PowerSpec) bool {
+	return powerSpec == nil || len(powerSpec.Alert) == 0 || powerSpec.Alert == spec.PowerAlertOK
+}
+
 func (l *linearPlanner) getThrottlePlan(budget, current int, levelHint capper.Level) *PowerPlan {
-	delta := float64(budget - current)
-	toDecrease := int(delta * l.kp)
+	gap := current - budget
+	toDecrease := int(float64(gap) * l.kp)
 	if toDecrease == 0 {
 		toDecrease = 1
 	}
@@ -64,7 +68,7 @@ type persistentPlanner struct {
 }
 
 func (p *persistentPlanner) GetPlan(spec *spec.PowerSpec, levelHint capper.Level, currTotalPower int) (*PowerPlan, error) {
-	if spec == nil || len(spec.Alert) == 0 {
+	if hasNoPowerAlert(spec) {
 		if p.priorPlan != nil && p.priorPlan.Op == "reset" {
 			return nil, nil
 		}
