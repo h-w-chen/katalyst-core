@@ -8,6 +8,11 @@ import (
 
 const defaultKp = 0.02
 
+const (
+	OpCap   = "cap"
+	OpReset = "reset"
+)
+
 type PowerPlan struct {
 	Op     string
 	Level  capper.Level
@@ -48,7 +53,7 @@ func (l *linearPlanner) getThrottlePlan(budget, current int, levelHint capper.Le
 
 	target := current - toDecrease
 	return &PowerPlan{
-		Op:     "cap",
+		Op:     OpCap,
 		Level:  levelHint,
 		Target: target,
 	}
@@ -56,7 +61,7 @@ func (l *linearPlanner) getThrottlePlan(budget, current int, levelHint capper.Le
 
 func (l *linearPlanner) getResetPlan() *PowerPlan {
 	return &PowerPlan{
-		Op:     "reset",
+		Op:     OpReset,
 		Level:  capper.LevelAll,
 		Target: 0,
 	}
@@ -69,7 +74,7 @@ type persistentPlanner struct {
 
 func (p *persistentPlanner) GetPlan(spec *spec.PowerSpec, levelHint capper.Level, currTotalPower int) (*PowerPlan, error) {
 	if hasNoPowerAlert(spec) {
-		if p.priorPlan != nil && p.priorPlan.Op == "reset" {
+		if p.priorPlan != nil && p.priorPlan.Op == OpReset {
 			return nil, nil
 		}
 	}

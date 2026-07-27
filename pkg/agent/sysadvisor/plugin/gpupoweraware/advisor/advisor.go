@@ -71,12 +71,24 @@ func (g *gpuAdvisor) runOnce(ctx context.Context) {
 		general.Warningf("pap-gpu: advisor: failed to runOnce once: %v", err)
 		return
 	}
+	if powerPlan == nil {
+		general.InfofV(6, "pap-gpu: advisor: no power plan generated")
+		return
+	}
 
-	general.InfofV(6, "pap-gpu: advisor: get power powerSpec %v", *powerSpec)
+	general.InfofV(6, "pap-gpu: advisor: get power powerSpec %v", powerSpec)
 	general.InfofV(6, "pap-gpu: advisor: get current total power %v", totalPower)
 	general.InfofV(6, "pap-gpu: advisor: decide power plan %v", powerPlan)
 
-	g.capper.CapWithLevel(ctx, powerPlan.Level, powerPlan.Target, totalPower)
+	switch powerPlan.Op {
+	case plan.OpReset:
+		g.capper.Reset()
+	case plan.OpCap:
+		g.capper.CapWithLevel(ctx, powerPlan.Level, powerPlan.Target, totalPower)
+	default:
+		general.Warningf("pap-gpu: advisor: unknown power plan op: %s", powerPlan.Op)
+		return
+	}
 
 	general.InfofV(6, "pap-gpu: advisor: runOnce once end")
 }

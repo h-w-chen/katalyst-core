@@ -117,7 +117,7 @@ func Test_CapWithLevel_GetAdvice_E2E(t *testing.T) {
 	defer cleanup()
 
 	resp, err := doGetAdviceThenPush(t, client, svc, func() {
-		svc.CapWithLevel(context.Background(), capper2.LevelInfer, 80, 100)
+		svc.CapWithLevel(context.Background(), capper2.LevelDecode, 80, 100)
 	})
 	require.NoError(t, err)
 
@@ -128,7 +128,7 @@ func Test_CapWithLevel_GetAdvice_E2E(t *testing.T) {
 	assert.Equal(t, string(capper.OpCap), calcRes.Values["op-code"])
 	assert.Equal(t, "100", calcRes.Values["current-value"])
 	assert.Equal(t, "80", calcRes.Values["target-value"])
-	assert.Equal(t, string(capper2.LevelInfer), calcRes.Values["op-level"])
+	assert.Equal(t, string(capper2.LevelDecode), calcRes.Values["op-level"])
 }
 
 // Test_Reset_GetAdvice_E2E verifies that Reset produces a reset instruction
@@ -216,7 +216,7 @@ func Test_GetAdvice_ApplyPreviousReset_NoResetPending(t *testing.T) {
 }
 
 // Test_CapWithLevel_MultipleLevels verifies that different GPU workload levels
-// (infer, train, all) are correctly propagated through the gRPC layer.
+// are correctly propagated through the gRPC layer.
 func Test_CapWithLevel_MultipleLevels(t *testing.T) {
 	t.Parallel()
 
@@ -224,8 +224,7 @@ func Test_CapWithLevel_MultipleLevels(t *testing.T) {
 		name  string
 		level capper2.Level
 	}{
-		{name: "infer", level: capper2.LevelInfer},
-		{name: "train", level: capper2.LevelTrain},
+		{name: "decode", level: capper2.LevelDecode},
 		{name: "all", level: capper2.LevelAll},
 	}
 
