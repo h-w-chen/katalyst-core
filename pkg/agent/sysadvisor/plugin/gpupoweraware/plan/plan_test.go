@@ -79,3 +79,60 @@ func TestLinearPlannerGetPlanNoPowerAlert(t *testing.T) {
 		t.Fatalf("unexpected level: got %s, want %s", got.Level, capper.LevelAll)
 	}
 }
+
+func TestSafetyNetPlannerClampsThrottleTargetBySafetyFloor(t *testing.T) {
+	t.Parallel()
+
+	planner := &safetyNetPlanner{
+		innerPlanner: &linearPlanner{
+			kp: 1,
+		},
+		maxTargetReductionRatio: defaultMaxTargetReductionRatio,
+	}
+
+	got, err := planner.GetPlan(&powerspec.PowerSpec{
+		Alert:  powerspec.PowerAlertP0,
+		Budget: 100,
+	}, capper.LevelAll, 1000)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if got == nil {
+		t.Fatal("expected cap plan, got nil")
+	}
+	if got.Target != 900 {
+		t.Fatalf("unexpected target: got %d, want 900", got.Target)
+	}
+}
+
+func TestSafetyNetPlannerSkipsThrottleBelowSafetyFloor(t *testing.T) {
+	t.Parallel()
+
+	planner := &safetyNetPlanner{
+		innerPlanner: &linearPlanner{
+			kp: 1,
+		},
+		maxTargetReductionRatio: defaultMaxTargetReductionRatio,
+	}
+
+	_, err := planner.GetPlan(&powerspec.PowerSpec{
+		Alert:  powerspec.PowerAlertP0,
+		Budget: 100,
+	}, capper.LevelAll, 1000)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	got, err := planner.GetPlan(&powerspec.PowerSpec{
+		Alert:  powerspec.PowerAlertP0,
+		Budget: 100,
+	}, capper.LevelAll, 890)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if got != nil {
+		t.Fatalf("expected no plan below safety floor, got %+v", got)
+	}
+}
