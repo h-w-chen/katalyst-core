@@ -16,6 +16,8 @@ import (
 
 const (
 	intervalRunOnce = time.Second * 3
+
+	powerAlertP3 spec.PowerAlert = "p3"
 )
 
 type Advisor interface {
@@ -65,8 +67,7 @@ func (g *gpuAdvisor) runOnce(ctx context.Context) {
 		return
 	}
 
-	// todo: support arg-provided level hint
-	powerPlan, err := g.planner.GetPlan(powerSpec, capper.LevelDecode, totalPower)
+	powerPlan, err := g.planner.GetPlan(powerSpec, getLevelHint(powerSpec), totalPower)
 	if err != nil {
 		general.Warningf("pap-gpu: advisor: failed to runOnce once: %v", err)
 		return
@@ -113,6 +114,19 @@ func (g *gpuAdvisor) start() error {
 
 func (g *gpuAdvisor) close() {
 	// to impl
+}
+
+func getLevelHint(powerSpec *spec.PowerSpec) capper.Level {
+	if powerSpec == nil {
+		return capper.LevelAll
+	}
+
+	switch powerSpec.Alert {
+	case spec.PowerAlertP2, powerAlertP3:
+		return capper.LevelDecode
+	default:
+		return capper.LevelAll
+	}
 }
 
 func New(specFetcher spec.SpecFetcher, powerCapper capper.PowerCapper) (Advisor, error) {

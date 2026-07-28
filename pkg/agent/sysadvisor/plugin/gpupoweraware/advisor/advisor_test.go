@@ -32,11 +32,15 @@ func (f *fakePowerReader) GetTotalPower(context.Context) (int, error) {
 }
 
 type fakePlanner struct {
-	powerPlan *plan.PowerPlan
-	err       error
+	powerPlan     *plan.PowerPlan
+	err           error
+	levelHint     gpucapper.Level
+	levelHintSeen bool
 }
 
-func (f *fakePlanner) GetPlan(*spec.PowerSpec, gpucapper.Level, int) (*plan.PowerPlan, error) {
+func (f *fakePlanner) GetPlan(_ *spec.PowerSpec, levelHint gpucapper.Level, _ int) (*plan.PowerPlan, error) {
+	f.levelHint = levelHint
+	f.levelHintSeen = true
 	return f.powerPlan, f.err
 }
 
@@ -149,5 +153,45 @@ func TestGPUAdvisorRunOnceAppliesCapPlan(t *testing.T) {
 	}
 	if powerCapper.currWatt != 943 {
 		t.Fatalf("unexpected current watts: got %d, want 943", powerCapper.currWatt)
+	}
+}
+
+func TestGPUAdvisorRunOncePassesLevelHintByAlert(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		alert     spec.PowerAlert
+		wantLevel gpucapper.Level
+	}{
+		{name: "s0 uses all", alert: spec.PowerAlertS0, wantLevel: gpucapper.LevelAll},
+		{name: "p0 uses all", alert: spec.PowerAlertP0, wantLevel: gpucapper.LevelAll},
+		{name: "p1 uses all", alert: spec.PowerAlertP1, wantLevel: gpucapper.LevelAll},
+		{name: "p2 uses decode", alert: spec.PowerAlertP2, wantLevel: gpucapper.LevelDecode},
+		{name: "p3 uses decode", alert: powerAlertP3, wantLevel: gpucapper.LevelDecode},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			planner := &fakePlanner{}
+			advisor := &gpuAdvisor{
+				specFetcher: &fakeSpecFetcher{powerSpec: &spec.PowerSpec{Alert: tt.alert, Budget: 900}},
+				powerReader: &fakePowerReader{totalPower: 943},
+				planner:     planner,
+				capper:      &fakePowerCapper{},
+			}
+
+			advisor.runOnce(context.Background())
+
+			if !planner.levelHintSeen {
+				t.Fatal("planner should be called")
+			}
+			if planner.levelHint != tt.wantLevel {
+				t.Fatalf("unexpected level hint: got %s, want %s", planner.levelHint, tt.wantLevel)
+			}
+		})
 	}
 }
