@@ -1,0 +1,148 @@
+pkg/agent/sysadvisor/plugin/gpupoweraware/advisor/advisor_test.go
+  s_f38ffdfab56260::t_b675934a4e8032 35-38,41-43,158-196 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a681de2837ce515f22e81bb","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Range":[35,38]},{"Range":[41,43]},{"Range":[158,196]}]}]}
+  s_f38ffdfab56260::t_e2ab207e2d16fc 197
+pkg/agent/sysadvisor/plugin/gpupoweraware/advisor/advisor.go
+  s_f38ffdfab56260::t_dff6310d7acd2d 19-20,70,119-129 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a681dd9837ce515f22e819a","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Range":[19,20]},{"Single":70},{"Range":[119,129]}]}]}
+  s_f38ffdfab56260::t_b81ec967716e75 130-131
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "7104299d8936a69a661bbcc60cd6fe5e4ccccdf1",
+  "prompts": {},
+  "sessions": {
+    "s_f38ffdfab56260": {
+      "agent_id": {
+        "tool": "trae",
+        "id": "6a67db56837ce515f22e7fa4",
+        "model": "gpt-5.5__dev"
+      },
+      "human_author": "Hongwei Chen <hongwei.chen@bytedance.com>"
+    }
+  },
+  "attestation_metadata": {
+    "pkg/agent/sysadvisor/plugin/gpupoweraware/advisor/advisor.go": [
+      {
+        "hash": "s_f38ffdfab56260::t_dff6310d7acd2d",
+        "line_ranges": [
+          {
+            "Range": [
+              19,
+              20
+            ]
+          },
+          {
+            "Single": 70
+          },
+          {
+            "Range": [
+              119,
+              129
+            ]
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a681dd9837ce515f22e819a",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Range": [
+                  19,
+                  20
+                ]
+              },
+              {
+                "Single": 70
+              },
+              {
+                "Range": [
+                  119,
+                  129
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "pkg/agent/sysadvisor/plugin/gpupoweraware/advisor/advisor_test.go": [
+      {
+        "hash": "s_f38ffdfab56260::t_b675934a4e8032",
+        "line_ranges": [
+          {
+            "Range": [
+              35,
+              38
+            ]
+          },
+          {
+            "Range": [
+              41,
+              43
+            ]
+          },
+          {
+            "Range": [
+              158,
+              196
+            ]
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a681de2837ce515f22e81bb",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Range": [
+                  35,
+                  38
+                ]
+              },
+              {
+                "Range": [
+                  41,
+                  43
+                ]
+              },
+              {
+                "Range": [
+                  158,
+                  196
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "remote_transcripts": {
+    "s_f38ffdfab56260": {
+      "tool": "trae",
+      "conversation_id": "6a67db56837ce515f22e7fa4",
+      "session_id": "6a67db56837ce515f22e7fa4",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_f38ffdfab56260::t_b675934a4e8032": {
+      "tool": "trae",
+      "conversation_id": "6a67db56837ce515f22e7fa4",
+      "session_id": "6a67db56837ce515f22e7fa4",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_f38ffdfab56260::t_dff6310d7acd2d": {
+      "tool": "trae",
+      "conversation_id": "6a67db56837ce515f22e7fa4",
+      "session_id": "6a67db56837ce515f22e7fa4",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    }
+  }
+}
