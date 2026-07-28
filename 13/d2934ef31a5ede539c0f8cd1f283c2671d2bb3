@@ -1,0 +1,438 @@
+pkg/agent/sysadvisor/plugin/gpupoweraware/plan/plan.go
+  s_b5afd37c5fc93f::t_80cdbeed0a8b39 4-5,11-14,113-114,116-118,121-123,126-127,129-131,133-138,140-143,145-147,156 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a683a4e837ce515f22e83b5","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Range":[4,5]},{"Range":[11,14]},{"Range":[113,114]},{"Range":[116,118]},{"Range":[121,123]},{"Range":[126,127]},{"Range":[129,131]},{"Range":[133,138]},{"Range":[140,143]},{"Range":[145,147]},{"Single":156}]}]}
+  s_b5afd37c5fc93f::t_c1a0399b925dcf 151-154 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a683cb5837ce515f22e844e","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Range":[151,154]}]}]}
+  s_b5afd37c5fc93f::t_5183cf1e92472f 94-112,115,119-120,124-125,128,132,139,144,150 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a683c94837ce515f22e8427","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Range":[94,112]},{"Single":115},{"Range":[119,120]},{"Range":[124,125]},{"Single":128},{"Single":132},{"Single":139},{"Single":144},{"Single":150}]}]}
+  s_b5afd37c5fc93f::t_dda21118bd4859 148
+pkg/agent/sysadvisor/plugin/gpupoweraware/plan/plan_test.go
+  s_b5afd37c5fc93f::t_404c32d54e1390 82,84-85,87-108,110-111,113-138 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a683a60837ce515f22e83d6","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Single":82},{"Range":[84,85]},{"Range":[87,108]},{"Range":[110,111]},{"Range":[113,138]}]}]}
+  s_b5afd37c5fc93f::t_988e9ea9251e46 83,86,109,112 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a683cbb837ce515f22e846f","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Single":83},{"Single":86},{"Single":109},{"Single":112}]}]}
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "13d2934ef31a5ede539c0f8cd1f283c2671d2bb3",
+  "prompts": {},
+  "sessions": {
+    "s_b5afd37c5fc93f": {
+      "agent_id": {
+        "tool": "trae",
+        "id": "6a68381c837ce515f22e8384",
+        "model": "gpt-5.5__dev"
+      },
+      "human_author": "Hongwei Chen <hongwei.chen@bytedance.com>"
+    }
+  },
+  "attestation_metadata": {
+    "pkg/agent/sysadvisor/plugin/gpupoweraware/plan/plan.go": [
+      {
+        "hash": "s_b5afd37c5fc93f::t_80cdbeed0a8b39",
+        "line_ranges": [
+          {
+            "Range": [
+              4,
+              5
+            ]
+          },
+          {
+            "Range": [
+              11,
+              14
+            ]
+          },
+          {
+            "Range": [
+              113,
+              114
+            ]
+          },
+          {
+            "Range": [
+              116,
+              118
+            ]
+          },
+          {
+            "Range": [
+              121,
+              123
+            ]
+          },
+          {
+            "Range": [
+              126,
+              127
+            ]
+          },
+          {
+            "Range": [
+              129,
+              131
+            ]
+          },
+          {
+            "Range": [
+              133,
+              138
+            ]
+          },
+          {
+            "Range": [
+              140,
+              143
+            ]
+          },
+          {
+            "Range": [
+              145,
+              147
+            ]
+          },
+          {
+            "Single": 156
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a683a4e837ce515f22e83b5",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Range": [
+                  4,
+                  5
+                ]
+              },
+              {
+                "Range": [
+                  11,
+                  14
+                ]
+              },
+              {
+                "Range": [
+                  113,
+                  114
+                ]
+              },
+              {
+                "Range": [
+                  116,
+                  118
+                ]
+              },
+              {
+                "Range": [
+                  121,
+                  123
+                ]
+              },
+              {
+                "Range": [
+                  126,
+                  127
+                ]
+              },
+              {
+                "Range": [
+                  129,
+                  131
+                ]
+              },
+              {
+                "Range": [
+                  133,
+                  138
+                ]
+              },
+              {
+                "Range": [
+                  140,
+                  143
+                ]
+              },
+              {
+                "Range": [
+                  145,
+                  147
+                ]
+              },
+              {
+                "Single": 156
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "hash": "s_b5afd37c5fc93f::t_c1a0399b925dcf",
+        "line_ranges": [
+          {
+            "Range": [
+              151,
+              154
+            ]
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a683cb5837ce515f22e844e",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Range": [
+                  151,
+                  154
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "hash": "s_b5afd37c5fc93f::t_5183cf1e92472f",
+        "line_ranges": [
+          {
+            "Range": [
+              94,
+              112
+            ]
+          },
+          {
+            "Single": 115
+          },
+          {
+            "Range": [
+              119,
+              120
+            ]
+          },
+          {
+            "Range": [
+              124,
+              125
+            ]
+          },
+          {
+            "Single": 128
+          },
+          {
+            "Single": 132
+          },
+          {
+            "Single": 139
+          },
+          {
+            "Single": 144
+          },
+          {
+            "Single": 150
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a683c94837ce515f22e8427",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Range": [
+                  94,
+                  112
+                ]
+              },
+              {
+                "Single": 115
+              },
+              {
+                "Range": [
+                  119,
+                  120
+                ]
+              },
+              {
+                "Range": [
+                  124,
+                  125
+                ]
+              },
+              {
+                "Single": 128
+              },
+              {
+                "Single": 132
+              },
+              {
+                "Single": 139
+              },
+              {
+                "Single": 144
+              },
+              {
+                "Single": 150
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "pkg/agent/sysadvisor/plugin/gpupoweraware/plan/plan_test.go": [
+      {
+        "hash": "s_b5afd37c5fc93f::t_404c32d54e1390",
+        "line_ranges": [
+          {
+            "Single": 82
+          },
+          {
+            "Range": [
+              84,
+              85
+            ]
+          },
+          {
+            "Range": [
+              87,
+              108
+            ]
+          },
+          {
+            "Range": [
+              110,
+              111
+            ]
+          },
+          {
+            "Range": [
+              113,
+              138
+            ]
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a683a60837ce515f22e83d6",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Single": 82
+              },
+              {
+                "Range": [
+                  84,
+                  85
+                ]
+              },
+              {
+                "Range": [
+                  87,
+                  108
+                ]
+              },
+              {
+                "Range": [
+                  110,
+                  111
+                ]
+              },
+              {
+                "Range": [
+                  113,
+                  138
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "hash": "s_b5afd37c5fc93f::t_988e9ea9251e46",
+        "line_ranges": [
+          {
+            "Single": 83
+          },
+          {
+            "Single": 86
+          },
+          {
+            "Single": 109
+          },
+          {
+            "Single": 112
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a683cbb837ce515f22e846f",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Single": 83
+              },
+              {
+                "Single": 86
+              },
+              {
+                "Single": 109
+              },
+              {
+                "Single": 112
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "remote_transcripts": {
+    "s_b5afd37c5fc93f": {
+      "tool": "trae",
+      "conversation_id": "6a68381c837ce515f22e8384",
+      "session_id": "6a68381c837ce515f22e8384",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_b5afd37c5fc93f::t_404c32d54e1390": {
+      "tool": "trae",
+      "conversation_id": "6a68381c837ce515f22e8384",
+      "session_id": "6a68381c837ce515f22e8384",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_b5afd37c5fc93f::t_5183cf1e92472f": {
+      "tool": "trae",
+      "conversation_id": "6a68381c837ce515f22e8384",
+      "session_id": "6a68381c837ce515f22e8384",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_b5afd37c5fc93f::t_80cdbeed0a8b39": {
+      "tool": "trae",
+      "conversation_id": "6a68381c837ce515f22e8384",
+      "session_id": "6a68381c837ce515f22e8384",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_b5afd37c5fc93f::t_988e9ea9251e46": {
+      "tool": "trae",
+      "conversation_id": "6a68381c837ce515f22e8384",
+      "session_id": "6a68381c837ce515f22e8384",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_b5afd37c5fc93f::t_c1a0399b925dcf": {
+      "tool": "trae",
+      "conversation_id": "6a68381c837ce515f22e8384",
+      "session_id": "6a68381c837ce515f22e8384",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    }
+  }
+}
